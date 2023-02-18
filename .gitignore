@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Editors and others
+*.swp
+*.old
+*.bak
+/tmp
+rpmdir/*
+.rpm-version*
