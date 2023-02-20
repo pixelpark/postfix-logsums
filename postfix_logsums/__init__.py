@@ -15,14 +15,24 @@ import os
 import re
 import datetime
 import copy
+import codecs
+import gzip
+import bz2
+import lzma
+import logging
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
 DEFAULT_TERMINAL_WIDTH = 99
 DEFAULT_TERMINAL_HEIGHT = 40
 MAX_TERMINAL_WIDTH = 150
+
+UTF8_ENCODING = 'utf-8'
+DEFAULT_ENCODING = UTF8_ENCODING
+
+LOG = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -71,6 +81,11 @@ class PostfixLogSums(object):
         self.lines = 0
 
     # -------------------------------------------------------------------------
+    def reset(self):
+        """Resetting all counters."""
+        self.lines = 0
+
+    # -------------------------------------------------------------------------
     def as_dict(self, short=True):
         """
         Transforms the elements of the object into a dict
@@ -115,14 +130,23 @@ class PostfixLogParser(object):
 
     valid_compressions = ('gzip', 'bzip2', 'xz', 'lzma')
 
+    re_gzip = re.compile(r'\.gz$', re.IGNORECASE)
+    re_bzip2 = re.compile(r'\.(bz2?|bzip2?)$', re.IGNORECASE)
+    re_lzma = re.compile(r'\.(xz|lzma)$', re.IGNORECASE)
+
+    default_encoding = DEFAULT_ENCODING
+
     # -------------------------------------------------------------------------
-    def __init__(self, appname=None, verbose=0, day=None, compression=None):
+    def __init__(
+            self, appname=None, verbose=0, day=None,
+            compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
         self._appname = get_generic_appname()
         self._verbose = 0
         self._initialized = False
         self._compression = None
+        self._encoding = self.default_encoding
 
         self.date_filter = None
         self.date_filter_rfc3339 = None
@@ -146,6 +170,11 @@ class PostfixLogParser(object):
             self.appname = appname
         self.verbose = verbose
         self.compression = compression
+
+        if encoding:
+            self.encoding = encoding
+        else:
+            self.encoding = self.default_encoding
 
         self._initialized = True
 
@@ -205,6 +234,24 @@ class PostfixLogParser(object):
             self._compression = v
 
     # -------------------------------------------------------------------------
+    @property
+    def encoding(self):
+        """Return the default encoding used to read config files."""
+        return self._encoding
+
+    @encoding.setter
+    def encoding(self, value):
+        if not isinstance(value, str):
+            msg = _(
+                "Encoding {v!r} must be a {s!r} object, "
+                "but is a {c!r} object instead.").format(
+                v=value, s='str', c=value.__class__.__name__)
+            raise TypeError(msg)
+
+        encoder = codecs.lookup(value)
+        self._encoding = encoder.name
+
+    # -------------------------------------------------------------------------
     def __str__(self):
         """
         Typecasting function for translating object structure
@@ -237,6 +284,7 @@ class PostfixLogParser(object):
         res['__class_name__'] = self.__class__.__name__
         res['appname'] = self.appname
         res['compression'] = self.compression
+        res['encoding'] = self.encoding
         res['initialized'] = self.initialized
         res['results'] = self.results.as_dict(short=short)
         res['this_month'] = self.this_month
@@ -246,6 +294,118 @@ class PostfixLogParser(object):
 
         return res
 
+    # -------------------------------------------------------------------------
+    def parse(self, *files):
+        """Main entry point of this class."""
+
+        self.results.reset()
+
+        if not files:
+            LOG.info("Parsing from STDIN ...")
+            return self.parse_fh(sys.stdin, 'STDIN', self.compression)
+
+        for logfile in files:
+            LOG.info("Parsing logfile {!r} ...".format(str(logfile)))
+
+            if not self.parse_file(logfile):
+                return False
+
+        return True
+
+    # -------------------------------------------------------------------------
+    def parse_file(self, logfile):
+        """Parsing a particular logfile."""
+
+        open_opts = {
+            'encoding': self.encoding,
+            'errors': 'surrogateescape',
+        }
+
+        compression = None
+
+        if self.compression:
+            compression = self.compression
+        else:
+            if self.re_gzip.search(logfile.name):
+                compression = 'gzip'
+            elif self.re_bzip2.search(logfile.name):
+                compression = 'bzip2'
+            elif self.re_lzma.search(logfile.name):
+                compression = 'lzma'
+
+        if compression:
+            with logfile.open('rb') as fh:
+                return self.parse_fh(fh, filename=str(logfile), compression=compression)
+        else:
+            with logfile.open('r', **open_opts) as fh:
+                return self.parse_fh(fh, filename=str(logfile))
+
+    # -------------------------------------------------------------------------
+    def parse_fh(self, fh, filename, compression=None):
+
+        line = None
+
+        if not compression:
+            LOG.debug("Reading uncompressed file {!r} ...".format(filename))
+            line = fh.readline()
+            while line:
+                self.eval_line(line)
+                line = fh.readline()
+            return True
+
+        cdata = fh.read()
+
+        if compression == 'gzip':
+            LOG.debug("Reading {w} compressed file {f!r} ...".format(
+                w='GZIP', f=filename))
+            self.read_gzip(cdata)
+            return True
+
+        if compression == 'bzip2':
+            LOG.debug("Reading {w} compressed file {f!r} ...".format(
+                w='BZIP2', f=filename))
+            self.read_bzip2(cdata)
+            return True
+
+        if compression == 'lzma':
+            LOG.debug("Reading {w} compressed file {f!r} ...".format(
+                w='LZMA', f=filename))
+            self.read_lzma(cdata)
+            return True
+
+    # -------------------------------------------------------------------------
+    def read_gzip(self, cdata):
+
+        bdata = gzip.decompress(cdata)
+        data = bdata.decode(self.encoding)
+
+        for line in data.splitlines():
+            self.eval_line(line)
+
+    # -------------------------------------------------------------------------
+    def read_bzip2(self, cdata):
+
+        bdata = bz2.decompress(cdata)
+        data = bdata.decode(self.encoding)
+
+        for line in data.splitlines():
+            self.eval_line(line)
+
+    # -------------------------------------------------------------------------
+    def read_lzma(self, cdata):
+
+        bdata = lzma.decompress(cdata)
+        data = bdata.decode(self.encoding)
+
+        for line in data.splitlines():
+            self.eval_line(line)
+
+    # -------------------------------------------------------------------------
+    def eval_line(self, line):
+
+        self.results.lines += 1
+
+
 # =============================================================================
 
 if __name__ == "__main__":
@@ -254,4 +414,4 @@ if __name__ == "__main__":
 
 # =============================================================================
 
-# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4 list

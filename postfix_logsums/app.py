@@ -24,6 +24,8 @@ import shutil
 from argparse import RawDescriptionHelpFormatter
 from argparse import RawTextHelpFormatter
 
+from pathlib import Path
+
 LOG = logging.getLogger(__name__)
 
 from . import __version__ as GLOBAL_VERSION
@@ -32,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 # =============================================================================
 class NonNegativeItegerOptionAction(argparse.Action):
@@ -52,6 +54,49 @@ class NonNegativeItegerOptionAction(argparse.Action):
             raise argparse.ArgumentError(self, msg)
 
         setattr(namespace, self.dest, val)
+
+
+# =============================================================================
+class LogFilesOptionAction(argparse.Action):
+    """An argparse action for logfiles."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, option_strings, *args, **kwargs):
+        """Initialise a LogFilesOptionAction object."""
+        super(LogFilesOptionAction, self).__init__(
+            option_strings=option_strings, *args, **kwargs)
+
+    # -------------------------------------------------------------------------
+    def __call__(self, parser, namespace, values, option_string=None):
+        """Parse the logfile option."""
+        if values is None or values == []:
+            setattr(namespace, self.dest, [])
+            return
+
+        if isinstance(values, list):
+            all_files = values
+        else:
+            all_files = [values]
+
+        logfiles = []
+        for logfile in all_files:
+
+            path = Path(logfile)
+            if not path.exists():
+                msg = "Logfile {!r} does not exists.".format(logfile)
+                raise argparse.ArgumentError(self, msg)
+
+            if not path.is_file():
+                msg = "File {!r} is not a regular file.".format(logfile)
+                raise argparse.ArgumentError(self, msg)
+
+            if not os.access(str(path), os.R_OK):
+                msg = "File {!r} is not readable.".format(logfile)
+                raise argparse.ArgumentError(self, msg)
+
+            logfiles.append(path.resolve())
+
+        setattr(namespace, self.dest, logfiles)
 
 
 # =============================================================================
@@ -350,7 +395,8 @@ class PostfixLogsumsApp(object):
         # last parse option
         desc = 'The logfile(s) to analyze. If no file(s) specified, reads from stdin.'
         desc = self.wrap_msg(desc, arg_width)
-        logfile_group.add_argument('logfile', metavar='FILE', nargs='*', help=desc)
+        logfile_group.add_argument(
+            'logfiles', metavar='FILE', nargs='*', action=LogFilesOptionAction, help=desc)
 
         #######
         # Output
@@ -578,6 +624,10 @@ class PostfixLogsumsApp(object):
 
         LOG.debug("And here wo go ...")
 
+        self.parser.parse(*self.args.logfiles)
+
+        LOG.info('Result of parsing:' + '\n' + pp(self.parser.results.as_dict()))
+
 
 # =============================================================================
 
@@ -587,4 +637,4 @@ if __name__ == "__main__":
 
 # =============================================================================
 
-# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4 list
