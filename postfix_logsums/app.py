@@ -30,7 +30,7 @@ from . import __version__ as GLOBAL_VERSION
 from . import pp, MAX_TERMINAL_WIDTH
 from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 # =============================================================================
 class NonNegativeItegerOptionAction(argparse.Action):
@@ -231,35 +231,12 @@ class PostfixLogsumsApp(object):
 
         logfile_group = self.arg_parser.add_argument_group('Options for scanning Postfix logfiles')
 
-        # --bounce-detail
-        desc = 'Limit detailed bounce reports to the top <COUNT>. 0 to suppress entirely.'
-        desc = self.wrap_msg(desc, arg_width)
-        logfile_group.add_argument(
-            '--bounce-detail', type=int, metavar='COUNT', dest='bounce_detail',
-            action=NonNegativeItegerOptionAction, help=desc)
-
         # --day
         desc = 'Generate report for just today or yesterday.'
         desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
             '-d', '--day', metavar='|'.join(day_values), dest='day', choices=day_values,
             help=desc)
-
-        # --deferral-detail
-        desc = 'Limit detailed deferral reports to the top <COUNT>. 0 to suppress entirely.'
-        desc = self.wrap_msg(desc, arg_width)
-        logfile_group.add_argument(
-            '--deferral-detail', type=int, metavar='COUNT', dest='deferral_detail',
-            action=NonNegativeItegerOptionAction, help=desc)
-
-        # --detail
-        desc = self.wrap_msg(
-            'Sets all --*-detail, -h and -u to <COUNT>. Is over-ridden by '
-            'individual settings.', arg_width)
-        desc += '\n--detail 0 suppresses *all* detail.'
-        logfile_group.add_argument(
-            '--detail', type=int, metavar='COUNT', dest='detail',
-            action=NonNegativeItegerOptionAction, help=desc)
 
         # --extended
         desc = 'Extended (extreme? excessive?) detail.\n'
@@ -272,16 +249,6 @@ class PostfixLogsumsApp(object):
         logfile_group.add_argument(
             '-e', '--extended', dest='extended', action="store_true", help=desc)
 
-        # --host
-        desc = self.wrap_msg('Top <COUNT> to display in host/domain reports.', arg_width)
-        desc += '\n0 = none.\n'
-        desc += self.wrap_msg(
-            'See also: "-u" and "--*-detail" options for further report-limiting options.',
-            arg_width)
-        logfile_group.add_argument(
-            '-h', '--host', type=int, metavar='COUNT', dest='host',
-            action=NonNegativeItegerOptionAction, help=desc)
-
         # --ignore-case
         desc = self.wrap_msg(
             'Handle complete email address in a case-insensitive manner.', arg_width)
@@ -292,13 +259,6 @@ class PostfixLogsumsApp(object):
             arg_width)
         logfile_group.add_argument(
             '-i', '--ignore-case', dest='ignore_case', action="store_true", help=desc)
-
-        # --iso-date-time
-        desc = self.wrap_msg(
-            'For summaries that contain date or time information, use ISO 8601 standard formats '
-            '(CCYY-MM-DD and HH:MM), rather than "Mon DD CCYY" and "HHMM".', arg_width)
-        logfile_group.add_argument(
-            '--iso-date-time', dest='iso_date', action="store_true", help=desc)
 
         # --no-no-msg-size
         desc = self.wrap_msg('Do not emit report on "Messages with no size data".', arg_width)
@@ -312,26 +272,184 @@ class PostfixLogsumsApp(object):
         logfile_group.add_argument(
             '--no-no-msg-size', dest='nono_msgsize', action="store_true", help=desc)
 
-        # --problems-first
-        desc = self.wrap_msg(
-            'Emit "problems" reports (bounces, defers, warnings, etc.) before "normal" stats.',
-            arg_width)
-        logfile_group.add_argument(
-            '--problems-first', dest='problems_first', action="store_true", help=desc)
-
         # --rej-add-from
         desc = self.wrap_msg(
             'For those reject reports that list IP addresses or host/domain names: append the '
             'email from address to each listing. (Does not apply to "Improper use of '
             'SMTP command pipelining" report.)', arg_width)
         logfile_group.add_argument(
-            '--rej-add-from', dest='rej_add_ffrom', action="store_true", help=desc)
+            '--rej-add-from', dest='rej_add_from', action="store_true", help=desc)
+
+        # --smtpd-stats
+        desc = self.wrap_msg('Generate smtpd connection statistics.', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'The "per-day" report is not generated for single-day reports. For multiple-day '
+            'reports: "per-hour" numbers are daily averages (reflected in the report '
+            'heading).', arg_width)
+        logfile_group.add_argument(
+            '--smtpd-stats', dest='smtps_stats', action="store_true", help=desc)
+
+        # --verp-mung
+        desc = self.wrap_msg(
+            'Do "VERP" generated address (?) munging. Convert sender addresses of the form '
+            '"list-return-NN-someuser=some.dom@host.sender.dom" to'
+            '"list-return-ID-someuser=some.dom@host.sender.dom".', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'In other words: replace the numeric value with "ID".', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'By specifying the optional "=2" (second form), the munging is more "aggressive", '
+            'converting the address to something like: "list-return@host.sender.dom".',
+            arg_width) + '\n'
+        desc += self.wrap_msg(
+            'Actually: specifying anything less than 2 does the "simple" munging and anything '
+            'greater than 1 results in the more "aggressive" hack being applied.', arg_width)
+        logfile_group.add_argument(
+            '--verp-mung', type=int, metavar='1|2', const=1, dest='verp_mung', nargs='?',
+            action=NonNegativeItegerOptionAction, default=1, help=desc)
+
+        #######
+        # Select compression
+        compression_section = self.arg_parser.add_argument_group('Logfile compression options')
+
+        compression_group = compression_section.add_mutually_exclusive_group()
+
+        # --gzip
+        desc = self.wrap_msg(
+            'Assume, that stdin stream or the given files are bgzip compressed.', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'If not given, filenames with the extension ".gz" are assumed to be compressed with '
+            'the gzip compression.', arg_width)
+        compression_group.add_argument(
+            '-z', '--gzip', dest='gzip', action="store_true", help=desc)
+
+        # --bzip2
+        desc = self.wrap_msg(
+            'Assume, that stdin stream or the given files are bzip2 compressed.', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'If not given, filenames with the extensions ".bz2" or ".bzip2" are assumed to be '
+            'compressed with the bzip2 compression.', arg_width)
+        compression_group.add_argument(
+            '-j', '--bzip2', dest='bzip2', action="store_true", help=desc)
+
+        # --xz
+        desc = self.wrap_msg(
+            'Assume, that stdin stream or the given files are xz or lzma compressed.',
+            arg_width) + '\n'
+        desc += self.wrap_msg(
+            'If not given, filenames with the extensions ".xz" or ".lzma" are assumed to be '
+            'compressed with the xz or lzma compression.', arg_width)
+        compression_group.add_argument(
+            '-J', '--xz', '--lzma', dest='xz', action="store_true", help=desc)
 
         # last parse option
         desc = 'The logfile(s) to analyze. If no file(s) specified, reads from stdin.'
         desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument('logfile', metavar='FILE', nargs='*', help=desc)
 
+        #######
+        # Output
+        output_options = self.arg_parser.add_argument_group('Output options')
+
+        # --detail
+        desc = self.wrap_msg(
+            'Sets all --*-detail, -h and -u to COUNT. Is over-ridden by '
+            'individual settings.', arg_width) + '\n'
+        desc += self.wrap_msg('--detail 0 suppresses *all* detail.', arg_width)
+        output_options.add_argument(
+            '--detail', type=int, metavar='COUNT', dest='detail',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --bounce-detail
+        desc = self.wrap_msg(
+            'Limit detailed bounce reports to the top COUNT.', arg_width) + '\n'
+        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        output_options.add_argument(
+            '--bounce-detail', type=int, metavar='COUNT', dest='bounce_detail',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --deferral-detail
+        desc = self.wrap_msg(
+            'Limit detailed deferral reports to the top COUNT.', arg_width) + '\n'
+        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        output_options.add_argument(
+            '--deferral-detail', type=int, metavar='COUNT', dest='deferral_detail',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --reject-detail
+        desc = self.wrap_msg(
+            'Limit detailed smtpd reject, warn, hold and discard reports to the top '
+            'COUNT.', arg_width) + '\n'
+        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        output_options.add_argument(
+            '--reject-detail', type=int, metavar='COUNT', dest='reject_detail',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --smtp-detail
+        desc = self.wrap_msg(
+            'Limit detailed smtp delivery reports to the top COUNT.', arg_width) + '\n'
+        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        output_options.add_argument(
+            '--smtp-detail', type=int, metavar='COUNT', dest='smtp_detail',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --host
+        desc = self.wrap_msg('Top COUNT to display in host/domain reports.', arg_width)
+        desc += '\n0 = none.\n'
+        desc += self.wrap_msg(
+            'See also: "-u" and "--*-detail" options for further report-limiting options.',
+            arg_width)
+        output_options.add_argument(
+            '-h', '--host', type=int, metavar='COUNT', dest='host',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --user
+        desc = self.wrap_msg('Top COUNT to display in user reports.', arg_width) + '\n'
+        desc += '0 = none.'
+        output_options.add_argument(
+            '-u', '--user', type=int, metavar='COUNT', dest='user',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --problems-first
+        desc = self.wrap_msg(
+            'Emit "problems" reports (bounces, defers, warnings, etc.) before "normal" stats.',
+            arg_width)
+        output_options.add_argument(
+            '--problems-first', dest='problems_first', action="store_true", help=desc)
+
+        # --iso-date-time
+        desc = self.wrap_msg(
+            'For summaries that contain date or time information, use ISO 8601 standard formats '
+            '(CCYY-MM-DD and HH:MM), rather than "Mon DD CCYY" and "HHMM".', arg_width)
+        output_options.add_argument(
+            '--iso-date-time', dest='iso_date', action="store_true", help=desc)
+
+        # --quiet
+        desc = self.wrap_msg("quiet - don't print headings for empty reports.", arg_width)
+        desc += '\n'
+        desc += self.wrap_msg(
+            'NOTE: headings for warning, fatal, and "master"  messages will always be '
+            'printed.', arg_width)
+        output_options.add_argument(
+            '-q', '--quiet', dest='quiet', action="store_true", help=desc)
+
+        # --verbose-msg-detail
+        desc = self.wrap_msg(
+            'For the message deferral, bounce and reject summaries: display the full "reason", '
+            'rather than a truncated one.', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'NOTE: this can result in quite long lines in the report.', arg_width)
+        output_options.add_argument(
+            '--verbose-msg-detail', dest='verbose_msg_detail', action="store_true", help=desc)
+
+        # --zero-fill
+        desc = self.wrap_msg(
+            '"Zero-fill" certain arrays so reports come out with data in columns that might '
+            'otherwise be blank.', arg_width)
+        output_options.add_argument(
+            '--zero-fill', dest='zero_fill', action="store_true", help=desc)
+
+        #######
+        # General stuff
         general_group = self.arg_parser.add_argument_group('General_options')
 
         desc = 'Increase the verbosity level.'

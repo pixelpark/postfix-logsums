@@ -11,7 +11,7 @@
 import pprint
 import shutil
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
