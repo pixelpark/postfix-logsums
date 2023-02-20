@@ -22,6 +22,7 @@ import textwrap
 import shutil
 
 from argparse import RawDescriptionHelpFormatter
+from argparse import RawTextHelpFormatter
 
 LOG = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ from . import __version__ as GLOBAL_VERSION
 from . import pp, MAX_TERMINAL_WIDTH
 from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 # =============================================================================
 class NonNegativeItegerOptionAction(argparse.Action):
@@ -54,10 +55,25 @@ class NonNegativeItegerOptionAction(argparse.Action):
 # =============================================================================
 class PostfixLogsumsApp(object):
 
+    term_size = shutil.get_terminal_size((DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT))
+    max_width = term_size.columns
+    if max_width > MAX_TERMINAL_WIDTH:
+        max_width = MAX_TERMINAL_WIDTH
+
+    re_first_letter = re.compile(r'^(.)(.*)')
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def wrap_msg(cls, message, width=None):
+        """Wrap the given message to the max terminal witdt.."""
+        if width is None:
+            width = cls.max_width
+        return textwrap.fill(message, width)
+
     # -------------------------------------------------------------------------
     @classmethod
     def get_generic_appname(cls, appname=None):
-
+        """Evaluate the current application name."""
         if appname:
             v = str(appname).strip()
             if v:
@@ -94,6 +110,16 @@ class PostfixLogsumsApp(object):
             v = str(value).strip()
             if v:
                 self._appname = v
+
+    # -----------------------------------------------------------
+    @property
+    def appname_capitalized(self):
+        """The name of the current running application withe first character
+        as a capital."""
+        match = self.re_first_letter.match(self.appname)
+        if match:
+            return match.group(1).upper() + match.group(2)
+        return self.appname
 
     # -----------------------------------------------------------
     @property
@@ -157,6 +183,7 @@ class PostfixLogsumsApp(object):
 
         res['__class_name__'] = self.__class__.__name__
         res['appname'] = self.appname
+        res['appname_capitalized'] = self.appname_capitalized
         res['args'] = copy.copy(self.args.__dict__)
         res['version'] = self.version
         res['verbose'] = self.verbose
@@ -173,11 +200,8 @@ class PostfixLogsumsApp(object):
 
         """
 
-        appname = 'Postfix-logsums'
-        term_size = shutil.get_terminal_size((DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT))
-        width = term_size.columns
-        if width > MAX_TERMINAL_WIDTH:
-            width = MAX_TERMINAL_WIDTH
+        appname = self.appname_capitalized
+        arg_width = self.max_width - 24
 
         desc = []
         desc.append('{} is a log analyzer/summarizer for the Postfix MTA.'.format(appname))
@@ -191,7 +215,7 @@ class PostfixLogsumsApp(object):
 
         description = ''
         for des in desc:
-            des = textwrap.fill(des, width)
+            des = self.wrap_msg(des)
             if description:
                 description += '\n\n'
             description += des
@@ -201,43 +225,118 @@ class PostfixLogsumsApp(object):
         self.arg_parser = argparse.ArgumentParser(
             prog=self.appname,
             description=description,
-            formatter_class=RawDescriptionHelpFormatter,
+            formatter_class=RawTextHelpFormatter,
             add_help=False,
         )
 
         logfile_group = self.arg_parser.add_argument_group('Options for scanning Postfix logfiles')
 
+        # --bounce-detail
+        desc = 'Limit detailed bounce reports to the top <COUNT>. 0 to suppress entirely.'
+        desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
             '--bounce-detail', type=int, metavar='COUNT', dest='bounce_detail',
-            action=NonNegativeItegerOptionAction,
-            help="Limit detailed bounce reports to the top <COUNT>. 0 to suppress entirely.")
+            action=NonNegativeItegerOptionAction, help=desc)
 
+        # --day
+        desc = 'Generate report for just today or yesterday.'
+        desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
             '-d', '--day', metavar='|'.join(day_values), dest='day', choices=day_values,
-            help='Generate report for just today or yesterday')
+            help=desc)
 
+        # --deferral-detail
+        desc = 'Limit detailed deferral reports to the top <COUNT>. 0 to suppress entirely.'
+        desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
             '--deferral-detail', type=int, metavar='COUNT', dest='deferral_detail',
-            action=NonNegativeItegerOptionAction,
-            help='Limit detailed deferral reports to the top <COUNT>. 0 to suppress entirely.')
+            action=NonNegativeItegerOptionAction, help=desc)
 
+        # --detail
+        desc = self.wrap_msg(
+            'Sets all --*-detail, -h and -u to <COUNT>. Is over-ridden by '
+            'individual settings.', arg_width)
+        desc += '\n--detail 0 suppresses *all* detail.'
         logfile_group.add_argument(
             '--detail', type=int, metavar='COUNT', dest='detail',
-            action=NonNegativeItegerOptionAction,
-            help=(
-                'Sets all --*-detail, -h and -u to <COUNT>. Is over-ridden by '
-                'individual settings. --detail 0 suppresses *all* detail.'),)
+            action=NonNegativeItegerOptionAction, help=desc)
 
-        logfile_group.add_argument( 
-            'logfile', metavar='FILE', nargs='*', help=(
-                'The logfile(s) to analyze. If no file(s) specified, reads from stdin.'),)
+        # --extended
+        desc = 'Extended (extreme? excessive?) detail.\n'
+        desc += self.wrap_msg(
+            'At present, this includes only a per-message report, sorted by sender domain, '
+            'then user-in-domain, then by queue i.d.', arg_width) + '\n'
+        desc += self.wrap_msg(
+            'WARNING: the data built to generate this report can quickly consume very large '
+            'amounts of memory if a ot of log entries are processed!', arg_width)
+        logfile_group.add_argument(
+            '-e', '--extended', dest='extended', action="store_true", help=desc)
+
+        # --host
+        desc = self.wrap_msg('Top <COUNT> to display in host/domain reports.', arg_width)
+        desc += '\n0 = none.\n'
+        desc += self.wrap_msg(
+            'See also: "-u" and "--*-detail" options for further report-limiting options.',
+            arg_width)
+        logfile_group.add_argument(
+            '-h', '--host', type=int, metavar='COUNT', dest='host',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --ignore-case
+        desc = self.wrap_msg(
+            'Handle complete email address in a case-insensitive manner.', arg_width)
+        desc += '\n'
+        desc += self.wrap_msg(
+            'Normally {} lower-cases only the host and domain parts, leaving the user part alone. '
+            'This option causes the entire email address to be lower-cased.'.format(appname),
+            arg_width)
+        logfile_group.add_argument(
+            '-i', '--ignore-case', dest='ignore_case', action="store_true", help=desc)
+
+        # --iso-date-time
+        desc = self.wrap_msg(
+            'For summaries that contain date or time information, use ISO 8601 standard formats '
+            '(CCYY-MM-DD and HH:MM), rather than "Mon DD CCYY" and "HHMM".', arg_width)
+        logfile_group.add_argument(
+            '--iso-date-time', dest='iso_date', action="store_true", help=desc)
+
+        # --no-no-msg-size
+        desc = self.wrap_msg('Do not emit report on "Messages with no size data".', arg_width)
+        desc += '\n'
+        desc += self.wrap_msg((
+            'Message size is reported only by the queue manager. The message may be delivered '
+            'long-enough after the (last) qmgr log entry that the information is not in '
+            'the log(s) processed by a particular run of {a}. This throws off "Recipients by '
+            'message size" and the total for "bytes delivered." These are normally reported by '
+            '{a} as "Messages with nosize data.').format(a=appname), arg_width)
+        logfile_group.add_argument(
+            '--no-no-msg-size', dest='nono_msgsize', action="store_true", help=desc)
+
+        # --problems-first
+        desc = self.wrap_msg(
+            'Emit "problems" reports (bounces, defers, warnings, etc.) before "normal" stats.',
+            arg_width)
+        logfile_group.add_argument(
+            '--problems-first', dest='problems_first', action="store_true", help=desc)
+
+        # --rej-add-from
+        desc = self.wrap_msg(
+            'For those reject reports that list IP addresses or host/domain names: append the '
+            'email from address to each listing. (Does not apply to "Improper use of '
+            'SMTP command pipelining" report.)', arg_width)
+        logfile_group.add_argument(
+            '--rej-add-from', dest='rej_add_ffrom', action="store_true", help=desc)
+
+        # last parse option
+        desc = 'The logfile(s) to analyze. If no file(s) specified, reads from stdin.'
+        desc = self.wrap_msg(desc, arg_width)
+        logfile_group.add_argument('logfile', metavar='FILE', nargs='*', help=desc)
 
         general_group = self.arg_parser.add_argument_group('General_options')
 
+        desc = 'Increase the verbosity level.'
         general_group.add_argument(
-            "-v", "--verbose", action="count", dest='verbose',
-            help='Increase the verbosity level',
-        )
+            "-v", "--verbose", action="count", dest='verbose', help=desc)
 
         general_group.add_argument(
             "--help", action='help', dest='help',
