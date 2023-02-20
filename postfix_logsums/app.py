@@ -29,8 +29,10 @@ LOG = logging.getLogger(__name__)
 from . import __version__ as GLOBAL_VERSION
 from . import pp, MAX_TERMINAL_WIDTH
 from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
+from . import get_generic_appname
+from . import PostfixLogParser
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 # =============================================================================
 class NonNegativeItegerOptionAction(argparse.Action):
@@ -71,28 +73,30 @@ class PostfixLogsumsApp(object):
         return textwrap.fill(message, width)
 
     # -------------------------------------------------------------------------
-    @classmethod
-    def get_generic_appname(cls, appname=None):
-        """Evaluate the current application name."""
-        if appname:
-            v = str(appname).strip()
-            if v:
-                return v
-        aname = sys.argv[0]
-        aname = re.sub(r'\.py$', '', aname, flags=re.IGNORECASE)
-        return os.path.basename(aname)
-
-    # -------------------------------------------------------------------------
     def __init__(self):
 
-        self._appname = self.get_generic_appname()
+        self._appname = get_generic_appname()
         self._version = __version__
         self._verbose = 0
         self._initialized = False
+        self.parser = None
 
         self.init_arg_parser()
         self.perform_arg_parser()
         self.init_logging()
+
+        compression = None
+        if self.args.gzip:
+            compression = 'gzip'
+        elif self.args.bzip2:
+            compression = 'bzip2'
+        elif self.args.xz:
+            compression = 'lzma'
+
+
+        self.parser = PostfixLogParser(
+            appname=self.appname, verbose=self.verbose, day=self.args.day,
+            compression=compression)
 
         self._initialized = True
 
@@ -185,9 +189,11 @@ class PostfixLogsumsApp(object):
         res['appname'] = self.appname
         res['appname_capitalized'] = self.appname_capitalized
         res['args'] = copy.copy(self.args.__dict__)
+        res['initialized'] = self.initialized
+        if self.parser:
+            res['parser'] = self.parser.as_dict(short=short)
         res['version'] = self.version
         res['verbose'] = self.verbose
-        res['initialized'] = self.initialized
 
         return res
 
