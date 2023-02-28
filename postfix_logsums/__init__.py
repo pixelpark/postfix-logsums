@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -182,6 +182,11 @@ class PostfixLogParser(object):
         self._encoding = self.default_encoding
         self._syslog_name = DEFAULT_SYSLOG_NAME
 
+        self._cur_ts = None
+        self._cur_msg = None
+        self._cur_pf_command = None
+        self._cur_qid = None
+
         self.re_date_filter = None
         self.re_date_filter_rfc3339 = None
         self.results = PostfixLogSums()
@@ -222,10 +227,10 @@ class PostfixLogParser(object):
         pattern_pf_command = r'^postfix'
         if self.syslog_name != 'postfix':
             pattern_pf_command = r'^(?:postfix|{})'.format(self.syslog_name)
-        pattern_pf_command += r'(?:/(?:smtps|submission))?/([^\[:]*).*?: ([^:\s]+)'
+        pattern_pf_command += r'(?:/(?:smtps|submission))?/(?P<cmd>[^\[:]*).*?: (?P<qid>[^:\s]+)'
         self.re_pf_command = re.compile(pattern_pf_command)
 
-        pattern_pf_script = r'^((?:postfix)(?:-script)?)(?:\[\d+\])?: ([^:\s]+)'
+        pattern_pf_script = r'^(?P<cmd>(?:postfix)(?:-script)?)(?:\[\d+\])?: (?P<qid>[^:\s]+)'
         self.re_pf_script = re.compile(pattern_pf_script)
 
         if encoding:
@@ -490,13 +495,49 @@ class PostfixLogParser(object):
             if not matched:
                 return
 
+        result = self._eval_msg_ts(line)
+
+        if not result:
+            return
+
+        self._cur_ts = result[0]
+        self._cur_msg = result[1].strip()
+
+        result = self._eval_pf_command(self._cur_msg)
+        if result:
+            self._cur_pf_command = result[0]
+            self._cur_qid = result[1]
+        else:
+            LOG.debug("Did not found Postfix command and QID from: {}".format(self._cur_msg))
+            return
+        if self.verbose > 2:
+            LOG.debug("Postfix command {cmd!r}, qid {qid!r}, message: {msg}".format(
+                cmd=self._cur_pf_command, qid=self._cur_qid, msg=self._cur_msg))
+
+        if self.verbose > 4:
+            LOG.debug("Found message: {ts}: {msg}".format(
+                ts=self._cur_ts.isoformat(' '), msg=self._cur_msg))
+
+        self.results.incr_lines_considered()
+
+    # -------------------------------------------------------------------------
+    def _eval_msg_ts(self, line):
+
+        result = self._eval_msg_ts_traditional(line)
+        if result:
+            return result
+
+        return self._eval_msg_ts_rfc3339(line)
+
+    # -------------------------------------------------------------------------
+    def _eval_msg_ts_traditional(self, line):
+
         year = None
         month = None
         day = None
         hour = None
         minute = None
         second = None
-        tz = None
 
         msg_ts = None
         message = None
@@ -515,35 +556,62 @@ class PostfixLogParser(object):
 
             msg_ts = datetime.datetime(year, month, day, hour, minute, second, tzinfo=self.utc)
             message = m['msg']
-        else:
-            m = self.re_date_rfc3339.match(line)
-            if m:
-                year = int(m['year'])
-                month = int(m['month'])
-                day = int(m['day'])
-                hour = int(m['hour'])
-                minute = int(m['minute'])
-                second = int(m['second'])
 
-                tz = self.utc
-                tz_hours = m['tz_hours']
-                tz_mins = m['tz_mins']
-                if tz_hours is not None and tz_mins is not None:
-                    tz_hours = int(tz_hours)
-                    tz_mins = int(tz_mins)
-                    delta = datetime.timedelta(hours=tz_hours, minutes=tz_mins)
-                    tz = datetime.timezone(delta, 'Local_TZ')
+            return (msg_ts, message)
 
-                msg_ts = datetime.datetime(year, month, day, hour, minute, second, tzinfo=tz)
-                message = m['msg']
+        return None
 
-        if not msg_ts:
-            return
+    # -------------------------------------------------------------------------
+    def _eval_msg_ts_rfc3339(self, line):
 
-        if self.verbose > 4:
-            LOG.debug("Found message: {ts}: {msg}".format(ts=msg_ts.isoformat(' '), msg=message))
+        year = None
+        month = None
+        day = None
+        hour = None
+        minute = None
+        second = None
+        tz = None
 
-        self.results.incr_lines_considered()
+        msg_ts = None
+        message = None
+
+        m = self.re_date_rfc3339.match(line)
+        if m:
+            year = int(m['year'])
+            month = int(m['month'])
+            day = int(m['day'])
+            hour = int(m['hour'])
+            minute = int(m['minute'])
+            second = int(m['second'])
+
+            tz = self.utc
+            tz_hours = m['tz_hours']
+            tz_mins = m['tz_mins']
+            if tz_hours is not None and tz_mins is not None:
+                tz_hours = int(tz_hours)
+                tz_mins = int(tz_mins)
+                delta = datetime.timedelta(hours=tz_hours, minutes=tz_mins)
+                tz = datetime.timezone(delta, 'Local_TZ')
+
+            msg_ts = datetime.datetime(year, month, day, hour, minute, second, tzinfo=tz)
+            message = m['msg']
+
+            return (msg_ts, message)
+
+        return None
+
+    # -------------------------------------------------------------------------
+    def _eval_pf_command(self, message):
+
+        m = self.re_pf_command.match(message)
+        if m:
+            return(m['cmd'], m['qid'])
+
+        m = self.re_pf_script.match(message)
+        if m:
+            return(m['cmd'], m['qid'])
+
+        return None
 
 
 # =============================================================================
