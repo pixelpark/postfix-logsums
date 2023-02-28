@@ -141,7 +141,7 @@ class PostfixLogsumsApp(object):
 
         self.parser = PostfixLogParser(
             appname=self.appname, verbose=self.verbose, day=self.args.day,
-            compression=compression)
+            compression=compression, zero_fill=self.args.zero_fill)
 
         self._initialized = True
 

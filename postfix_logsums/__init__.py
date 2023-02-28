@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -86,8 +86,10 @@ class PostfixLogSums(object):
         """Resetting all counters and result structs."""
         self.lines_total = 0
         self.lines_considered = 0
+        self.days_counted = 0
         self._files_index = None
         self.files = []
+        self.messages_per_day = {}
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
@@ -172,6 +174,7 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
+            zero_fill=False,
             compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -181,11 +184,14 @@ class PostfixLogParser(object):
         self._compression = None
         self._encoding = self.default_encoding
         self._syslog_name = DEFAULT_SYSLOG_NAME
+        self._zero_fill = False
 
         self._cur_ts = None
         self._cur_msg = None
         self._cur_pf_command = None
         self._cur_qid = None
+
+        self.last_date = None
 
         self.re_date_filter = None
         self.re_date_filter_rfc3339 = None
@@ -212,6 +218,7 @@ class PostfixLogParser(object):
         self.verbose = verbose
         self.compression = compression
         self.syslog_name = syslog_name
+        self.zero_fill = zero_fill
 
         pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
         pattern_date += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) \S+ (?P<msg>.+)$/'
@@ -310,7 +317,17 @@ class PostfixLogParser(object):
         if v == 'xz':
             self._compression = 'lzma'
         else:
-            self._compression = v
+             self._compression = v
+
+    # -------------------------------------------------------------------------
+    @property
+    def zero_fill(self):
+        """'Zero-fill' certain arrays."""
+        return self._zero_fill
+
+    @zero_fill.setter
+    def zero_fill(self, value):
+        self._zero_fill = bool(value)
 
     # -------------------------------------------------------------------------
     @property
@@ -371,6 +388,7 @@ class PostfixLogParser(object):
         res['this_year'] = self.this_year
         res['today'] = self.today
         res['verbose'] = self.verbose
+        res['zero_fill'] = self.zero_fill
 
         return res
 
@@ -503,6 +521,13 @@ class PostfixLogParser(object):
         self._cur_ts = result[0]
         self._cur_msg = result[1].strip()
 
+        current_date = self._cur_ts.date()
+        if self.last_date is None or self.last_date != current_date:
+            self.last_date = current_date
+            self.results.days_counted += 1
+            if self.zero_fill:
+                self.results.messages_per_day[self.cur_date_fmt()] = 0
+
         result = self._eval_pf_command(self._cur_msg)
         if result:
             self._cur_pf_command = result[0]
@@ -510,15 +535,18 @@ class PostfixLogParser(object):
         else:
             LOG.debug("Did not found Postfix command and QID from: {}".format(self._cur_msg))
             return
-        if self.verbose > 2:
+        if self.verbose > 4:
             LOG.debug("Postfix command {cmd!r}, qid {qid!r}, message: {msg}".format(
                 cmd=self._cur_pf_command, qid=self._cur_qid, msg=self._cur_msg))
 
-        if self.verbose > 4:
-            LOG.debug("Found message: {ts}: {msg}".format(
-                ts=self._cur_ts.isoformat(' '), msg=self._cur_msg))
-
         self.results.incr_lines_considered()
+
+    # -------------------------------------------------------------------------
+    def cur_date_fmt(self):
+        """Return the formatted day of the current log line."""
+        if not self._cur_ts:
+            return None
+        return self._cur_ts.strftime('%Y-%m-%d')
 
     # -------------------------------------------------------------------------
     def _eval_msg_ts(self, line):
