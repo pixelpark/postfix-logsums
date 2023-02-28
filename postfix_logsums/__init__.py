@@ -32,7 +32,7 @@ MAX_TERMINAL_WIDTH = 150
 UTF8_ENCODING = 'utf-8'
 DEFAULT_ENCODING = UTF8_ENCODING
 DEFAULT_SYSLOG_NAME = 'postfix'
-DEFAULT_MAX_TRIM_LENGTH = 64
+DEFAULT_MAX_TRIM_LENGTH = 66
 
 LOG = logging.getLogger(__name__)
 
@@ -148,6 +148,9 @@ class PostfixLogSums(object):
         self.discards = {
             'cleanup': {},
         }
+        self.warnings = {}
+        self.fatals = {}
+        self.panics = {}
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
@@ -233,6 +236,7 @@ class PostfixLogParser(object):
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             zero_fill=False, verbose_msg_detail=False, reject_detail=False,
+            no_smtpd_warnings=False,
             compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -245,6 +249,7 @@ class PostfixLogParser(object):
         self._zero_fill = False
         self._verbose_msg_detail = False
         self._reject_details = False
+        self._no_smtpd_warnings = False
 
         self._cur_ts = None
         self._cur_msg = None
@@ -281,6 +286,7 @@ class PostfixLogParser(object):
         self.zero_fill = zero_fill
         self.verbose_msg_detail = verbose_msg_detail
         self.reject_detail = reject_detail
+        self.no_smtpd_warnings = no_smtpd_warnings
 
         pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
         pattern_date += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) \S+ (?P<msg>.+)$/'
@@ -307,6 +313,9 @@ class PostfixLogParser(object):
         self.re_cmd_cleanup = re.compile(pattern_cmd_cleanup)
 
         self.re_clean_from = re.compile(r'( from \S+?)?; from=<.*$')
+        self.re_warning = re.compile(r'^.*warning: ')
+        self.re_fatal = re.compile(r'^.*fatal: ')
+        self.re_panic = re.compile(r'^.*panic: ')
 
         if encoding:
             self.encoding = encoding
@@ -419,6 +428,16 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
+    def no_smtpd_warnings(self):
+        """Display the full reason rather than a truncated deferral, bounce and reject messages."""
+        return self._no_smtpd_warnings
+
+    @no_smtpd_warnings.setter
+    def no_smtpd_warnings(self, value):
+        self._no_smtpd_warnings = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
     def encoding(self):
         """Return the default encoding used to read config files."""
         return self._encoding
@@ -468,6 +487,7 @@ class PostfixLogParser(object):
         res['compression'] = self.compression
         res['encoding'] = self.encoding
         res['initialized'] = self.initialized
+        res['no_smtpd_warnings'] = self.no_smtpd_warnings
         res['reject_detail'] = self.reject_detail
         res['results'] = self.results.as_dict(short=short)
         res['syslog_name'] = self.syslog_name
@@ -741,12 +761,68 @@ class PostfixLogParser(object):
                 self._eval_cleanup_cmd(subtype=m['subtype'], part=m['part'], cmd_msg=m['cmd_msg'])
                 return
 
+        if self._cur_qid == 'warning':
+            self._eval_warning_cmd()
+            return
+
+        if self._cur_qid == 'fatal':
+            self._eval_fatal_cmd()
+            return
+
+        if self._cur_qid == 'panic':
+            self._eval_panic_cmd()
+            return
+
+    # -------------------------------------------------------------------------
+    def _eval_warning_cmd(self):
+
+        cmd = self._cur_pf_command
+        if cmd == 'smtpd' and self.no_smtpd_warnings:
+            return
+
+        warn_msg = self.re_warning.sub('', self._cur_msg)
+        warn_msg = string_trimmer(warn_msg, do_not_trim=self.verbose_msg_detail)
+
+        if cmd not in self.results.warnings:
+            self.results.warnings[cmd] = {}
+        if warn_msg not in self.results.warnings[cmd]:
+            self.results.warnings[cmd][warn_msg] = 0
+        self.results.warnings[cmd][warn_msg] += 1
+
+    # -------------------------------------------------------------------------
+    def _eval_fatal_cmd(self):
+
+        cmd = self._cur_pf_command
+
+        fatal_msg = self.re_fatal.sub('', self._cur_msg)
+        fatal_msg = string_trimmer(fatal_msg, do_not_trim=self.verbose_msg_detail)
+
+        if cmd not in self.results.fatals:
+            self.results.fatals[cmd] = {}
+        if fatal_msg not in self.results.fatals[cmd]:
+            self.results.fatals[cmd][fatal_msg] = 0
+        self.results.fatals[cmd][fatal_msg] += 1
+
+    # -------------------------------------------------------------------------
+    def _eval_panic_cmd(self):
+
+        cmd = self._cur_pf_command
+
+        panic_msg = self.re_panic.sub('', self._cur_msg)
+        panic_msg = string_trimmer(panic_msg, do_not_trim=self.verbose_msg_detail)
+
+        if cmd not in self.results.panics:
+            self.results.panics[cmd] = {}
+        if panic_msg not in self.results.panics[cmd]:
+            self.results.panics[cmd][panic_msg] = 0
+        self.results.panics[cmd][panic_msg] += 1
+
     # -------------------------------------------------------------------------
     def _eval_cleanup_cmd(self, subtype, part, cmd_msg):
 
         if not self.verbose_msg_detail:
             cmd_msg = self.re_clean_from.sub('', cmd_msg)
-            cmd_msg = string_trimmer(cmd_msg, do_not_trim=self.verbose_msg_detail)
+            cmd_msg = string_trimmer(cmd_msg, max_len=64, do_not_trim=self.verbose_msg_detail)
 
         hour = self._cur_ts.hour
         if hour not in self.results.reject_messages_per_hour:

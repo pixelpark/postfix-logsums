@@ -148,10 +148,19 @@ class PostfixLogsumsApp(object):
         else:
             rj_detail = bool(rj_detail)
 
+        no_smtpd_warnings = self.args.smtpd_warning_detail
+        if no_smtpd_warnings is None:
+            if self.args.detail is not None:
+                no_smtpd_warnings = bool(self.args.detail)
+            else:
+                no_smtpd_warnings = False
+        else:
+            no_smtpd_warnings = bool(no_smtpd_warnings)
+
         self.parser = PostfixLogParser(
             appname=self.appname, verbose=self.verbose, day=self.args.day,
             compression=compression, zero_fill=self.args.zero_fill,
-            reject_detail=rj_detail,
+            reject_detail=rj_detail, no_smtpd_warnings=no_smtpd_warnings,
             verbose_msg_detail=self.args.verbose_msg_detail)
 
         self._initialized = True
@@ -453,6 +462,14 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg('0 to suppress entirely.', arg_width)
         output_options.add_argument(
             '--smtp-detail', type=int, metavar='COUNT', dest='smtp_detail',
+            action=NonNegativeItegerOptionAction, help=desc)
+
+        # --smtpd-warning-detail
+        desc = self.wrap_msg(
+            'Limit detailed smtpd warnings reports to the top COUNT.', arg_width) + '\n'
+        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        output_options.add_argument(
+            '--smtpd-warning-detail', type=int, metavar='COUNT', dest='smtpd_warning_detail',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --host
