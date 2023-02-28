@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -51,6 +51,27 @@ def pp(value, indent=4, width=None, depth=None):
 
     pretty_printer = pprint.PrettyPrinter(indent=indent, width=width, depth=depth)
     return pretty_printer.pformat(value)
+
+
+# =============================================================================
+def encode_or_bust(obj, encoding='utf-8'):
+    """Convert given value to a byte string withe the given encoding."""
+    if isinstance(obj, str):
+        obj = obj.encode(encoding)
+
+    return obj
+
+
+# =============================================================================
+def to_bytes(obj, encoding='utf-8'):
+    """Do the same as encode_or_bust()."""
+    return encode_or_bust(obj, encoding)
+
+
+# =============================================================================
+def to_utf8(obj):
+    """Convert given value to a utf-8 encoded byte string."""
+    return encode_or_bust(obj, 'utf-8')
 
 
 # =============================================================================
@@ -204,12 +225,12 @@ class PostfixLogParser(object):
                 used_date = self.today - t_diff
             elif day != 'today':
                 msg = "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.".format(
-                        d=day, n='None', y='yesterday', t='today')
+                    d=day, n='None', y='yesterday', t='today')
                 raise PostfixLogsumError(msg)
-            filter_pattern = "^{m} {d:02d}\s".format(
+            filter_pattern = r"^{m} {d:02d}\s".format(
                 m=self.month_names[used_date.month - 1], d=used_date.day)
             self.re_date_filter = re.compile(filter_pattern, re.IGNORECASE)
-            filter_rfc3339_pattern = "^{y:04d}-{m:02d}-{d:02d}[T\s]".format(
+            filter_rfc3339_pattern = r"^{y:04d}-{m:02d}-{d:02d}[T\s]".format(
                 y=used_date.year, m=used_date.month, d=used_date.day)
             self.re_date_filter_rfc3339 = re.compile(filter_rfc3339_pattern, re.IGNORECASE)
 
@@ -274,7 +295,7 @@ class PostfixLogParser(object):
         if v >= 0:
             self._verbose = v
         else:
-            LOG.warning(_("Wrong verbose level {!r}, must be >= 0").format(value))
+            LOG.warning("Wrong verbose level {!r}, must be >= 0".format(value))
 
     # -----------------------------------------------------------
     @property
@@ -317,7 +338,7 @@ class PostfixLogParser(object):
         if v == 'xz':
             self._compression = 'lzma'
         else:
-             self._compression = v
+            self._compression = v
 
     # -------------------------------------------------------------------------
     @property
@@ -338,9 +359,7 @@ class PostfixLogParser(object):
     @encoding.setter
     def encoding(self, value):
         if not isinstance(value, str):
-            msg = _(
-                "Encoding {v!r} must be a {s!r} object, "
-                "but is a {c!r} object instead.").format(
+            msg = "Encoding {v!r} must be a {s!r} object, but is a {c!r} object instead.".format(
                 v=value, s='str', c=value.__class__.__name__)
             raise TypeError(msg)
 

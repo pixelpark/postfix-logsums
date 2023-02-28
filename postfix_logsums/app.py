@@ -21,7 +21,7 @@ import re
 import textwrap
 import shutil
 
-from argparse import RawDescriptionHelpFormatter
+# from argparse import RawDescriptionHelpFormatter
 from argparse import RawTextHelpFormatter
 
 from pathlib import Path
@@ -29,12 +29,13 @@ from pathlib import Path
 LOG = logging.getLogger(__name__)
 
 from . import __version__ as GLOBAL_VERSION
-from . import pp, MAX_TERMINAL_WIDTH
+from . import pp, to_bytes, MAX_TERMINAL_WIDTH
 from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
+
 
 # =============================================================================
 class NonNegativeItegerOptionAction(argparse.Action):
@@ -138,7 +139,6 @@ class PostfixLogsumsApp(object):
         elif self.args.xz:
             compression = 'lzma'
 
-
         self.parser = PostfixLogParser(
             appname=self.appname, verbose=self.verbose, day=self.args.day,
             compression=compression, zero_fill=self.args.zero_fill)
@@ -188,7 +188,7 @@ class PostfixLogsumsApp(object):
         if v >= 0:
             self._verbose = v
         else:
-            LOG.warning(_("Wrong verbose level {!r}, must be >= 0").format(value))
+            LOG.warning("Wrong verbose level {!r}, must be >= 0".format(value))
 
     # -----------------------------------------------------------
     @property
@@ -581,7 +581,7 @@ class PostfixLogsumsApp(object):
 
         msg = str(error_message).strip()
         if not msg:
-            msg = _('undefined error.')
+            msg = 'undefined error.'
         title = None
 
         if isinstance(error_message, Exception):
@@ -590,7 +590,7 @@ class PostfixLogsumsApp(object):
             if exception_name is not None:
                 title = exception_name.strip()
             else:
-                title = _('Exception happened')
+                title = 'Exception happened'
         msg = title + ': ' + msg
 
         root_log = logging.getLogger()
