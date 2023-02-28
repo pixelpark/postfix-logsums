@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -78,12 +78,42 @@ class PostfixLogSums(object):
     # -------------------------------------------------------------------------
     def __init__(self):
         """Constructor."""
-        self.lines = 0
+        self.reset()
 
     # -------------------------------------------------------------------------
     def reset(self):
-        """Resetting all counters."""
-        self.lines = 0
+        """Resetting all counters and result structs."""
+        self.lines_total = 0
+        self.lines_considered = 0
+        self._files_index = None
+        self.files = []
+
+    # -------------------------------------------------------------------------
+    def start_logfile(self, logfile):
+        """Creates an entry for a new logfile in self.files and sets self.files_index
+        to the index of the new created entry."""
+        entry = {
+            'file': logfile,
+            'lines_total': 0,
+            'lines_considered': 0,
+        }
+
+        self.files.append(entry)
+        self._files_index = len(self.files) - 1
+
+    # -------------------------------------------------------------------------
+    def incr_lines_total(self, increment=1):
+        """Increment all counters for all evaluated lines."""
+        self.lines_total += increment
+        if self._files_index is not None:
+            self.files[self._files_index]['lines_total'] += increment
+
+    # -------------------------------------------------------------------------
+    def incr_lines_considered(self, increment=1):
+        """Increment all counters for all considered lines."""
+        self.lines_considered += increment
+        if self._files_index is not None:
+            self.files[self._files_index]['lines_considered'] += increment
 
     # -------------------------------------------------------------------------
     def as_dict(self, short=True):
@@ -302,11 +332,12 @@ class PostfixLogParser(object):
 
         if not files:
             LOG.info("Parsing from STDIN ...")
+            self.results.start_logfile('STDIN')
             return self.parse_fh(sys.stdin, 'STDIN', self.compression)
 
         for logfile in files:
             LOG.info("Parsing logfile {!r} ...".format(str(logfile)))
-
+            self.results.start_logfile(logfile)
             if not self.parse_file(logfile):
                 return False
 
@@ -403,7 +434,7 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def eval_line(self, line):
 
-        self.results.lines += 1
+        self.results.incr_lines_total()
 
 
 # =============================================================================
