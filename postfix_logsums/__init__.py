@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -133,6 +133,7 @@ class PostfixLogSums(object):
         self.messages = {
             'discard': 0,
             'hold': 0,
+            'master': 0,
             'rejected': 0,
             'warning': 0,
         }
@@ -151,6 +152,7 @@ class PostfixLogSums(object):
         self.warnings = {}
         self.fatals = {}
         self.panics = {}
+        self.master_msgs = {}
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
@@ -316,6 +318,7 @@ class PostfixLogParser(object):
         self.re_warning = re.compile(r'^.*warning: ')
         self.re_fatal = re.compile(r'^.*fatal: ')
         self.re_panic = re.compile(r'^.*panic: ')
+        self.re_master = re.compile(r'.*master.*: ')
 
         if encoding:
             self.encoding = encoding
@@ -773,6 +776,31 @@ class PostfixLogParser(object):
             self._eval_panic_cmd()
             return
 
+        if self._cur_qid == 'reject':
+            self.proc_smtpd_reject(self.results.messages['rejected'])
+            return
+
+        if self._cur_qid == 'reject_warning':
+            self.proc_smtpd_reject(self.results.messages['warning'])
+            return
+
+        if self._cur_qid == 'hold':
+            self.proc_smtpd_reject(self.results.messages['hold'])
+            return
+
+        if self._cur_qid == 'discard':
+            self.proc_smtpd_reject(self.results.messages['discard'])
+            return
+
+        if self._cur_pf_command == 'master':
+            mparts = self.re_master.split(self._cur_msg)
+            mpart = mparts[1]
+            self.results.messages['master'] += 1
+            if mpart not in self.results.master_msgs:
+                self.results.master_msgs[mpart] = 0
+            self.results.master_msgs[mpart] += 1
+            return
+
     # -------------------------------------------------------------------------
     def _eval_warning_cmd(self):
 
@@ -870,6 +898,22 @@ class PostfixLogParser(object):
                 if cmd_msg not in self.results.discards['cleanup'][part]:
                     self.results.discards['cleanup'][part][cmd_msg] = 0
                 self.results.discards['cleanup'][part][cmd_msg] += 1
+
+    # -------------------------------------------------------------------------
+    def proc_smtpd_reject(self, counter):
+
+        counter += 1
+
+        hour = self._cur_ts.hour
+        if hour not in self.results.reject_messages_per_hour:
+            self.results.reject_messages_per_hour[hour] = 0
+        self.results.reject_messages_per_hour[hour] += 1
+
+        dt_fmt = self.cur_date_fmt()
+        self.results.messages_per_day[dt_fmt][4] += 1
+
+        if not self.reject_detail:
+            return
 
 
 # =============================================================================
