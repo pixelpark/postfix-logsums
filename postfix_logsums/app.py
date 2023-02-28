@@ -34,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 
 # =============================================================================
@@ -139,9 +139,20 @@ class PostfixLogsumsApp(object):
         elif self.args.xz:
             compression = 'lzma'
 
+        rj_detail = self.args.reject_detail
+        if rj_detail is None:
+            if self.args.detail is not None:
+                rj_detail = bool(self.args.detail)
+            else:
+                rj_detail = False
+        else:
+            rj_detail = bool(rj_detail)
+
         self.parser = PostfixLogParser(
             appname=self.appname, verbose=self.verbose, day=self.args.day,
-            compression=compression, zero_fill=self.args.zero_fill)
+            compression=compression, zero_fill=self.args.zero_fill,
+            reject_detail=rj_detail,
+            verbose_msg_detail=self.args.verbose_msg_detail)
 
         self._initialized = True
 

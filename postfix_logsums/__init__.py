@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -32,6 +32,7 @@ MAX_TERMINAL_WIDTH = 150
 UTF8_ENCODING = 'utf-8'
 DEFAULT_ENCODING = UTF8_ENCODING
 DEFAULT_SYSLOG_NAME = 'postfix'
+DEFAULT_MAX_TRIM_LENGTH = 64
 
 LOG = logging.getLogger(__name__)
 
@@ -94,6 +95,23 @@ def get_generic_appname(appname=None):
 
 
 # =============================================================================
+def string_trimmer(message, max_len=DEFAULT_MAX_TRIM_LENGTH, do_not_trim=False):
+    """Trimming the given message to the given length inclusive an ellipsis."""
+    trimmed = str(message).strip()
+    if do_not_trim:
+        return trimmed
+
+    if max_len < 4:
+        msg = "Invalid max. length {} of a string, must be >= 4.".format(max_len)
+        raise ValueError(msg)
+
+    ml = int(max_len) - 3
+    if len(trimmed) > ml:
+        trimmed = trimmed[0:ml] + '...'
+
+    return trimmed
+
+# =============================================================================
 class PostfixLogSums(object):
     """A class for the results of parsing of postfix logfiles."""
 
@@ -111,6 +129,25 @@ class PostfixLogSums(object):
         self._files_index = None
         self.files = []
         self.messages_per_day = {}
+        self.reject_messages_per_hour = {}
+        self.messages = {
+            'discard': 0,
+            'hold': 0,
+            'rejected': 0,
+            'warning': 0,
+        }
+        self.rejects = {
+            'cleanup': {},
+        }
+        self.warns = {
+            'cleanup': {},
+        }
+        self.holds = {
+            'cleanup': {},
+        }
+        self.discards = {
+            'cleanup': {},
+        }
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
@@ -195,7 +232,7 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
-            zero_fill=False,
+            zero_fill=False, verbose_msg_detail=False, reject_detail=False,
             compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -206,6 +243,8 @@ class PostfixLogParser(object):
         self._encoding = self.default_encoding
         self._syslog_name = DEFAULT_SYSLOG_NAME
         self._zero_fill = False
+        self._verbose_msg_detail = False
+        self._reject_details = False
 
         self._cur_ts = None
         self._cur_msg = None
@@ -240,6 +279,8 @@ class PostfixLogParser(object):
         self.compression = compression
         self.syslog_name = syslog_name
         self.zero_fill = zero_fill
+        self.verbose_msg_detail = verbose_msg_detail
+        self.reject_detail = reject_detail
 
         pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
         pattern_date += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) \S+ (?P<msg>.+)$/'
@@ -260,6 +301,12 @@ class PostfixLogParser(object):
 
         pattern_pf_script = r'^(?P<cmd>(?:postfix)(?:-script)?)(?:\[\d+\])?: (?P<qid>[^:\s]+)'
         self.re_pf_script = re.compile(pattern_pf_script)
+
+        pattern_cmd_cleanup = r'\/cleanup\[\d+\]: .*?\b(?P<subtype>reject|warning|hold|discard): '
+        pattern_cmd_cleanup += r'(?P<part>header|body) (?P<cmd_msg>.*)$'
+        self.re_cmd_cleanup = re.compile(pattern_cmd_cleanup)
+
+        self.re_clean_from = re.compile(r'( from \S+?)?; from=<.*$')
 
         if encoding:
             self.encoding = encoding
@@ -352,6 +399,26 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
+    def verbose_msg_detail(self):
+        """Display the full reason rather than a truncated deferral, bounce and reject messages."""
+        return self._verbose_msg_detail
+
+    @verbose_msg_detail.setter
+    def verbose_msg_detail(self, value):
+        self._verbose_msg_detail = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
+    def reject_detail(self):
+        """Display the full reason rather than a truncated deferral, bounce and reject messages."""
+        return self._reject_details
+
+    @reject_detail.setter
+    def reject_detail(self, value):
+        self._reject_detail = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
     def encoding(self):
         """Return the default encoding used to read config files."""
         return self._encoding
@@ -401,6 +468,7 @@ class PostfixLogParser(object):
         res['compression'] = self.compression
         res['encoding'] = self.encoding
         res['initialized'] = self.initialized
+        res['reject_detail'] = self.reject_detail
         res['results'] = self.results.as_dict(short=short)
         res['syslog_name'] = self.syslog_name
         res['this_month'] = self.this_month
@@ -545,7 +613,9 @@ class PostfixLogParser(object):
             self.last_date = current_date
             self.results.days_counted += 1
             if self.zero_fill:
-                self.results.messages_per_day[self.cur_date_fmt()] = 0
+                dt_fmt = self.cur_date_fmt()
+                if dt_fmt not in self.results.messages_per_day:
+                    self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
 
         result = self._eval_pf_command(self._cur_msg)
         if result:
@@ -559,6 +629,8 @@ class PostfixLogParser(object):
                 cmd=self._cur_pf_command, qid=self._cur_qid, msg=self._cur_msg))
 
         self.results.incr_lines_considered()
+
+        self.eval_command_msg()
 
     # -------------------------------------------------------------------------
     def cur_date_fmt(self):
@@ -659,6 +731,69 @@ class PostfixLogParser(object):
             return(m['cmd'], m['qid'])
 
         return None
+
+    # -------------------------------------------------------------------------
+    def eval_command_msg(self):
+        """Further analyzing of the message."""
+        if self._cur_pf_command == 'cleanup':
+            m = self.re_cmd_cleanup.search(self._cur_msg)
+            if m:
+                self._eval_cleanup_cmd(subtype=m['subtype'], part=m['part'], cmd_msg=m['cmd_msg'])
+                return
+
+    # -------------------------------------------------------------------------
+    def _eval_cleanup_cmd(self, subtype, part, cmd_msg):
+
+        if not self.verbose_msg_detail:
+            cmd_msg = self.re_clean_from.sub('', cmd_msg)
+            cmd_msg = string_trimmer(cmd_msg, do_not_trim=self.verbose_msg_detail)
+
+        hour = self._cur_ts.hour
+        if hour not in self.results.reject_messages_per_hour:
+            self.results.reject_messages_per_hour[hour] = 0
+        self.results.reject_messages_per_hour[hour] += 1
+
+        dt_fmt = self.cur_date_fmt()
+        self.results.messages_per_day[dt_fmt][4] += 1
+
+        if subtype == 'reject':
+            self.results.messages['rejected'] += 1
+            if self.reject_detail:
+                if part not in self.results.rejects['cleanup']:
+                    self.results.rejects['cleanup'][part] = {}
+                if cmd_msg not in self.results.rejects['cleanup'][part]:
+                    self.results.rejects['cleanup'][part][cmd_msg] = 0
+                self.results.rejects['cleanup'][part][cmd_msg] += 1
+            return
+
+        if subtype == 'warning':
+            self.results.messages['warning'] += 1
+            if self.reject_detail:
+                if part not in self.results.warns['cleanup']:
+                    self.results.warns['cleanup'][part] = {}
+                if cmd_msg not in self.results.warns['cleanup'][part]:
+                    self.results.warns['cleanup'][part][cmd_msg] = 0
+                self.results.warns['cleanup'][part][cmd_msg] += 1
+            return
+
+        if subtype == 'hold':
+            self.results.messages['hold'] += 1
+            if self.reject_detail:
+                if part not in self.results.holds['cleanup']:
+                    self.results.holds['cleanup'][part] = {}
+                if cmd_msg not in self.results.holds['cleanup'][part]:
+                    self.results.holds['cleanup'][part][cmd_msg] = 0
+                self.results.holds['cleanup'][part][cmd_msg] += 1
+            return
+
+        if subtype == 'discard':
+            self.results.messages['discard'] += 1
+            if self.reject_detail:
+                if part not in self.results.discards['cleanup']:
+                    self.results.discards['cleanup'][part] = {}
+                if cmd_msg not in self.results.discards['cleanup'][part]:
+                    self.results.discards['cleanup'][part][cmd_msg] = 0
+                self.results.discards['cleanup'][part][cmd_msg] += 1
 
 
 # =============================================================================
