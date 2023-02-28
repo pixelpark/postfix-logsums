@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -31,6 +31,7 @@ MAX_TERMINAL_WIDTH = 150
 
 UTF8_ENCODING = 'utf-8'
 DEFAULT_ENCODING = UTF8_ENCODING
+DEFAULT_SYSLOG_NAME = 'postfix'
 
 LOG = logging.getLogger(__name__)
 
@@ -164,11 +165,13 @@ class PostfixLogParser(object):
     re_bzip2 = re.compile(r'\.(bz2?|bzip2?)$', re.IGNORECASE)
     re_lzma = re.compile(r'\.(xz|lzma)$', re.IGNORECASE)
 
+    utc = datetime.timezone(datetime.timedelta(0), 'UTC')
+
     default_encoding = DEFAULT_ENCODING
 
     # -------------------------------------------------------------------------
     def __init__(
-            self, appname=None, verbose=0, day=None,
+            self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -177,9 +180,10 @@ class PostfixLogParser(object):
         self._initialized = False
         self._compression = None
         self._encoding = self.default_encoding
+        self._syslog_name = DEFAULT_SYSLOG_NAME
 
-        self.date_filter = None
-        self.date_filter_rfc3339 = None
+        self.re_date_filter = None
+        self.re_date_filter_rfc3339 = None
         self.results = PostfixLogSums()
 
         if day:
@@ -191,15 +195,38 @@ class PostfixLogParser(object):
                 msg = "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.".format(
                         d=day, n='None', y='yesterday', t='today')
                 raise PostfixLogsumError(msg)
-            self.date_filter = "{m} {d:02d}".format(
+            filter_pattern = "^{m} {d:02d}\s".format(
                 m=self.month_names[used_date.month - 1], d=used_date.day)
-            self.date_filter_rfc3339 = "{y:04d}-{m:02d}-{d:02d}".format(
+            self.re_date_filter = re.compile(filter_pattern, re.IGNORECASE)
+            filter_rfc3339_pattern = "^{y:04d}-{m:02d}-{d:02d}[T\s]".format(
                 y=used_date.year, m=used_date.month, d=used_date.day)
+            self.re_date_filter_rfc3339 = re.compile(filter_rfc3339_pattern, re.IGNORECASE)
 
         if appname:
             self.appname = appname
         self.verbose = verbose
         self.compression = compression
+        self.syslog_name = syslog_name
+
+        pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
+        pattern_date += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) \S+ (?P<msg>.+)$/'
+        self.re_date = re.compile(pattern_date)
+
+        pattern_date_rfc3339 = r'^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})[T\s]'
+        pattern_date_rfc3339 += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})'
+        pattern_date_rfc3339 += r'(?:\.\d+)?'
+        pattern_date_rfc3339 += r'(?:(?P<tz_hours>[\+\-]\d{2}):(?P<tz_mins>\d{2})|Z)'
+        pattern_date_rfc3339 += r' \S+ (?P<msg>.+)$'
+        self.re_date_rfc3339 = re.compile(pattern_date_rfc3339, re.IGNORECASE)
+
+        pattern_pf_command = r'^postfix'
+        if self.syslog_name != 'postfix':
+            pattern_pf_command = r'^(?:postfix|{})'.format(self.syslog_name)
+        pattern_pf_command += r'(?:/(?:smtps|submission))?/([^\[:]*).*?: ([^:\s]+)'
+        self.re_pf_command = re.compile(pattern_pf_command)
+
+        pattern_pf_script = r'^((?:postfix)(?:-script)?)(?:\[\d+\])?: ([^:\s]+)'
+        self.re_pf_script = re.compile(pattern_pf_script)
 
         if encoding:
             self.encoding = encoding
@@ -242,6 +269,23 @@ class PostfixLogParser(object):
     def initialized(self):
         """The initialisation of this object is complete."""
         return getattr(self, '_initialized', False)
+
+    # -----------------------------------------------------------
+    @property
+    def syslog_name(self):
+        """The name, which is used by syslog for entries in logfiles."""
+        return self._syslog_name
+
+    @syslog_name.setter
+    def syslog_name(self, value):
+        if value is None:
+            msg = "The syslog name must not be None."
+            raise TypeError(msg)
+        v = str(value).strip()
+        if v == '':
+            msg = "The syslog name must not be empty."
+            raise ValueError(msg)
+        self._syslog_name = v
 
     # -----------------------------------------------------------
     @property
@@ -317,6 +361,7 @@ class PostfixLogParser(object):
         res['encoding'] = self.encoding
         res['initialized'] = self.initialized
         res['results'] = self.results.as_dict(short=short)
+        res['syslog_name'] = self.syslog_name
         res['this_month'] = self.this_month
         res['this_year'] = self.this_year
         res['today'] = self.today
@@ -435,6 +480,70 @@ class PostfixLogParser(object):
     def eval_line(self, line):
 
         self.results.incr_lines_total()
+
+        if self.re_date_filter:
+            matched = False
+            if self.re_date_filter.match(line):
+                matched = True
+            elif self.re_date_filter_rfc3339.match(line):
+                matched = True
+            if not matched:
+                return
+
+        year = None
+        month = None
+        day = None
+        hour = None
+        minute = None
+        second = None
+        tz = None
+
+        msg_ts = None
+        message = None
+
+        m = self.re_date.match(line)
+        if m:
+            month_str = m['month_str']
+            month = self.month_nums[month_str]
+            day = int(m['day'])
+            hour = int(m['hour'])
+            minute = int(m['minute'])
+            second = int(m['second'])
+            year = self.this_year
+            if month > self.this_month:
+                year -= 1
+
+            msg_ts = datetime.datetime(year, month, day, hour, minute, second, tzinfo=self.utc)
+            message = m['msg']
+        else:
+            m = self.re_date_rfc3339.match(line)
+            if m:
+                year = int(m['year'])
+                month = int(m['month'])
+                day = int(m['day'])
+                hour = int(m['hour'])
+                minute = int(m['minute'])
+                second = int(m['second'])
+
+                tz = self.utc
+                tz_hours = m['tz_hours']
+                tz_mins = m['tz_mins']
+                if tz_hours is not None and tz_mins is not None:
+                    tz_hours = int(tz_hours)
+                    tz_mins = int(tz_mins)
+                    delta = datetime.timedelta(hours=tz_hours, minutes=tz_mins)
+                    tz = datetime.timezone(delta, 'Local_TZ')
+
+                msg_ts = datetime.datetime(year, month, day, hour, minute, second, tzinfo=tz)
+                message = m['msg']
+
+        if not msg_ts:
+            return
+
+        if self.verbose > 4:
+            LOG.debug("Found message: {ts}: {msg}".format(ts=msg_ts.isoformat(' '), msg=message))
+
+        self.results.incr_lines_considered()
 
 
 # =============================================================================
