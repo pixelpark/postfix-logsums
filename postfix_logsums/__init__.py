@@ -937,13 +937,15 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def eval_smtpd_msg(self):
         """Analyzing messages from smtpd."""
-        if self.verbose > 2:
+        if self.verbose > 3:
             LOG.debug("Evaluating 'smtpd' command message.")
 
         m = self.re_smtpd_client.search(self._cur_msg)
         if m:
             self._incr_smtpd_client_counters(m.group(1))
             return
+
+        self._eval_smtpd_connections()
 
     # -------------------------------------------------------------------------
     def _incr_smtpd_client_counters(self, client):
@@ -958,7 +960,7 @@ class PostfixLogParser(object):
         self._rcvd_msgs_qid[self._cur_qid] = self.gimme_domain(client)
 
     # -------------------------------------------------------------------------
-    def _eval_smtpc_connections(self):
+    def _eval_smtpd_connections(self):
         hour = self._cur_ts.hour
         dt_fmt = self.cur_date_fmt()
 
