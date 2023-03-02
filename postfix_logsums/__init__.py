@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -237,8 +237,8 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
-            zero_fill=False, verbose_msg_detail=False, reject_detail=False,
-            no_smtpd_warnings=False,
+            zero_fill=False, detail_verbose_msg=False, detail_reject=True,
+            detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
             compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -249,9 +249,11 @@ class PostfixLogParser(object):
         self._encoding = self.default_encoding
         self._syslog_name = DEFAULT_SYSLOG_NAME
         self._zero_fill = False
-        self._verbose_msg_detail = False
-        self._reject_details = False
-        self._no_smtpd_warnings = False
+        self._detail_verbose_msg = False
+        self._detail_reject = True
+        self._detail_smtpd_warning = True
+        self._ignore_case = False
+        self._rej_add_from = False
 
         self._cur_ts = None
         self._cur_msg = None
@@ -286,9 +288,11 @@ class PostfixLogParser(object):
         self.compression = compression
         self.syslog_name = syslog_name
         self.zero_fill = zero_fill
-        self.verbose_msg_detail = verbose_msg_detail
-        self.reject_detail = reject_detail
-        self.no_smtpd_warnings = no_smtpd_warnings
+        self.detail_verbose_msg = detail_verbose_msg
+        self.detail_reject = detail_reject
+        self.detail_smtpd_warning = detail_smtpd_warning
+        self.ignore_case = ignore_case
+        self.rej_add_from = rej_add_from
 
         pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
         pattern_date += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) \S+ (?P<msg>.+)$/'
@@ -319,6 +323,23 @@ class PostfixLogParser(object):
         self.re_fatal = re.compile(r'^.*fatal: ')
         self.re_panic = re.compile(r'^.*panic: ')
         self.re_master = re.compile(r'.*master.*: ')
+
+        pat_re_reject = r'^.* \b(?:reject(?:_warning)?|hold|discard): '
+        pat_re_reject += r'(?P<type>\S+) from (?P<from>\S+?): (?P<rest>.*)$'
+        self.re_reject = re.compile(pat_re_reject)
+
+        self.re_rej_reason1 = re.compile(r'^(\d{3} <).*?(>:)')
+        self.re_rej_reason2 = re.compile(r'^(?:.*?[:;] )(?:\[[^\]]+\] )?([^;,]+)[;,].*$')
+        self.re_rej_reason3 = re.compile(r'^((?:Sender|Recipient) address rejected: [^:]+):.*$')
+        self.re_rej_reason4 = re.compile(r'(Client host|Sender address) .+? blocked')
+        self.re_rej_reason5 = re.compile(r'^\d{3} (?:<.+>: )?([^;:]+)[;:]?.*$')
+        self.re_rej_reason6 = re.compile(r'^(?:.*[:;] )?([^,]+).*$')
+
+        self.re_rej_to1 = re.compile(r'to=<([^>]+)>')
+        self.re_rej_to2 = re.compile(r'\d{3} <([^>]+)>: User unknown ')
+        self.re_rej_to3 = re.compile(r'to=<(.*?)(?:[, ]|$)/')
+
+        self.re_rej_from = re.compile(r'from=<([^>]+)>')
 
         if encoding:
             self.encoding = encoding
@@ -411,33 +432,61 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
-    def verbose_msg_detail(self):
+    def detail_verbose_msg(self):
         """Display the full reason rather than a truncated deferral, bounce and reject messages."""
-        return self._verbose_msg_detail
+        return self._detail_verbose_msg
 
-    @verbose_msg_detail.setter
-    def verbose_msg_detail(self, value):
-        self._verbose_msg_detail = bool(value)
+    @detail_verbose_msg.setter
+    def detail_verbose_msg(self, value):
+        self._detail_verbose_msg = bool(value)
 
     # -------------------------------------------------------------------------
     @property
-    def reject_detail(self):
+    def detail_reject(self):
         """Display the full reason rather than a truncated deferral, bounce and reject messages."""
-        return self._reject_details
+        return self._detail_reject
 
-    @reject_detail.setter
-    def reject_detail(self, value):
-        self._reject_detail = bool(value)
+    @detail_reject.setter
+    def detail_reject(self, value):
+        if value is None:
+            self._detail_reject = True
+            return
+        self._detail_reject = bool(value)
 
     # -------------------------------------------------------------------------
     @property
-    def no_smtpd_warnings(self):
+    def detail_smtpd_warning(self):
         """Display the full reason rather than a truncated deferral, bounce and reject messages."""
-        return self._no_smtpd_warnings
+        return self._detail_smtpd_warning
 
-    @no_smtpd_warnings.setter
-    def no_smtpd_warnings(self, value):
-        self._no_smtpd_warnings = bool(value)
+    @detail_smtpd_warning.setter
+    def detail_smtpd_warning(self, value):
+        if value is None:
+            self._detail_smtpd_warning = True
+            return
+        self._detail_smtpd_warning = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
+    def ignore_case(self):
+        """This option causes the entire email address to be lower-cased."""
+        return self._ignore_case
+
+    @ignore_case.setter
+    def ignore_case(self, value):
+        self._ignore_case = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
+    def rej_add_from(self):
+        """For those reject reports that list IP addresses or host/domain names: append the
+        email from address to each listing. (Does not apply to 'Improper use of 
+        SMTP command pipelining' report.)"""
+        return self._rej_add_from
+
+    @rej_add_from.setter
+    def rej_add_from(self, value):
+        self._rej_add_from = bool(value)
 
     # -------------------------------------------------------------------------
     @property
@@ -488,16 +537,19 @@ class PostfixLogParser(object):
         res['__class_name__'] = self.__class__.__name__
         res['appname'] = self.appname
         res['compression'] = self.compression
+        res['detail_reject'] = self.detail_reject
         res['encoding'] = self.encoding
+        res['ignore_case'] = self.ignore_case
         res['initialized'] = self.initialized
-        res['no_smtpd_warnings'] = self.no_smtpd_warnings
-        res['reject_detail'] = self.reject_detail
+        res['detail_smtpd_warning'] = self.detail_smtpd_warning
+        res['rej_add_from'] = self.rej_add_from
         res['results'] = self.results.as_dict(short=short)
         res['syslog_name'] = self.syslog_name
         res['this_month'] = self.this_month
         res['this_year'] = self.this_year
         res['today'] = self.today
         res['verbose'] = self.verbose
+        res['detail_verbose_msg'] = self.detail_verbose_msg
         res['zero_fill'] = self.zero_fill
 
         return res
@@ -805,11 +857,11 @@ class PostfixLogParser(object):
     def _eval_warning_cmd(self):
 
         cmd = self._cur_pf_command
-        if cmd == 'smtpd' and self.no_smtpd_warnings:
+        if cmd == 'smtpd' and self.detail_smtpd_warning:
             return
 
         warn_msg = self.re_warning.sub('', self._cur_msg)
-        warn_msg = string_trimmer(warn_msg, do_not_trim=self.verbose_msg_detail)
+        warn_msg = string_trimmer(warn_msg, do_not_trim=self.detail_verbose_msg)
 
         if cmd not in self.results.warnings:
             self.results.warnings[cmd] = {}
@@ -823,7 +875,7 @@ class PostfixLogParser(object):
         cmd = self._cur_pf_command
 
         fatal_msg = self.re_fatal.sub('', self._cur_msg)
-        fatal_msg = string_trimmer(fatal_msg, do_not_trim=self.verbose_msg_detail)
+        fatal_msg = string_trimmer(fatal_msg, do_not_trim=self.detail_verbose_msg)
 
         if cmd not in self.results.fatals:
             self.results.fatals[cmd] = {}
@@ -837,7 +889,7 @@ class PostfixLogParser(object):
         cmd = self._cur_pf_command
 
         panic_msg = self.re_panic.sub('', self._cur_msg)
-        panic_msg = string_trimmer(panic_msg, do_not_trim=self.verbose_msg_detail)
+        panic_msg = string_trimmer(panic_msg, do_not_trim=self.detail_verbose_msg)
 
         if cmd not in self.results.panics:
             self.results.panics[cmd] = {}
@@ -848,9 +900,9 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def _eval_cleanup_cmd(self, subtype, part, cmd_msg):
 
-        if not self.verbose_msg_detail:
+        if not self.detail_verbose_msg:
             cmd_msg = self.re_clean_from.sub('', cmd_msg)
-            cmd_msg = string_trimmer(cmd_msg, max_len=64, do_not_trim=self.verbose_msg_detail)
+            cmd_msg = string_trimmer(cmd_msg, max_len=64, do_not_trim=self.detail_verbose_msg)
 
         hour = self._cur_ts.hour
         if hour not in self.results.reject_messages_per_hour:
@@ -862,7 +914,7 @@ class PostfixLogParser(object):
 
         if subtype == 'reject':
             self.results.messages['rejected'] += 1
-            if self.reject_detail:
+            if self.detail_reject:
                 if part not in self.results.rejects['cleanup']:
                     self.results.rejects['cleanup'][part] = {}
                 if cmd_msg not in self.results.rejects['cleanup'][part]:
@@ -872,7 +924,7 @@ class PostfixLogParser(object):
 
         if subtype == 'warning':
             self.results.messages['warning'] += 1
-            if self.reject_detail:
+            if self.detail_reject:
                 if part not in self.results.warns['cleanup']:
                     self.results.warns['cleanup'][part] = {}
                 if cmd_msg not in self.results.warns['cleanup'][part]:
@@ -882,7 +934,7 @@ class PostfixLogParser(object):
 
         if subtype == 'hold':
             self.results.messages['hold'] += 1
-            if self.reject_detail:
+            if self.detail_reject:
                 if part not in self.results.holds['cleanup']:
                     self.results.holds['cleanup'][part] = {}
                 if cmd_msg not in self.results.holds['cleanup'][part]:
@@ -892,12 +944,17 @@ class PostfixLogParser(object):
 
         if subtype == 'discard':
             self.results.messages['discard'] += 1
-            if self.reject_detail:
+            if self.detail_reject:
                 if part not in self.results.discards['cleanup']:
                     self.results.discards['cleanup'][part] = {}
                 if cmd_msg not in self.results.discards['cleanup'][part]:
                     self.results.discards['cleanup'][part][cmd_msg] = 0
                 self.results.discards['cleanup'][part][cmd_msg] += 1
+
+    # -------------------------------------------------------------------------
+    def verp_mung(self, address):
+
+        pass
 
     # -------------------------------------------------------------------------
     def proc_smtpd_reject(self, counter):
@@ -912,8 +969,47 @@ class PostfixLogParser(object):
         dt_fmt = self.cur_date_fmt()
         self.results.messages_per_day[dt_fmt][4] += 1
 
-        if not self.reject_detail:
+        if not self.detail_reject:
             return
+
+        m = self.re_reject.match(self._cur_msg)
+        if not m:
+            return
+        reject_type = m['type']
+        reject_from = m['from']
+        reject_rest = m['rest']
+
+        reject_reason = reject_rest
+        if not self.detail_verbose_msg:
+            if reject_type in ('RCPT', 'DATA', 'CONNECT'):
+                reject_reason = self.re_rej_reason1.sub(r'\1\2', reject_reason)
+                reject_reason = self.re_rej_reason2.sub(r'\1', reject_reason)
+                reject_reason = self.re_rej_reason3.sub(r'\1', reject_reason)
+                reject_reason = self.re_rej_reason4.sub(r'blocked', reject_reason)
+            elif reject_type == 'MAIL':
+                reject_reason = self.re_rej_reason5.sub(r'\1', reject_reason)
+            else:
+                reject_reason = self.re_rej_reason6.sub(r'\1', reject_reason)
+
+        reject_to = '<>'
+        m = self.re_rej_to1.search(reject_rest)
+        if m:
+            reject_to = m.group(1)
+        else:
+            m = self.re_rej_to2(reject_rest)
+            if m:
+                reject_to = m.group(1)
+            else:
+                m = self.re_rej_to3(reject_rest)
+                if m:
+                    reject_to = m.group(1)
+        if self.ignore_case:
+            reject_to = reject_to.lower()
+
+        reject_from = '<>'
+        m = self.re_rej_from(reject_rest)
+        if m:
+            reject_from = m.group(1)
 
 
 # =============================================================================

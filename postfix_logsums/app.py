@@ -34,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.5.2'
+__version__ = '0.6.0'
 
 
 # =============================================================================
@@ -139,29 +139,12 @@ class PostfixLogsumsApp(object):
         elif self.args.xz:
             compression = 'lzma'
 
-        rj_detail = self.args.reject_detail
-        if rj_detail is None:
-            if self.args.detail is not None:
-                rj_detail = bool(self.args.detail)
-            else:
-                rj_detail = False
-        else:
-            rj_detail = bool(rj_detail)
-
-        no_smtpd_warnings = self.args.smtpd_warning_detail
-        if no_smtpd_warnings is None:
-            if self.args.detail is not None:
-                no_smtpd_warnings = bool(self.args.detail)
-            else:
-                no_smtpd_warnings = False
-        else:
-            no_smtpd_warnings = bool(no_smtpd_warnings)
-
         self.parser = PostfixLogParser(
             appname=self.appname, verbose=self.verbose, day=self.args.day,
             compression=compression, zero_fill=self.args.zero_fill,
-            reject_detail=rj_detail, no_smtpd_warnings=no_smtpd_warnings,
-            verbose_msg_detail=self.args.verbose_msg_detail)
+            detail_reject=self.detail_reject, detail_smtpd_warning=self.detail_smtpd_warning,
+            ignore_case=self.args.ignore_case, rej_add_from=self.args.rej_add_from,
+            detail_verbose_msg=self.detail_verbose_msg)
 
         self._initialized = True
 
@@ -220,6 +203,117 @@ class PostfixLogsumsApp(object):
     def initialized(self, value):
         self._initialized = bool(value)
 
+    # -----------------------------------------------------------
+    @property
+    def detail(self):
+        """Sets all --*-detail, -h and -u. Is over-ridden by individual settings."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        return getattr(self.args, 'detail', None)
+
+    # -----------------------------------------------------------
+    @property
+    def detail_bounce(self):
+        """Limit detailed bounce reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_bounce', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_deferral(self):
+        """Limit detailed deferral reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_deferral', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_host(self):
+        """Limit detailed host reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_host', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_reject(self):
+        """Limit detailed reject reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_reject', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_smtp(self):
+        """Limit detailed smtp reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_smtp', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_smtpd_warning(self):
+        """Limit detailed smtpd warnings reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_smtpd_warning', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_user(self):
+        """Limit detailed user reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        det = getattr(self.args, 'detail_user', None)
+        if det is None:
+            return self.detail
+        return det
+
+    # -----------------------------------------------------------
+    @property
+    def detail_verbose_msg(self):
+        """Limit detailed verbose message reports."""
+        if not hasattr(self, 'args'):
+            return None
+        if not self.args:
+            return None
+        return getattr(self.args, 'detail_verbose_msg', False)
+
     # -------------------------------------------------------------------------
     def __str__(self):
         """
@@ -255,6 +349,15 @@ class PostfixLogsumsApp(object):
         res['appname_capitalized'] = self.appname_capitalized
         res['args'] = copy.copy(self.args.__dict__)
         res['initialized'] = self.initialized
+        res['detail'] = self.detail
+        res['detail_bounce'] = self.detail_bounce
+        res['detail_deferral'] = self.detail_deferral
+        res['detail_host'] = self.detail_host
+        res['detail_reject'] = self.detail_reject
+        res['detail_smtp'] = self.detail_smtp
+        res['detail_smtpd_warning'] = self.detail_smtpd_warning
+        res['detail_user'] = self.detail_user
+        res['detail_verbose_msg'] = self.detail_verbose_msg
         if self.parser:
             res['parser'] = self.parser.as_dict(short=short)
         res['version'] = self.version
@@ -375,8 +478,8 @@ class PostfixLogsumsApp(object):
             'Actually: specifying anything less than 2 does the "simple" munging and anything '
             'greater than 1 results in the more "aggressive" hack being applied.', arg_width)
         logfile_group.add_argument(
-            '--verp-mung', type=int, metavar='1|2', const=1, dest='verp_mung', nargs='?',
-            action=NonNegativeItegerOptionAction, default=1, help=desc)
+            '--verp-mung', type=int, metavar='1|2', const=0, dest='verp_mung', nargs='?',
+            action=NonNegativeItegerOptionAction, help=desc)
 
         #######
         # Select compression
@@ -436,7 +539,7 @@ class PostfixLogsumsApp(object):
             'Limit detailed bounce reports to the top COUNT.', arg_width) + '\n'
         desc += self.wrap_msg('0 to suppress entirely.', arg_width)
         output_options.add_argument(
-            '--bounce-detail', type=int, metavar='COUNT', dest='bounce_detail',
+            '--bounce-detail', type=int, metavar='COUNT', dest='detail_bounce',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --deferral-detail
@@ -444,7 +547,7 @@ class PostfixLogsumsApp(object):
             'Limit detailed deferral reports to the top COUNT.', arg_width) + '\n'
         desc += self.wrap_msg('0 to suppress entirely.', arg_width)
         output_options.add_argument(
-            '--deferral-detail', type=int, metavar='COUNT', dest='deferral_detail',
+            '--deferral-detail', type=int, metavar='COUNT', dest='detail_deferral',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --reject-detail
@@ -453,7 +556,7 @@ class PostfixLogsumsApp(object):
             'COUNT.', arg_width) + '\n'
         desc += self.wrap_msg('0 to suppress entirely.', arg_width)
         output_options.add_argument(
-            '--reject-detail', type=int, metavar='COUNT', dest='reject_detail',
+            '--reject-detail', type=int, metavar='COUNT', dest='detail_reject',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --smtp-detail
@@ -461,7 +564,7 @@ class PostfixLogsumsApp(object):
             'Limit detailed smtp delivery reports to the top COUNT.', arg_width) + '\n'
         desc += self.wrap_msg('0 to suppress entirely.', arg_width)
         output_options.add_argument(
-            '--smtp-detail', type=int, metavar='COUNT', dest='smtp_detail',
+            '--smtp-detail', type=int, metavar='COUNT', dest='detail_smtp',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --smtpd-warning-detail
@@ -469,7 +572,7 @@ class PostfixLogsumsApp(object):
             'Limit detailed smtpd warnings reports to the top COUNT.', arg_width) + '\n'
         desc += self.wrap_msg('0 to suppress entirely.', arg_width)
         output_options.add_argument(
-            '--smtpd-warning-detail', type=int, metavar='COUNT', dest='smtpd_warning_detail',
+            '--smtpd-warning-detail', type=int, metavar='COUNT', dest='detail_smtpd_warning',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --host
@@ -479,14 +582,14 @@ class PostfixLogsumsApp(object):
             'See also: "-u" and "--*-detail" options for further report-limiting options.',
             arg_width)
         output_options.add_argument(
-            '-h', '--host', type=int, metavar='COUNT', dest='host',
+            '-h', '--host', type=int, metavar='COUNT', dest='detail_host',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --user
         desc = self.wrap_msg('Top COUNT to display in user reports.', arg_width) + '\n'
         desc += '0 = none.'
         output_options.add_argument(
-            '-u', '--user', type=int, metavar='COUNT', dest='user',
+            '-u', '--user', type=int, metavar='COUNT', dest='detail_user',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --problems-first
@@ -519,7 +622,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(
             'NOTE: this can result in quite long lines in the report.', arg_width)
         output_options.add_argument(
-            '--verbose-msg-detail', dest='verbose_msg_detail', action="store_true", help=desc)
+            '--verbose-msg-detail', dest='detail_verbose_msg', action="store_true", help=desc)
 
         # --zero-fill
         desc = self.wrap_msg(
