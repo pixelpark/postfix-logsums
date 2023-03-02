@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.5'
+__version__ = '0.4.6'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -114,11 +114,16 @@ class PostfixLogSums(object):
         self._files_index = None
         self.files = []
         self.messages_per_day = {}
+        self.smtpd_per_day = {}
+        self.smtpd_per_domain = {}
+        self.connections_total = 0
+        self.connections_time = 0
         self.received_messages_per_hour = []
         self.rejected_messages_per_hour = []
         self.delivered_messages_per_hour = []
         self.defered_messages_per_hour = []
         self.bounced_messages_per_hour = []
+        self.smtpd_messages_per_hour = []
         self.messages = {
             'discard': 0,
             'hold': 0,
@@ -149,6 +154,7 @@ class PostfixLogSums(object):
             self.delivered_messages_per_hour.append(0)
             self.defered_messages_per_hour.append(0)
             self.bounced_messages_per_hour.append(0)
+            self.smtpd_messages_per_hour.append([0, 0, 0])
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
@@ -265,6 +271,7 @@ class PostfixLogParser(object):
         self.results = PostfixLogSums()
 
         self._rcvd_msgs_qid = {}
+        self._connection_times = {}
 
         if day:
             t_diff = datetime.timedelta(days=1)
@@ -364,6 +371,10 @@ class PostfixLogParser(object):
         self.re_rej_from = re.compile(r'from=<([^>]+)>')
 
         self.re_smtpd_client = re.compile(r'\[\d+\]: \w+: client=(.+?)(,|$)/')
+        self.re_smtpd_connect = re.compile(r': connect from ')
+        self.re_smtpd_disconnect = re.compile(r': disconnect from ')
+        self.re_smtpd_pid = re.compile(r'\/smtpd\[(\d+)\]: ')
+        self.re_smtpd_pid_disconnect = re.compile(r'\/smtpd\[(\d+)\]: disconnect from (.+)$')
 
         if encoding:
             self.encoding = encoding
@@ -945,6 +956,57 @@ class PostfixLogParser(object):
         self.results.messages_received_total += 1
 
         self._rcvd_msgs_qid[self._cur_qid] = self.gimme_domain(client)
+
+    # -------------------------------------------------------------------------
+    def _eval_smtpc_connections(self):
+        hour = self._cur_ts.hour
+        dt_fmt = self.cur_date_fmt()
+
+
+        if self.re_smtpd_connect.search(self._cur_msg):
+            m = self.re_smtpd_pid.search(self._cur_msg)
+            if m:
+                pid = int(m.group(1))
+                self._connection_times[pid] = self._cur_ts
+            return
+
+        if self.re_smtpd_disconnect.search(self._cur_msg):
+            m = self.re_smtpd_pid_disconnect.search(self._cur_msg)
+            if m:
+                pid = int(m.group(1))
+                host_id = m.group(2)
+
+                if pid not in self._connection_times:
+                    return
+
+                host_id = self.gimme_domain(host_id)
+
+                time_diff = self._cur_ts - self._connection_times[pid]
+                del self._connection_times[pid]
+
+                seconds = time_diff.total_seconds()
+
+                self.results.smtpd_messages_per_hour[hour][0] += 1
+                self.results.smtpd_messages_per_hour[hour][1] += seconds
+                if seconds > self.results.smtpd_messages_per_hour[hour][2]:
+                    self.results.smtpd_messages_per_hour[hour][2] = seconds
+
+                if dt_fmt not in self.results.smtpd_per_day:
+                    self.results.smtpd_per_day[dt_fmt] = [0, 0, 0]
+                self.results.smtpd_per_day[dt_fmt][0] += 1
+                self.results.smtpd_per_day[dt_fmt][1] += seconds
+                if seconds > self.results.smtpd_per_day[dt_fmt][2]:
+                    self.results.smtpd_per_day[dt_fmt][2] = seconds
+
+                if host_id not in self.results.smtpd_per_domain:
+                    self.results.smtpd_per_domain[host_id] = [0, 0, 0]
+                self.results.smtpd_per_domain[host_id][0] += 1
+                self.results.smtpd_per_domain[host_id][1] += seconds
+                if seconds > self.results.smtpd_per_domain[host_id][2]:
+                    self.results.smtpd_per_domain[host_id][2] = seconds
+
+                self.results.connections_total += 1
+                self.results.connections_time += seconds
 
     # -------------------------------------------------------------------------
     def _eval_warning_cmd(self):
