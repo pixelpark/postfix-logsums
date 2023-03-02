@@ -1134,7 +1134,7 @@ class PostfixLogParser(object):
                 domain = m.group(1)
                 ip_address = m.group(2)
             else:
-                m = self.re_gdom3(data)
+                m = self.re_gdom3.match(data)
                 if not m:
                     return None
                 domain = m.group(1)
