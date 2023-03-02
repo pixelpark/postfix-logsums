@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -93,23 +93,6 @@ def get_generic_appname(appname=None):
     aname = re.sub(r'\.py$', '', aname, flags=re.IGNORECASE)
     return os.path.basename(aname)
 
-
-# =============================================================================
-def string_trimmer(message, max_len=DEFAULT_MAX_TRIM_LENGTH, do_not_trim=False):
-    """Trimming the given message to the given length inclusive an ellipsis."""
-    trimmed = str(message).strip()
-    if do_not_trim:
-        return trimmed
-
-    if max_len < 4:
-        msg = "Invalid max. length {} of a string, must be >= 4.".format(max_len)
-        raise ValueError(msg)
-
-    ml = int(max_len) - 3
-    if len(trimmed) > ml:
-        trimmed = trimmed[0:ml] + '...'
-
-    return trimmed
 
 # =============================================================================
 class PostfixLogSums(object):
@@ -233,6 +216,7 @@ class PostfixLogParser(object):
     utc = datetime.timezone(datetime.timedelta(0), 'UTC')
 
     default_encoding = DEFAULT_ENCODING
+    default_max_trim_length = DEFAULT_MAX_TRIM_LENGTH
 
     # -------------------------------------------------------------------------
     def __init__(
@@ -347,6 +331,27 @@ class PostfixLogParser(object):
             self.encoding = self.default_encoding
 
         self._initialized = True
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def string_trimmer(cls, message, max_len=None, do_not_trim=False):
+        """Trimming the given message to the given length inclusive an ellipsis."""
+        if not max_len:
+            max_len = cls.default_max_trim_length
+
+        trimmed = str(message).strip()
+        if do_not_trim:
+            return trimmed
+
+        if max_len < 4:
+            msg = "Invalid max. length {} of a string, must be >= 4.".format(max_len)
+            raise ValueError(msg)
+
+        ml = int(max_len) - 3
+        if len(trimmed) > ml:
+            trimmed = trimmed[0:ml] + '...'
+
+        return trimmed
 
     # -----------------------------------------------------------
     @property
@@ -861,7 +866,7 @@ class PostfixLogParser(object):
             return
 
         warn_msg = self.re_warning.sub('', self._cur_msg)
-        warn_msg = string_trimmer(warn_msg, do_not_trim=self.detail_verbose_msg)
+        warn_msg = self.string_trimmer(warn_msg, do_not_trim=self.detail_verbose_msg)
 
         if cmd not in self.results.warnings:
             self.results.warnings[cmd] = {}
@@ -875,7 +880,7 @@ class PostfixLogParser(object):
         cmd = self._cur_pf_command
 
         fatal_msg = self.re_fatal.sub('', self._cur_msg)
-        fatal_msg = string_trimmer(fatal_msg, do_not_trim=self.detail_verbose_msg)
+        fatal_msg = self.string_trimmer(fatal_msg, do_not_trim=self.detail_verbose_msg)
 
         if cmd not in self.results.fatals:
             self.results.fatals[cmd] = {}
@@ -889,7 +894,7 @@ class PostfixLogParser(object):
         cmd = self._cur_pf_command
 
         panic_msg = self.re_panic.sub('', self._cur_msg)
-        panic_msg = string_trimmer(panic_msg, do_not_trim=self.detail_verbose_msg)
+        panic_msg = self.string_trimmer(panic_msg, do_not_trim=self.detail_verbose_msg)
 
         if cmd not in self.results.panics:
             self.results.panics[cmd] = {}
@@ -902,7 +907,7 @@ class PostfixLogParser(object):
 
         if not self.detail_verbose_msg:
             cmd_msg = self.re_clean_from.sub('', cmd_msg)
-            cmd_msg = string_trimmer(cmd_msg, max_len=64, do_not_trim=self.detail_verbose_msg)
+            cmd_msg = self.string_trimmer(cmd_msg, do_not_trim=self.detail_verbose_msg)
 
         hour = self._cur_ts.hour
         if hour not in self.results.reject_messages_per_hour:
