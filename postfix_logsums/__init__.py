@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -321,9 +321,28 @@ class PostfixLogParser(object):
         self.re_rej_reason5 = re.compile(r'^\d{3} (?:<.+>: )?([^;:]+)[;:]?.*$')
         self.re_rej_reason6 = re.compile(r'^(?:.*[:;] )?([^,]+).*$')
 
+        self.re_rej_smtp_reason1 = re.compile(r'^Sender address rejected:')
+        self.re_rej_smtp_reason2 = re.compile(r'^(Recipient address rejected:|User unknown( |$))')
+        self.re_rej_smtp_reason3 = re.compile(
+            r'^.*?\d{3} (Improper use of SMTP command pipelining);.*$')
+        self.re_rej_smtp_reason4 = re.compile(r'^.+? from (\S+?):.*$')
+        self.re_rej_smtp_reason5 = re.compile(r'^.*?\d{3} (Message size exceeds fixed limit);.*$')
+        self.re_rej_smtp_reason6 = re.compile(
+            r'^.*?\d{3} (Server configuration (?:error|problem));.*$')
+
         self.re_rej_to1 = re.compile(r'to=<([^>]+)>')
         self.re_rej_to2 = re.compile(r'\d{3} <([^>]+)>: User unknown ')
         self.re_rej_to3 = re.compile(r'to=<(.*?)(?:[, ]|$)/')
+
+        pat_verp_mung1 = r'((?:bounce[ds]?|no(?:list|reply|response)|return|sentto|\d+).*?)'
+        pat_verp_mung1 += r'(?:[\+_\.\*-]\d+\b)+'
+        self.re_verp_mung1 = re.compile(pat_verp_mung1, re.IGNORECASE)
+        self.re_verp_mung2 = re.compile(r'[\*-](\d+[\*-])?[^=\*-]+[=\*][^\@]+\@')
+
+        self.re_gdom1 = re.compile(r'^([^\[]+)\[((?:\d{1,3}\.){3}\d{1,3})\]')
+        self.re_gdom2 = re.compile(r'^([^\/]+)\/([0-9a-f.:]+)', re.IGNORECASE)
+        self.re_gdom3 = re.compile(r'^([^\[\(\/]+)[\[\(\/]([^\]\)]+)[\]\)]?:?\s*$')
+        self.re_gdom4 = re.compile(r'^(.*)\.([^\.]+)\.([^\.]{3}|[^\.]{2,3}\.[^\.]{2})$')
 
         self.re_rej_from = re.compile(r'from=<([^>]+)>')
 
@@ -487,7 +506,7 @@ class PostfixLogParser(object):
     @property
     def rej_add_from(self):
         """For those reject reports that list IP addresses or host/domain names: append the
-        email from address to each listing. (Does not apply to 'Improper use of 
+        email from address to each listing. (Does not apply to 'Improper use of
         SMTP command pipelining' report.)"""
         return self._rej_add_from
 
@@ -976,9 +995,43 @@ class PostfixLogParser(object):
                 self.results.discards['cleanup'][part][cmd_msg] += 1
 
     # -------------------------------------------------------------------------
-    def verp_mung(self, address):
+    def do_verp_mung(self, address):
 
-        pass
+        if self.verp_mung is not None:
+            address = self.re_verp_mung1.sub(r'\1-ID', address)
+            if self.verp_mung > 1:
+                address = self.re_verp_mung2.sub(r'\@', address)
+
+        return address
+
+    # -------------------------------------------------------------------------
+    def gimme_domain(self, data):
+
+        domain = None
+        ip_address = None
+
+        m = self.re_gdom1.match(data)
+        if m:
+            domain = m.group(1)
+            ip_address = m.group(2)
+        else:
+            m = self.re_gdom2.match(data)
+            if m:
+                domain = m.group(1)
+                ip_address = m.group(2)
+            else:
+                m = self.re_gdom3(data)
+                if not m:
+                    return None
+                domain = m.group(1)
+                ip_address = m.group(2)
+
+        if domain == 'unknown':
+            domain = ip_address
+        else:
+            domain = self.re_gdom4.sub(r'\1.\2', domain).lower()
+
+        return domain
 
     # -------------------------------------------------------------------------
     def proc_smtpd_reject(self, counter):
@@ -996,44 +1049,105 @@ class PostfixLogParser(object):
         if not self.detail_reject:
             return
 
+        reject = self._eval_reject_msg()
+        if not reject:
+            return
+
+        if self.re_rej_smtp_reason1.match(reject.reason):
+            self._incr_reject_counter(reject.type, reject.reason, reject.sender)
+        elif self.re_rej_smtp_reason2.match(reject.reason):
+            reject_data = reject.to
+            if self.rej_add_from:
+                reject_data += "  (" + reject.sender + ")"
+            self._incr_reject_counter(reject.type, reject.reason, reject_data)
+        elif self.re_rej_smtp_reason3.match(reject.reason):
+            reject.reason = self.re_rej_smtp_reason3.sub(r'\1', reject.reason)
+            if self.re_rej_smtp_reason4.match(self._cur_msg):
+                reject_src = self.re_rej_smtp_reason4.match(self._cur_msg).group(1)
+                self._incr_reject_counter(reject.type, reject.reason, reject_src)
+        elif self.re_rej_smtp_reason5.match(reject.reason):
+            reject.reason = self.re_rej_smtp_reason5.sub(r'\1', reject.reason)
+            reject_data = self.gimme_domain(reject.sender)
+            if reject_data:
+                if self.rej_add_from:
+                    reject_data += '  (' + reject.sender + ')'
+                self._incr_reject_counter(reject.type, reject.reason, reject_data)
+        elif self.re_rej_smtp_reason6.match(reject.reason):
+            reject.reason = self.re_rej_smtp_reason6.sub(r'(Local) \1', reject.reason)
+            reject_data = self.gimme_domain(reject.sender)
+            if reject_data:
+                if self.rej_add_from:
+                    reject_data += '  (' + reject.sender + ')'
+                self._incr_reject_counter(reject.type, reject.reason, reject_data)
+        else:
+            reject_data = self.gimme_domain(reject.sender)
+            if reject_data:
+                if self.rej_add_from:
+                    reject_data += '  (' + reject.sender + ')'
+                self._incr_reject_counter(reject.type, reject.reason, reject_data)
+
+    # -------------------------------------------------------------------------
+    def _incr_reject_counter(self, rtype, reason, rdata):
+
+        if rtype not in self.result.rejects:
+            self.result.rejects[rtype] = {}
+
+        if reason not in self.result.rejects[rtype]:
+            self.result.rejects[rtype][reason] = {}
+
+        if rdata not in self.result.rejects[rtype][reason]:
+            self.result.rejects[rtype][reason][rdata] = 0
+
+        self.result.rejects[rtype][reason][rdata] += 1
+
+    # -------------------------------------------------------------------------
+    def _eval_reject_msg(self):
+
+        reject = object()
+
         m = self.re_reject.match(self._cur_msg)
         if not m:
-            return
-        reject_type = m['type']
-        reject_from = m['from']
-        reject_rest = m['rest']
+            return None
 
-        reject_reason = reject_rest
+        reject.type = m['type']
+        reject.sender = m['from']
+        reject.rest = m['rest']
+        reject.reason = reject.rest
+
         if not self.detail_verbose_msg:
-            if reject_type in ('RCPT', 'DATA', 'CONNECT'):
-                reject_reason = self.re_rej_reason1.sub(r'\1\2', reject_reason)
-                reject_reason = self.re_rej_reason2.sub(r'\1', reject_reason)
-                reject_reason = self.re_rej_reason3.sub(r'\1', reject_reason)
-                reject_reason = self.re_rej_reason4.sub(r'blocked', reject_reason)
-            elif reject_type == 'MAIL':
-                reject_reason = self.re_rej_reason5.sub(r'\1', reject_reason)
+            if reject.type in ('RCPT', 'DATA', 'CONNECT'):
+                reject.reason = self.re_rej_reason1.sub(r'\1\2', reject.reason)
+                reject.reason = self.re_rej_reason2.sub(r'\1', reject.reason)
+                reject.reason = self.re_rej_reason3.sub(r'\1', reject.reason)
+                reject.reason = self.re_rej_reason4.sub(r'blocked', reject.reason)
+            elif reject.type == 'MAIL':
+                reject.reason = self.re_rej_reason5.sub(r'\1', reject.reason)
             else:
-                reject_reason = self.re_rej_reason6.sub(r'\1', reject_reason)
+                reject.reason = self.re_rej_reason6.sub(r'\1', reject.reason)
 
-        reject_to = '<>'
-        m = self.re_rej_to1.search(reject_rest)
+        reject.to = '<>'
+        m = self.re_rej_to1.search(reject.rest)
         if m:
-            reject_to = m.group(1)
+            reject.to = m.group(1)
         else:
-            m = self.re_rej_to2(reject_rest)
+            m = self.re_rej_to2(reject.rest)
             if m:
-                reject_to = m.group(1)
+                reject.to = m.group(1)
             else:
-                m = self.re_rej_to3(reject_rest)
+                m = self.re_rej_to3(reject.rest)
                 if m:
-                    reject_to = m.group(1)
+                    reject.to = m.group(1)
         if self.ignore_case:
-            reject_to = reject_to.lower()
+            reject.to = reject.to.lower()
 
-        reject_from = '<>'
-        m = self.re_rej_from(reject_rest)
+        reject.sender = '<>'
+        m = self.re_rej_from(reject.rest)
         if m:
-            reject_from = m.group(1)
+            reject.sender = self.do_verp_mung(m.group(1))
+            if self.ignore_case:
+                reject.sender = reject.sender.lower()
+
+        return reject
 
 
 # =============================================================================
