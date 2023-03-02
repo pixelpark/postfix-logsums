@@ -106,6 +106,7 @@ class PostfixLogSums(object):
     # -------------------------------------------------------------------------
     def reset(self):
         """Resetting all counters and result structs."""
+        self.amavis_msgs = 0
         self.lines_total = 0
         self.lines_considered = 0
         self.days_counted = 0
@@ -290,6 +291,8 @@ class PostfixLogParser(object):
         pattern_date_rfc3339 += r'(?:(?P<tz_hours>[\+\-]\d{2}):(?P<tz_mins>\d{2})|Z)'
         pattern_date_rfc3339 += r' \S+ (?P<msg>.+)$'
         self.re_date_rfc3339 = re.compile(pattern_date_rfc3339, re.IGNORECASE)
+
+        self.re_amavis = re.compile(r'^amavis\[\d+\]: ', re.IGNORECASE)
 
         pattern_pf_command = r'^postfix'
         if self.syslog_name != 'postfix':
@@ -734,6 +737,10 @@ class PostfixLogParser(object):
                 dt_fmt = self.cur_date_fmt()
                 if dt_fmt not in self.results.messages_per_day:
                     self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
+
+        if self.re_amavis.match(self._cur_msg):
+            self.results.amavis_msgs += 1
+            return
 
         result = self._eval_pf_command(self._cur_msg)
         if result:
