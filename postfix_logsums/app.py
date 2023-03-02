@@ -34,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 
 
 # =============================================================================
@@ -144,7 +144,7 @@ class PostfixLogsumsApp(object):
             compression=compression, zero_fill=self.args.zero_fill,
             detail_reject=self.detail_reject, detail_smtpd_warning=self.detail_smtpd_warning,
             ignore_case=self.args.ignore_case, rej_add_from=self.args.rej_add_from,
-            detail_verbose_msg=self.detail_verbose_msg)
+            verp_mung=self.args.verp_mung, detail_verbose_msg=self.detail_verbose_msg)
 
         self._initialized = True
 
@@ -208,10 +208,10 @@ class PostfixLogsumsApp(object):
     def detail(self):
         """Sets all --*-detail, -h and -u. Is over-ridden by individual settings."""
         if not hasattr(self, 'args'):
-            return None
+            return 1
         if not self.args:
-            return None
-        return getattr(self.args, 'detail', None)
+            return 1
+        return getattr(self.args, 'detail', 1)
 
     # -----------------------------------------------------------
     @property
@@ -531,7 +531,7 @@ class PostfixLogsumsApp(object):
             'individual settings.', arg_width) + '\n'
         desc += self.wrap_msg('--detail 0 suppresses *all* detail.', arg_width)
         output_options.add_argument(
-            '--detail', type=int, metavar='COUNT', dest='detail',
+            '--detail', type=int, metavar='COUNT', dest='detail', default=1,
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --bounce-detail

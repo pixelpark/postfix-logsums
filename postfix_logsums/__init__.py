@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -223,7 +223,7 @@ class PostfixLogParser(object):
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             zero_fill=False, detail_verbose_msg=False, detail_reject=True,
             detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
-            compression=None, encoding=DEFAULT_ENCODING):
+            verp_mung=None, compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
         self._appname = get_generic_appname()
@@ -238,6 +238,7 @@ class PostfixLogParser(object):
         self._detail_smtpd_warning = True
         self._ignore_case = False
         self._rej_add_from = False
+        self._verp_mung = None
 
         self._cur_ts = None
         self._cur_msg = None
@@ -277,6 +278,7 @@ class PostfixLogParser(object):
         self.detail_smtpd_warning = detail_smtpd_warning
         self.ignore_case = ignore_case
         self.rej_add_from = rej_add_from
+        self.verp_mung = verp_mung
 
         pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
         pattern_date += r'(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) \S+ (?P<msg>.+)$/'
@@ -510,6 +512,22 @@ class PostfixLogParser(object):
         self._encoding = encoder.name
 
     # -------------------------------------------------------------------------
+    @property
+    def verp_mung(self):
+        """This option causes the entire email address to be lower-cased."""
+        return self._verp_mung
+
+    @verp_mung.setter
+    def verp_mung(self, value):
+        if value is None:
+            self._verp_mung = None
+            return
+        v = int(value)
+        if v < 0:
+            v = 0
+        self._verp_mung = v
+
+    # -------------------------------------------------------------------------
     def __str__(self):
         """
         Typecasting function for translating object structure
@@ -555,6 +573,7 @@ class PostfixLogParser(object):
         res['today'] = self.today
         res['verbose'] = self.verbose
         res['detail_verbose_msg'] = self.detail_verbose_msg
+        res['verp_mung'] = self.verp_mung
         res['zero_fill'] = self.zero_fill
 
         return res
