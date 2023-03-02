@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.6'
+__version__ = '0.4.7'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -374,6 +374,7 @@ class PostfixLogParser(object):
         self.re_rej_from = re.compile(r'from=<([^>]+)>')
 
         self.re_smtpd_client = re.compile(r'\[\d+\]: \w+: client=(.+?)(,|$)/')
+        self.re_smtpd_reject = re.compile(r'\[\d+\]: \w+: (reject(?:_warning)?|hold|discard): ')
         self.re_smtpd_connect = re.compile(r': connect from ')
         self.re_smtpd_disconnect = re.compile(r': disconnect from ')
         self.re_smtpd_pid = re.compile(r'\/smtpd\[(\d+)\]: ')
@@ -959,6 +960,11 @@ class PostfixLogParser(object):
             self._incr_smtpd_client_counters(m.group(1))
             return
 
+        m = self.re_smtpd_reject.search(self._cur_msg)
+        if m:
+            self._eval_smtpd_rejects(m.group(1))
+            return
+
         self._eval_smtpd_connections()
 
     # -------------------------------------------------------------------------
@@ -972,6 +978,25 @@ class PostfixLogParser(object):
         self.results.messages_received_total += 1
 
         self._rcvd_msgs_qid[self._cur_qid] = self.gimme_domain(client)
+
+    # -------------------------------------------------------------------------
+    def _eval_smtpd_rejects(self, sub_type):
+
+        if sub_type == 'reject':
+            self.proc_smtpd_reject(self.results.messages['rejected'])
+            return
+
+        if sub_type == 'reject_warning':
+            self.proc_smtpd_reject(self.results.messages['warning'])
+            return
+
+        if sub_type == 'hold':
+            self.proc_smtpd_reject(self.results.messages['hold'])
+            return
+
+        if sub_type == 'discard':
+            self.proc_smtpd_reject(self.results.messages['discard'])
+            return
 
     # -------------------------------------------------------------------------
     def _eval_smtpd_connections(self):
