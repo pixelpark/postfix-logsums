@@ -110,10 +110,15 @@ class PostfixLogSums(object):
         self.lines_total = 0
         self.lines_considered = 0
         self.days_counted = 0
+        self.messages_received_total = 0
         self._files_index = None
         self.files = []
         self.messages_per_day = {}
-        self.reject_messages_per_hour = {}
+        self.received_messages_per_hour = []
+        self.rejected_messages_per_hour = []
+        self.delivered_messages_per_hour = []
+        self.defered_messages_per_hour = []
+        self.bounced_messages_per_hour = []
         self.messages = {
             'discard': 0,
             'hold': 0,
@@ -137,6 +142,13 @@ class PostfixLogSums(object):
         self.fatals = {}
         self.panics = {}
         self.master_msgs = {}
+
+        for hour in range(0, 24):
+            self.received_messages_per_hour.append(0)
+            self.rejected_messages_per_hour.append(0)
+            self.delivered_messages_per_hour.append(0)
+            self.defered_messages_per_hour.append(0)
+            self.bounced_messages_per_hour.append(0)
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
@@ -252,6 +264,8 @@ class PostfixLogParser(object):
         self.re_date_filter_rfc3339 = None
         self.results = PostfixLogSums()
 
+        self._rcvd_msgs_qid = {}
+
         if day:
             t_diff = datetime.timedelta(days=1)
             used_date = copy.copy(self.today)
@@ -348,6 +362,8 @@ class PostfixLogParser(object):
         self.re_gdom4 = re.compile(r'^(.*)\.([^\.]+)\.([^\.]{3}|[^\.]{2,3}\.[^\.]{2})$')
 
         self.re_rej_from = re.compile(r'from=<([^>]+)>')
+
+        self.re_smtpd_client = re.compile(r'\[\d+\]: \w+: client=(.+?)(,|$)/')
 
         if encoding:
             self.encoding = encoding
@@ -903,6 +919,30 @@ class PostfixLogParser(object):
             self.results.master_msgs[mpart] += 1
             return
 
+        if self._cur_pf_command == 'smtpd':
+            self.eval_smtpd_msg()
+            return
+
+    # -------------------------------------------------------------------------
+    def eval_smtpd_msg(self):
+        """Analyzing messages from smtpd."""
+        m = self.re_smtpd_client.search(self._cur_msg)
+        if m:
+            self._incr_smtpd_client_counters(m.group(1))
+            return
+
+    # -------------------------------------------------------------------------
+    def _incr_smtpd_client_counters(self, client):
+        hour = self._cur_ts.hour
+        self.results.received_messages_per_hour[hour] += 1
+
+        dt_fmt = self.cur_date_fmt()
+        self.results.messages_per_day[dt_fmt][4] += 1
+
+        self.results.messages_received_total += 1
+
+        self._rcvd_msgs_qid[self._cur_qid] = self.gimme_domain(client)
+
     # -------------------------------------------------------------------------
     def _eval_warning_cmd(self):
 
@@ -955,9 +995,7 @@ class PostfixLogParser(object):
             cmd_msg = self.string_trimmer(cmd_msg, do_not_trim=self.detail_verbose_msg)
 
         hour = self._cur_ts.hour
-        if hour not in self.results.reject_messages_per_hour:
-            self.results.reject_messages_per_hour[hour] = 0
-        self.results.reject_messages_per_hour[hour] += 1
+        self.results.rejected_messages_per_hour[hour] += 1
 
         dt_fmt = self.cur_date_fmt()
         self.results.messages_per_day[dt_fmt][4] += 1
@@ -1046,9 +1084,7 @@ class PostfixLogParser(object):
         counter += 1
 
         hour = self._cur_ts.hour
-        if hour not in self.results.reject_messages_per_hour:
-            self.results.reject_messages_per_hour[hour] = 0
-        self.results.reject_messages_per_hour[hour] += 1
+        self.results.rejected_messages_per_hour[hour] += 1
 
         dt_fmt = self.cur_date_fmt()
         self.results.messages_per_day[dt_fmt][4] += 1
