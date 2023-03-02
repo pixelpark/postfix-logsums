@@ -765,7 +765,7 @@ class PostfixLogParser(object):
         else:
             LOG.debug("Did not found Postfix command and QID from: {}".format(self._cur_msg))
             return
-        if self.verbose > 4:
+        if self.verbose > 3:
             LOG.debug("Postfix command {cmd!r}, qid {qid!r}, message: {msg}".format(
                 cmd=self._cur_pf_command, qid=self._cur_qid, msg=self._cur_msg))
 
@@ -926,6 +926,9 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def eval_smtpd_msg(self):
         """Analyzing messages from smtpd."""
+        if self.verbose > 2:
+            LOG.debug("Evaluating 'smtpd' command message.")
+
         m = self.re_smtpd_client.search(self._cur_msg)
         if m:
             self._incr_smtpd_client_counters(m.group(1))
@@ -989,6 +992,8 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def _eval_cleanup_cmd(self, subtype, part, cmd_msg):
+        if self.verbose > 2:
+            LOG.debug("Evaluating 'cleanup' command message.")
 
         if not self.detail_verbose_msg:
             cmd_msg = self.re_clean_from.sub('', cmd_msg)
