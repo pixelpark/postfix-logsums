@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.7'
+__version__ = '0.4.8'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1198,6 +1198,8 @@ class PostfixLogParser(object):
         self.results.rejected_messages_per_hour[hour] += 1
 
         dt_fmt = self.cur_date_fmt()
+        if dt_fmt not in self.results.messages_per_day:
+            self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
         self.results.messages_per_day[dt_fmt][4] += 1
 
         if not self.detail_reject:
@@ -1243,21 +1245,24 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def _incr_reject_counter(self, rtype, reason, rdata):
 
-        if rtype not in self.result.rejects:
-            self.result.rejects[rtype] = {}
+        if rtype not in self.results.rejects:
+            self.results.rejects[rtype] = {}
 
-        if reason not in self.result.rejects[rtype]:
-            self.result.rejects[rtype][reason] = {}
+        if reason not in self.results.rejects[rtype]:
+            self.results.rejects[rtype][reason] = {}
 
-        if rdata not in self.result.rejects[rtype][reason]:
-            self.result.rejects[rtype][reason][rdata] = 0
+        if rdata not in self.results.rejects[rtype][reason]:
+            self.results.rejects[rtype][reason][rdata] = 0
 
-        self.result.rejects[rtype][reason][rdata] += 1
+        self.results.rejects[rtype][reason][rdata] += 1
 
     # -------------------------------------------------------------------------
     def _eval_reject_msg(self):
 
-        reject = object()
+        class Reject(object):
+            pass
+
+        reject = Reject()
 
         m = self.re_reject.match(self._cur_msg)
         if not m:
@@ -1295,7 +1300,7 @@ class PostfixLogParser(object):
             reject.to = reject.to.lower()
 
         reject.sender = '<>'
-        m = self.re_rej_from(reject.rest)
+        m = self.re_rej_from.search(reject.rest)
         if m:
             reject.sender = self.do_verp_mung(m.group(1))
             if self.ignore_case:
