@@ -147,6 +147,10 @@ class PostfixLogSums(object):
         self.fatals = {}
         self.panics = {}
         self.master_msgs = {}
+        self.message_details = {}
+        self.sender_domain_count = 0
+        self.sending_domain_data = {}
+        self.sending_user_data = {}
 
         for hour in range(0, 24):
             self.received_messages_per_hour.append(0)
@@ -242,7 +246,7 @@ class PostfixLogParser(object):
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             zero_fill=False, detail_verbose_msg=False, detail_reject=True,
             detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
-            smtpd_stats=False,
+            smtpd_stats=False, extended=False,
             verp_mung=None, compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -257,6 +261,7 @@ class PostfixLogParser(object):
         self._detail_reject = True
         self._detail_smtpd_warning = True
         self._ignore_case = False
+        self._extended = False
         self._rej_add_from = False
         self._smtpd_stats = False
         self._verp_mung = None
@@ -274,6 +279,7 @@ class PostfixLogParser(object):
 
         self._rcvd_msgs_qid = {}
         self._connection_times = {}
+        self._message_size = {}
 
         if day:
             t_diff = datetime.timedelta(days=1)
@@ -300,6 +306,7 @@ class PostfixLogParser(object):
         self.detail_verbose_msg = detail_verbose_msg
         self.detail_reject = detail_reject
         self.detail_smtpd_warning = detail_smtpd_warning
+        self.extended = extended
         self.ignore_case = ignore_case
         self.rej_add_from = rej_add_from
         self.smtpd_stats = smtpd_stats
@@ -379,6 +386,10 @@ class PostfixLogParser(object):
         self.re_smtpd_disconnect = re.compile(r': disconnect from ')
         self.re_smtpd_pid = re.compile(r'\/smtpd\[(\d+)\]: ')
         self.re_smtpd_pid_disconnect = re.compile(r'\/smtpd\[(\d+)\]: disconnect from (.+)$')
+
+        self.re_from_size = re.compile(r'from=<(?P<from>[^>]*)>, size=(?P<size>\d+)')
+        self.re_domain = re.compile(r'@(.+)')
+        self.re_domain_addr = re.compile(r'^[^@]+\@(.+)$')
 
         if encoding:
             self.encoding = encoding
@@ -538,6 +549,16 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
+    def extended(self):
+        """Extended detail."""
+        return self._extended
+
+    @extended.setter
+    def extended(self, value):
+        self._extended = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
     def rej_add_from(self):
         """For those reject reports that list IP addresses or host/domain names: append the
         email from address to each listing. (Does not apply to 'Improper use of
@@ -626,6 +647,7 @@ class PostfixLogParser(object):
         res['detail_reject'] = self.detail_reject
         res['detail_verbose_msg'] = self.detail_verbose_msg
         res['encoding'] = self.encoding
+        res['extended'] = self.extended
         res['ignore_case'] = self.ignore_case
         res['initialized'] = self.initialized
         res['detail_smtpd_warning'] = self.detail_smtpd_warning
@@ -1006,7 +1028,6 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
         dt_fmt = self.cur_date_fmt()
 
-
         if self.re_smtpd_connect.search(self._cur_msg):
             m = self.re_smtpd_pid.search(self._cur_msg)
             if m:
@@ -1307,6 +1328,55 @@ class PostfixLogParser(object):
                 reject.sender = reject.sender.lower()
 
         return reject
+
+    # -------------------------------------------------------------------------
+    def eval_other_msasg(self):
+        """Analyzing other messages."""
+        if self.verbose > 3:
+            LOG.debug("Evaluating other message.")
+
+        m = self.re_from_size.search(self._cur_msg)
+        if m:
+            self._eval_message_size(sender=m['from'], size=int(m['size']))
+            return
+
+    # -------------------------------------------------------------------------
+    def _eval_message_size(self, sender, size):
+        if sender:
+            if self.ignore_case:
+                m = self.re_domain.search(sender)
+                if m:
+                    domain = m.group(1).lower()
+                    senderself.re_domain.sub('@' + domain, sender)
+        else:
+            sender = "from=<>"
+
+        qid = self._cur_qid
+        self._message_size[qid] = size
+        if self.extended:
+            if qid not in self.results.message_details:
+                self.results.message_details[qid] = []
+            self.results.message_details[qid].append(sender)
+
+        if qid in self._rcvd_msgs_qid:
+            dom_addr = self.re_domain_addr.sub(r'\1', sender)
+            if dom_addr == sender:
+                if self._rcvd_msgs_qid[qid] != "pickup":
+                    dom_addr = self._rcvd_msgs_qid[qid]
+            if dom_addr not in self.results.sending_domain_data:
+                self.results.sending_domain_data[dom_addr] = {
+                    'count': 0,
+                    'size': 0,
+                    'defers': 0,
+                    'delay_avg': 0,
+                    'delay_max': 0,
+                }
+            if not self.results.sending_domain_data[dom_addr]['count']:
+                self.results.sender_domain_count += 1
+            self.results.sending_domain_data[dom_addr]['count'] += 1
+            self.results.sending_domain_data[dom_addr]['size'] += size
+
+
 
 
 # =============================================================================

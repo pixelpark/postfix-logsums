@@ -144,7 +144,7 @@ class PostfixLogsumsApp(object):
             compression=compression, zero_fill=self.args.zero_fill,
             detail_reject=self.detail_reject, detail_smtpd_warning=self.detail_smtpd_warning,
             ignore_case=self.args.ignore_case, rej_add_from=self.args.rej_add_from,
-            smtpd_stats=self.args.smtpd_stats,
+            smtpd_stats=self.args.smtpd_stats, extended=self.args.extended,
             verp_mung=self.args.verp_mung, detail_verbose_msg=self.detail_verbose_msg)
 
         self._initialized = True
