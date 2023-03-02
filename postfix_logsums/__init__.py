@@ -242,6 +242,7 @@ class PostfixLogParser(object):
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             zero_fill=False, detail_verbose_msg=False, detail_reject=True,
             detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
+            smtpd_stats=False,
             verp_mung=None, compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -257,6 +258,7 @@ class PostfixLogParser(object):
         self._detail_smtpd_warning = True
         self._ignore_case = False
         self._rej_add_from = False
+        self._smtpd_stats = False
         self._verp_mung = None
 
         self._cur_ts = None
@@ -300,6 +302,7 @@ class PostfixLogParser(object):
         self.detail_smtpd_warning = detail_smtpd_warning
         self.ignore_case = ignore_case
         self.rej_add_from = rej_add_from
+        self.smtpd_stats = smtpd_stats
         self.verp_mung = verp_mung
 
         pattern_date = r'^(?P<month_str>...) {1,2}(?P<day>\d{1,2}) '
@@ -562,6 +565,16 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
+    def smtpd_stats(self):
+        """Generate smtpd connection statistics."""
+        return self._smtpd_stats
+
+    @smtpd_stats.setter
+    def smtpd_stats(self, value):
+        self._smtpd_stats = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
     def verp_mung(self):
         """This option causes the entire email address to be lower-cased."""
         return self._verp_mung
@@ -610,18 +623,19 @@ class PostfixLogParser(object):
         res['appname'] = self.appname
         res['compression'] = self.compression
         res['detail_reject'] = self.detail_reject
+        res['detail_verbose_msg'] = self.detail_verbose_msg
         res['encoding'] = self.encoding
         res['ignore_case'] = self.ignore_case
         res['initialized'] = self.initialized
         res['detail_smtpd_warning'] = self.detail_smtpd_warning
         res['rej_add_from'] = self.rej_add_from
         res['results'] = self.results.as_dict(short=short)
+        res['smtpd_stats'] = self.smtpd_stats
         res['syslog_name'] = self.syslog_name
         res['this_month'] = self.this_month
         res['this_year'] = self.this_year
         res['today'] = self.today
         res['verbose'] = self.verbose
-        res['detail_verbose_msg'] = self.detail_verbose_msg
         res['verp_mung'] = self.verp_mung
         res['zero_fill'] = self.zero_fill
 
@@ -961,6 +975,9 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def _eval_smtpd_connections(self):
+        if not self.smtpd_stats:
+            return
+
         hour = self._cur_ts.hour
         dt_fmt = self.cur_date_fmt()
 

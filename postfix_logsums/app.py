@@ -144,6 +144,7 @@ class PostfixLogsumsApp(object):
             compression=compression, zero_fill=self.args.zero_fill,
             detail_reject=self.detail_reject, detail_smtpd_warning=self.detail_smtpd_warning,
             ignore_case=self.args.ignore_case, rej_add_from=self.args.rej_add_from,
+            smtpd_stats=self.args.smtpd_stats,
             verp_mung=self.args.verp_mung, detail_verbose_msg=self.detail_verbose_msg)
 
         self._initialized = True
@@ -461,7 +462,7 @@ class PostfixLogsumsApp(object):
             'reports: "per-hour" numbers are daily averages (reflected in the report '
             'heading).', arg_width)
         logfile_group.add_argument(
-            '--smtpd-stats', dest='smtps_stats', action="store_true", help=desc)
+            '--smtpd-stats', dest='smtpd_stats', action="store_true", help=desc)
 
         # --verp-mung
         desc = self.wrap_msg(
@@ -757,7 +758,8 @@ class PostfixLogsumsApp(object):
 
         self.parser.parse(*self.args.logfiles)
 
-        LOG.info('Result of parsing:' + '\n' + pp(self.parser.results.as_dict()))
+        if self.verbose > 1:
+            LOG.info('Result of parsing:' + '\n' + pp(self.parser.results.as_dict()))
 
 
 # =============================================================================
