@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -404,7 +404,9 @@ class PostfixLogSums(object):
         self.message_details = {}
         self.sender_domain_count = 0
         self.sending_domain_data = {}
+        self.sending_user_count = 0
         self.sending_user_data = {}
+        self.received_size = 0
 
         for hour in range(0, 24):
             self.received_messages_per_hour.append(0)
@@ -1225,6 +1227,8 @@ class PostfixLogParser(object):
             self.eval_smtpd_msg()
             return
 
+        self.eval_other_msg()
+
     # -------------------------------------------------------------------------
     def eval_smtpd_msg(self):
         """Analyzing messages from smtpd."""
@@ -1584,7 +1588,7 @@ class PostfixLogParser(object):
         return reject
 
     # -------------------------------------------------------------------------
-    def eval_other_msasg(self):
+    def eval_other_msg(self):
         """Analyzing other messages."""
         if self.verbose > 3:
             LOG.debug("Evaluating other message.")
@@ -1596,16 +1600,19 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def _eval_message_size(self, sender, size):
+        qid = self._cur_qid
+        if qid in self._message_size:
+            return
+
         if sender:
             if self.ignore_case:
                 m = self.re_domain.search(sender)
                 if m:
                     domain = m.group(1).lower()
-                    senderself.re_domain.sub('@' + domain, sender)
+                    sender = self.re_domain.sub('@' + domain, sender)
         else:
             sender = "from=<>"
 
-        qid = self._cur_qid
         self._message_size[qid] = size
         if self.extended:
             if qid not in self.results.message_details:
@@ -1613,6 +1620,7 @@ class PostfixLogParser(object):
             self.results.message_details[qid].append(sender)
 
         if qid in self._rcvd_msgs_qid:
+
             dom_addr = self.re_domain_addr.sub(r'\1', sender)
             if dom_addr == sender:
                 if self._rcvd_msgs_qid[qid] != "pickup":
@@ -1624,7 +1632,15 @@ class PostfixLogParser(object):
             self.results.sending_domain_data[dom_addr].count += 1
             self.results.sending_domain_data[dom_addr].size += size
 
+            if sender not in self.results.sending_user_data:
+                self.results.sending_user_data[sender] = MessageStats()
+            if not self.results.sending_user_data[sender].count:
+                self.sending_user_count += 1
+            self.results.sending_user_data[sender].count += 1
+            self.results.sending_user_data[sender].size += size
+            self.results.received_size += size
 
+            del self._rcvd_msgs_qid[qid]
 
 
 # =============================================================================
