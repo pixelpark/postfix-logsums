@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -646,6 +646,12 @@ class PostfixLogParser(object):
         self.re_from_size = re.compile(r'from=<(?P<from>[^>]*)>, size=(?P<size>\d+)')
         self.re_domain = re.compile(r'@(.+)')
         self.re_domain_addr = re.compile(r'^[^@]+\@(.+)$')
+        self.re_domain_only = re.compile(r'^[^@]+\@')
+
+        pat_relay = r'to=<(?P<to>[^>]*)>, (?:orig_to=<[^>]*>, )?relay=(?P<relay>[^,]+), '
+        pat_relay += r'(?:conn_use=[^,]+, )?delay=(?P<delay>[^,]+), '
+        pat_relay += r'(?:delays=[^,]+, )?(?:dsn=[^,]+, )?status=(?P<status>\S+)(?P<rest>.*)$'
+        self.re_relay = re.compile(pat_relay)
 
         if encoding:
             self.encoding = encoding
@@ -1598,6 +1604,12 @@ class PostfixLogParser(object):
             self._eval_message_size(sender=m['from'], size=int(m['size']))
             return
 
+        m = self.re_relay.search(self._cur_msg)
+        if m:
+            self._eval_relayed_msg(
+                addr=m['to'], relay=m['relay'], delay=m['delay'],
+                status=['status'], rest=m['rest'])
+
     # -------------------------------------------------------------------------
     def _eval_message_size(self, sender, size):
         qid = self._cur_qid
@@ -1606,6 +1618,8 @@ class PostfixLogParser(object):
 
         if sender:
             if self.ignore_case:
+                sender = sender.lower()
+            else:
                 m = self.re_domain.search(sender)
                 if m:
                     domain = m.group(1).lower()
@@ -1642,6 +1656,24 @@ class PostfixLogParser(object):
 
             del self._rcvd_msgs_qid[qid]
 
+    # -------------------------------------------------------------------------
+    def _eval_relayed_msg(self, addr, relay, delay, status, rest):
+        if self.ignore_case:
+            addr = addr.lower()
+            relay = relay.lower()
+        else:
+            m = self.re_domain.search(addr)
+            if m:
+                domain = m.group(1).lower()
+                addr = self.re_domain.sub('@' + domain, addr)
+
+        domain = self.re_domain_only.sub('', addr)
+
+        if self.verbose > 2:
+            data = {
+                'addr': addr, 'domain': domain, 'relay': relay, 'delay': delay,
+                'status': status, 'rest': rest, }
+            LOG.debug("Processing relaying message: " + pp(data))
 
 # =============================================================================
 
