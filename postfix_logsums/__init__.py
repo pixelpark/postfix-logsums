@@ -21,6 +21,11 @@ import bz2
 import lzma
 import logging
 
+try:
+    from collections.abc import Mapping
+except ImportError:
+    from collections import MutableMapping, Mapping
+
 __version__ = '0.5.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
@@ -76,13 +81,6 @@ def to_utf8(obj):
 
 
 # =============================================================================
-class PostfixLogsumError(Exception):
-    """Base exception class for all exceptions in this package."""
-
-    pass
-
-
-# =============================================================================
 def get_generic_appname(appname=None):
     """Evaluate the current application name."""
     if appname:
@@ -95,17 +93,69 @@ def get_generic_appname(appname=None):
 
 
 # =============================================================================
-class MessageStats(object):
-    """A class for encapsulating message statistics."""
+class PostfixLogsumsError(Exception):
+    """Base error class for all exceptions in this package."""
+
+    pass
+
+
+# =============================================================================
+class WrongMsgStatsKeyError(PostfixLogsumsError, KeyError):
+    """Error class for a wrong key for the MessageStats object."""
 
     # -------------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self, key):
+        """Initialise a WrongMsgStatsKeyError exception."""
+
+        self.key = key
+        super(WrongMsgStatsKeyError, self).__init__()
+
+    # -------------------------------------------------------------------------
+    def __str__(self):
+        """Typecast into str."""
+        msg = "Invalid key {k!r} for a {w} object."
+        return msg.format(k=self.key, w='MessageStats'))
+
+
+# =============================================================================
+class MessageStats(MutableMapping):
+    """A class for encapsulating message statistics."""
+
+    valid_keys = ('count', 'size', 'defers', 'delay_avg', 'delay_max')
+
+    # -------------------------------------------------------------------------
+    def __init__(self, first_param=None, **kwargs):
         """Constructor."""
         self._count = 0
         self._size = 0
         self._defers = 0
         self._delay_avg = 0
         self._delay_max = 0
+
+        if first_param is not None:
+
+            # LOG.debug("First parameter type {t!r}: {p!r}".format(
+            #     t=type(first_param), p=first_param))
+
+            if isinstance(first_param, Mapping):
+                self._update_from_mapping(first_param)
+            elif first_param.__class__.__name__ == 'zip':
+                self._update_from_mapping(dict(first_param))
+            else:
+                msg = "Object is not a {m} object, but a {w} object instead.".format(
+                    m='Mapping', w=first_param.__class__.__qualname__)
+                raise PostfixLogsumsError(msg)
+
+        if kwargs:
+            self._update_from_mapping(kwargs)
+
+    # -------------------------------------------------------------------------
+    def _update_from_mapping(self, mapping):
+
+        for key in mapping.keys():
+            if key not in self.valid_keys:
+                raise WrongMsgStatsKeyError(key)
+            setattr(self, key, mapping[key])
 
     # -----------------------------------------------------------
     @property
@@ -178,10 +228,12 @@ class MessageStats(object):
             LOG.warning("Wrong delay_max {!r}, must be >= 0".format(value))
 
     # -----------------------------------------------------------
-    def as_dict(self):
+    def as_dict(self, pure=False):
         """Transforms the elements of the object into a dict."""
 
         res = {}
+        if not pure:
+            res['__class_name__'] = self.__class__.__name__
         res['size'] = self.count
         res['count'] = self.size
         res['defers'] = self.defers
@@ -189,6 +241,111 @@ class MessageStats(object):
         res['delay_max'] = self.delay_max
 
         return res
+
+    # -------------------------------------------------------------------------
+    def dict(self):
+        """Typecast into a regular dict."""
+        return self.as_dict(pure=True)
+
+    # -----------------------------------------------------------
+    def __repr__(self):
+        """Typecast for reproduction."""
+        return self.dict()
+
+    # -------------------------------------------------------------------------
+    def __copy__(self):
+        """Return a copy of the current set."""
+        return self.__class__(self.dict())
+
+    # -------------------------------------------------------------------------
+    def copy(self):
+        """Return a copy of the current set."""
+        return self.__copy__()
+
+    # -------------------------------------------------------------------------
+    def _get_item(self, key):
+        """Return an arbitrary item by the key."""
+        if key not in self.valid_keys:
+            raise WrongMsgStatsKeyError(key)
+
+        return getattr(self, key, 0)
+
+    # -------------------------------------------------------------------------
+    def get(self, key):
+        """Return an arbitrary item by the key."""
+        return self._get_item(key)
+
+    # -------------------------------------------------------------------------
+    # The next four methods are requirements of the ABC.
+
+    # -------------------------------------------------------------------------
+    def __getitem__(self, key):
+        """Return an arbitrary item by the key."""
+        return self._get_item(key)
+
+    # -------------------------------------------------------------------------
+    def __iter__(self):
+        """Return an iterator over all keys."""
+        for key in self.keys():
+            yield key
+
+    # -------------------------------------------------------------------------
+    def __len__(self):
+        """Return the the nuber of entries (keys) in this dict."""
+        return 4
+
+    # -------------------------------------------------------------------------
+    def __contains__(self, key):
+        """Return, whether the given key exists(the 'in'-operator)."""
+        if key in self.valid_keys:
+            return True
+        return False
+
+    # -------------------------------------------------------------------------
+    def keys(self):
+        """Return a list with all keys in original notation."""
+        return copy.copy(self.valid_keys)
+
+    # -------------------------------------------------------------------------
+    def items(self):
+        """Return a list of all items of the current dict.
+
+        An item is a tuple, with the key in original notation and the value.
+        """
+        item_list = []
+
+        for key in sorted(self.keys()):
+            value = self.get(key)
+            item_list.append((key, value))
+
+        return item_list
+
+    # -------------------------------------------------------------------------
+    def values(self):
+        """Return a list with all values of the current dict."""
+        return list(map(lambda x: self.get(x), self.keys()))
+
+    # -------------------------------------------------------------------------
+    def __setitem__(self, key, value):
+        """Set the value of the given key."""
+        if key not in self.valid_keys:
+            raise WrongMsgStatsKeyError(key)
+
+        setattr(self, key, value)
+
+    # -------------------------------------------------------------------------
+    def set(self, key, value):
+        """Set the value of the given key."""
+        self[key] = value
+
+    # -------------------------------------------------------------------------
+    def __delitem__(self, key):
+        """Should delete the entry on the given key.
+        But in real the value if this key set to zero instead."""
+        if key not in self.valid_keys:
+            raise WrongMsgStatsKeyError(key)
+
+        setattr(self, key, 0)
 
 
 # =============================================================================
@@ -386,7 +543,7 @@ class PostfixLogParser(object):
             elif day != 'today':
                 msg = "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.".format(
                     d=day, n='None', y='yesterday', t='today')
-                raise PostfixLogsumError(msg)
+                raise PostfixLogsumsError(msg)
             filter_pattern = r"^{m} {d:02d}\s".format(
                 m=self.month_names[used_date.month - 1], d=used_date.day)
             self.re_date_filter = re.compile(filter_pattern, re.IGNORECASE)
@@ -582,7 +739,7 @@ class PostfixLogParser(object):
         v = str(value).strip().lower()
         if v not in self.valid_compressions:
             msg = "Invalid compression {!r} given.".format(value)
-            raise PostfixLogsumError(msg)
+            raise PostfixLogsumsError(msg)
         if v == 'xz':
             self._compression = 'lzma'
         else:
@@ -1461,17 +1618,11 @@ class PostfixLogParser(object):
                 if self._rcvd_msgs_qid[qid] != "pickup":
                     dom_addr = self._rcvd_msgs_qid[qid]
             if dom_addr not in self.results.sending_domain_data:
-                self.results.sending_domain_data[dom_addr] = {
-                    'count': 0,
-                    'size': 0,
-                    'defers': 0,
-                    'delay_avg': 0,
-                    'delay_max': 0,
-                }
-            if not self.results.sending_domain_data[dom_addr]['count']:
+                self.results.sending_domain_data[dom_addr] = MessageStats()
+            if not self.results.sending_domain_data[dom_addr].count:
                 self.results.sender_domain_count += 1
-            self.results.sending_domain_data[dom_addr]['count'] += 1
-            self.results.sending_domain_data[dom_addr]['size'] += size
+            self.results.sending_domain_data[dom_addr].count += 1
+            self.results.sending_domain_data[dom_addr].size += size
 
 
 
