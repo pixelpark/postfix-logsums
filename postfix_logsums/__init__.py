@@ -1004,7 +1004,7 @@ class PostfixLogParser(object):
     def read_gzip(self, cdata):
 
         bdata = gzip.decompress(cdata)
-        data = bdata.decode(self.encoding)
+        data = bdata.decode(self.encoding, errors='surrogateescape')
 
         for line in data.splitlines():
             self.eval_line(line)
@@ -1013,7 +1013,7 @@ class PostfixLogParser(object):
     def read_bzip2(self, cdata):
 
         bdata = bz2.decompress(cdata)
-        data = bdata.decode(self.encoding)
+        data = bdata.decode(self.encoding, errors='surrogateescape')
 
         for line in data.splitlines():
             self.eval_line(line)
@@ -1022,7 +1022,7 @@ class PostfixLogParser(object):
     def read_lzma(self, cdata):
 
         bdata = lzma.decompress(cdata)
-        data = bdata.decode(self.encoding)
+        data = bdata.decode(self.encoding, errors='surrogateescape')
 
         for line in data.splitlines():
             self.eval_line(line)
@@ -1568,11 +1568,11 @@ class PostfixLogParser(object):
         if m:
             reject.to = m.group(1)
         else:
-            m = self.re_rej_to2(reject.rest)
+            m = self.re_rej_to2.search(reject.rest)
             if m:
                 reject.to = m.group(1)
             else:
-                m = self.re_rej_to3(reject.rest)
+                m = self.re_rej_to3.search(reject.rest)
                 if m:
                     reject.to = m.group(1)
         if self.ignore_case:
