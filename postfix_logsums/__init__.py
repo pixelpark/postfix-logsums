@@ -250,7 +250,15 @@ class MessageStats(MutableMapping):
     # -----------------------------------------------------------
     def __repr__(self):
         """Typecast for reproduction."""
-        return self.dict()
+        ret = "{}({{".format(self.__class__.__name__)
+        kargs = []
+        for pair in self.items():
+            arg = "{k!r}: {v!r}".format(k=pair[0], v=pair[1])
+            kargs.append(arg)
+        ret += ', '.join(kargs)
+        ret += '})'
+
+        return ret
 
     # -------------------------------------------------------------------------
     def __copy__(self):
@@ -407,6 +415,11 @@ class PostfixLogSums(object):
         self.sending_user_count = 0
         self.sending_user_data = {}
         self.received_size = 0
+        self.messages_forwarded = 0
+        self.rcpt_domain = {}
+        self.rcpt_domain_count = 0
+        self.rcpt_user = {}
+        self.rcpt_user_count = 0
 
         for hour in range(0, 24):
             self.received_messages_per_hour.append(0)
@@ -652,6 +665,8 @@ class PostfixLogParser(object):
         pat_relay += r'(?:conn_use=[^,]+, )?delay=(?P<delay>[^,]+), '
         pat_relay += r'(?:delays=[^,]+, )?(?:dsn=[^,]+, )?status=(?P<status>\S+)(?P<rest>.*)$'
         self.re_relay = re.compile(pat_relay)
+
+        self.re_forwarded_as = re.compile(r'forwarded as ')
 
         if encoding:
             self.encoding = encoding
@@ -1607,8 +1622,8 @@ class PostfixLogParser(object):
         m = self.re_relay.search(self._cur_msg)
         if m:
             self._eval_relayed_msg(
-                addr=m['to'], relay=m['relay'], delay=m['delay'],
-                status=['status'], rest=m['rest'])
+                addr=m['to'], relay=m['relay'], delay=float(m['delay']),
+                status=m['status'], rest=m['rest'])
 
     # -------------------------------------------------------------------------
     def _eval_message_size(self, sender, size):
@@ -1673,7 +1688,31 @@ class PostfixLogParser(object):
             data = {
                 'addr': addr, 'domain': domain, 'relay': relay, 'delay': delay,
                 'status': status, 'rest': rest, }
-            LOG.debug("Processing relaying message: " + pp(data))
+            LOG.debug("Processing relaying message:\n" + pp(data))
+
+        if status == 'sent':
+            self._eval_relay_sent_msg(addr, domain, relay, delay, rest)
+            return
+
+    # -------------------------------------------------------------------------
+    def _eval_relay_sent_msg(self, addr, domain, relay, delay, rest):
+        if self.re_forwarded_as.search(rest):
+            self.results.messages_forwarded += 1
+            return
+
+        if domain not in self.results.rcpt_domain:
+            self.results.rcpt_domain[domain] = MessageStats()
+            self.results.rcpt_domain_count += 1
+        self.results.rcpt_domain[domain].count += 1
+        self.results.rcpt_domain[domain].delay_avg += delay
+        if delay > self.results.rcpt_domain[domain].delay_max:
+            self.results.rcpt_domain[domain].delay_max = delay
+
+        if addr not in self.results.rcpt_user:
+            self.results.rcpt_user[addr] = MessageStats()
+            self.results.rcpt_user_count += 1
+        self.results.rcpt_user[addr].count += 1
+
 
 # =============================================================================
 
