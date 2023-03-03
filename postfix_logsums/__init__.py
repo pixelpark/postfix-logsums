@@ -21,7 +21,7 @@ import bz2
 import lzma
 import logging
 
-__version__ = '0.4.8'
+__version__ = '0.5.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -92,6 +92,103 @@ def get_generic_appname(appname=None):
     aname = sys.argv[0]
     aname = re.sub(r'\.py$', '', aname, flags=re.IGNORECASE)
     return os.path.basename(aname)
+
+
+# =============================================================================
+class MessageStats(object):
+    """A class for encapsulating message statistics."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self):
+        """Constructor."""
+        self._count = 0
+        self._size = 0
+        self._defers = 0
+        self._delay_avg = 0
+        self._delay_max = 0
+
+    # -----------------------------------------------------------
+    @property
+    def count(self):
+        """The count of messages."""
+        return getattr(self, '_count', 0)
+
+    @count.setter
+    def count(self, value):
+        v = int(value)
+        if v >= 0:
+            self._count = v
+        else:
+            LOG.warning("Wrong count {!r}, must be >= 0".format(value))
+
+    # -----------------------------------------------------------
+    @property
+    def size(self):
+        """The accumulated size of messages."""
+        return getattr(self, '_size', 0)
+
+    @size.setter
+    def size(self, value):
+        v = int(value)
+        if v >= 0:
+            self._size = v
+        else:
+            LOG.warning("Wrong size {!r}, must be >= 0".format(value))
+
+    # -----------------------------------------------------------
+    @property
+    def defers(self):
+        """The number of defered messages."""
+        return getattr(self, '_defers', 0)
+
+    @defers.setter
+    def defers(self, value):
+        v = int(value)
+        if v >= 0:
+            self._defers = v
+        else:
+            LOG.warning("Wrong defers {!r}, must be >= 0".format(value))
+
+    # -----------------------------------------------------------
+    @property
+    def delay_avg(self):
+        """The total of delays (used for averaging)."""
+        return getattr(self, '_delay_avg', 0)
+
+    @delay_avg.setter
+    def delay_avg(self, value):
+        v = int(value)
+        if v >= 0:
+            self._delay_avg = v
+        else:
+            LOG.warning("Wrong delay_avg {!r}, must be >= 0".format(value))
+
+    # -----------------------------------------------------------
+    @property
+    def delay_max(self):
+        """The maximum delay."""
+        return getattr(self, '_delay_max', 0)
+
+    @delay_max.setter
+    def delay_max(self, value):
+        v = int(value)
+        if v >= 0:
+            self._delay_max = v
+        else:
+            LOG.warning("Wrong delay_max {!r}, must be >= 0".format(value))
+
+    # -----------------------------------------------------------
+    def as_dict(self):
+        """Transforms the elements of the object into a dict."""
+
+        res = {}
+        res['size'] = self.count
+        res['count'] = self.size
+        res['defers'] = self.defers
+        res['delay_avg'] = self.delay_avg
+        res['delay_max'] = self.delay_max
+
+        return res
 
 
 # =============================================================================
