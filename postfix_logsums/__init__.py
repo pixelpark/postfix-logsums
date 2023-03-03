@@ -22,11 +22,11 @@ import lzma
 import logging
 
 try:
-    from collections.abc import Mapping
+    from collections.abc import MutableMapping, Mapping
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -114,7 +114,7 @@ class WrongMsgStatsKeyError(PostfixLogsumsError, KeyError):
     def __str__(self):
         """Typecast into str."""
         msg = "Invalid key {k!r} for a {w} object."
-        return msg.format(k=self.key, w='MessageStats'))
+        return msg.format(k=self.key, w='MessageStats')
 
 
 # =============================================================================
