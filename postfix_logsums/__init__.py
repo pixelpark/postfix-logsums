@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.3'
+__version__ = '0.5.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -368,24 +368,26 @@ class PostfixLogSums(object):
     # -------------------------------------------------------------------------
     def reset(self):
         """Resetting all counters and result structs."""
-        self.amavis_msgs = 0
-        self.lines_total = 0
-        self.lines_considered = 0
-        self.days_counted = 0
-        self.messages_received_total = 0
         self._files_index = None
-        self.files = []
-        self.messages_per_day = {}
-        self.smtpd_per_day = {}
-        self.smtpd_per_domain = {}
-        self.connections_total = 0
-        self.connections_time = 0
-        self.received_messages_per_hour = []
-        self.rejected_messages_per_hour = []
-        self.delivered_messages_per_hour = []
-        self.defered_messages_per_hour = []
+        self.amavis_msgs = 0
         self.bounced_messages_per_hour = []
-        self.smtpd_messages_per_hour = []
+        self.connections_time = 0
+        self.connections_total = 0
+        self.days_counted = 0
+        self.defered_messages_per_hour = []
+        self.delivered_messages_per_hour = []
+        self.discards = {
+            'cleanup': {},
+        }
+        self.fatals = {}
+        self.files = []
+        self.holds = {
+            'cleanup': {},
+        }
+        self.lines_considered = 0
+        self.lines_total = 0
+        self.master_msgs = {}
+        self.message_details = {}
         self.messages = {
             'discard': 0,
             'hold': 0,
@@ -393,33 +395,32 @@ class PostfixLogSums(object):
             'rejected': 0,
             'warning': 0,
         }
-        self.rejects = {
-            'cleanup': {},
-        }
-        self.warns = {
-            'cleanup': {},
-        }
-        self.holds = {
-            'cleanup': {},
-        }
-        self.discards = {
-            'cleanup': {},
-        }
-        self.warnings = {}
-        self.fatals = {}
-        self.panics = {}
-        self.master_msgs = {}
-        self.message_details = {}
-        self.sender_domain_count = 0
-        self.sending_domain_data = {}
-        self.sending_user_count = 0
-        self.sending_user_data = {}
-        self.received_size = 0
+        self.messages_delivered = 0
         self.messages_forwarded = 0
+        self.messages_per_day = {}
+        self.messages_received_total = 0
+        self.panics = {}
         self.rcpt_domain = {}
         self.rcpt_domain_count = 0
         self.rcpt_user = {}
         self.rcpt_user_count = 0
+        self.received_messages_per_hour = []
+        self.received_size = 0
+        self.rejected_messages_per_hour = []
+        self.rejects = {
+            'cleanup': {},
+        }
+        self.sender_domain_count = 0
+        self.sending_domain_data = {}
+        self.sending_user_count = 0
+        self.sending_user_data = {}
+        self.smtpd_per_day = {}
+        self.smtpd_per_domain = {}
+        self.smtpd_messages_per_hour = []
+        self.warnings = {}
+        self.warns = {
+            'cleanup': {},
+        }
 
         for hour in range(0, 24):
             self.received_messages_per_hour.append(0)
@@ -1075,9 +1076,7 @@ class PostfixLogParser(object):
             self.last_date = current_date
             self.results.days_counted += 1
             if self.zero_fill:
-                dt_fmt = self.cur_date_fmt()
-                if dt_fmt not in self.results.messages_per_day:
-                    self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
+                self.incr_msgs_per_day()
 
         if self.re_amavis.match(self._cur_msg):
             self.results.amavis_msgs += 1
@@ -1104,6 +1103,18 @@ class PostfixLogParser(object):
         if not self._cur_ts:
             return None
         return self._cur_ts.strftime('%Y-%m-%d')
+
+    # -------------------------------------------------------------------------
+    def incr_msgs_per_day(self, index=None):
+
+        dt_fmt = self.cur_date_fmt()
+        if dt_fmt not in self.results.messages_per_day:
+            self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
+
+        if index is None:
+            return
+
+        self.results.messages_per_day[dt_fmt][index] += 1
 
     # -------------------------------------------------------------------------
     def _eval_msg_ts(self, line):
@@ -1270,15 +1281,20 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def _incr_smtpd_client_counters(self, client):
+
+        qid = self._cur_qid
+        doamin = self.gimme_domain(client)
         hour = self._cur_ts.hour
+        if self.verbose > 2:
+            msg = (
+                "Increasing smtpd_client_counters for client {c!r}, domain {d!r} and "
+                "qid {q!r}.").format(c=client, d=doamin, q=qid)
+            LOG.debug(msg)
+
         self.results.received_messages_per_hour[hour] += 1
-
-        dt_fmt = self.cur_date_fmt()
-        self.results.messages_per_day[dt_fmt][4] += 1
-
+        self.incr_msgs_per_day(4)
         self.results.messages_received_total += 1
-
-        self._rcvd_msgs_qid[self._cur_qid] = self.gimme_domain(client)
+        self._rcvd_msgs_qid[qid] = domain
 
     # -------------------------------------------------------------------------
     def _eval_smtpd_rejects(self, sub_type):
@@ -1408,8 +1424,7 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
         self.results.rejected_messages_per_hour[hour] += 1
 
-        dt_fmt = self.cur_date_fmt()
-        self.results.messages_per_day[dt_fmt][4] += 1
+        self.incr_msgs_per_day(4)
 
         if subtype == 'reject':
             self.results.messages['rejected'] += 1
@@ -1497,10 +1512,7 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
         self.results.rejected_messages_per_hour[hour] += 1
 
-        dt_fmt = self.cur_date_fmt()
-        if dt_fmt not in self.results.messages_per_day:
-            self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
-        self.results.messages_per_day[dt_fmt][4] += 1
+        self.incr_msgs_per_day(4)
 
         if not self.detail_reject:
             return
@@ -1616,7 +1628,7 @@ class PostfixLogParser(object):
 
         m = self.re_from_size.search(self._cur_msg)
         if m:
-            self._eval_message_size(sender=m['from'], size=int(m['size']))
+            self._eval_message_size(addr=m['from'], size=int(m['size']))
             return
 
         m = self.re_relay.search(self._cur_msg)
@@ -1626,47 +1638,48 @@ class PostfixLogParser(object):
                 status=m['status'], rest=m['rest'])
 
     # -------------------------------------------------------------------------
-    def _eval_message_size(self, sender, size):
+    def _eval_message_size(self, addr, size):
         qid = self._cur_qid
         if qid in self._message_size:
             return
 
-        if sender:
+        if addr:
             if self.ignore_case:
-                sender = sender.lower()
+                addr = addr.lower()
             else:
-                m = self.re_domain.search(sender)
+                m = self.re_domain.search(addr)
                 if m:
                     domain = m.group(1).lower()
-                    sender = self.re_domain.sub('@' + domain, sender)
+                    addr = self.re_domain.sub('@' + domain, addr)
+            addr = self.do_verp_mung(addr)
         else:
-            sender = "from=<>"
+            addr = "from=<>"
 
         self._message_size[qid] = size
         if self.extended:
             if qid not in self.results.message_details:
                 self.results.message_details[qid] = []
-            self.results.message_details[qid].append(sender)
+            self.results.message_details[qid].append(addr)
 
         if qid in self._rcvd_msgs_qid:
 
-            dom_addr = self.re_domain_addr.sub(r'\1', sender)
-            if dom_addr == sender:
+            dom_addr = self.re_domain_addr.sub(r'\1', addr)
+            if dom_addr == addr:
                 if self._rcvd_msgs_qid[qid] != "pickup":
                     dom_addr = self._rcvd_msgs_qid[qid]
             if dom_addr not in self.results.sending_domain_data:
                 self.results.sending_domain_data[dom_addr] = MessageStats()
             if not self.results.sending_domain_data[dom_addr].count:
-                self.results.sender_domain_count += 1
+                self.results.addr_domain_count += 1
             self.results.sending_domain_data[dom_addr].count += 1
             self.results.sending_domain_data[dom_addr].size += size
 
-            if sender not in self.results.sending_user_data:
-                self.results.sending_user_data[sender] = MessageStats()
-            if not self.results.sending_user_data[sender].count:
+            if addr not in self.results.sending_user_data:
+                self.results.sending_user_data[addr] = MessageStats()
+            if not self.results.sending_user_data[addr].count:
                 self.sending_user_count += 1
-            self.results.sending_user_data[sender].count += 1
-            self.results.sending_user_data[sender].size += size
+            self.results.sending_user_data[addr].count += 1
+            self.results.sending_user_data[addr].size += size
             self.results.received_size += size
 
             del self._rcvd_msgs_qid[qid]
@@ -1713,6 +1726,10 @@ class PostfixLogParser(object):
             self.results.rcpt_user_count += 1
         self.results.rcpt_user[addr].count += 1
 
+        hour = self._cur_ts.hour
+        self.results.delivered_messages_per_hour[hour] += 1
+        self.incr_msgs_per_day(1)
+        self.results.messages_delivered += 1
 
 # =============================================================================
 
