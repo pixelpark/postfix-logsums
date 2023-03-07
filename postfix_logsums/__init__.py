@@ -370,11 +370,14 @@ class PostfixLogSums(object):
         """Resetting all counters and result structs."""
         self._files_index = None
         self.amavis_msgs = 0
+        self.bounced = {}
         self.bounced_messages_per_hour = []
+        self.bounced_total = 0
         self.connections_time = 0
         self.connections_total = 0
         self.days_counted = 0
         self.deferrals_total = 0
+        self.deferred = {}
         self.deferred_messages_per_hour = []
         self.deferred_messages_total = 0
         self.delivered_messages_per_hour = []
@@ -1798,6 +1801,16 @@ class PostfixLogParser(object):
             self._eval_deferred_msg(addr, domain, relay, delay, rest)
             return
 
+        if status == 'bounced':
+            self._eval_bounced_msg(addr, domain, relay, delay, rest)
+            return
+
+        if self.verbose > 1:
+            msg = (
+                "Unhandled message: addr={a!r}, relay={r!r}, delay={d!r}, status={s!r}, "
+                "rest={rst!r}.").format(a=addr, r=relay, d=delay, s=status, rst=rest)
+            LOG.debug(msg)
+
     # -------------------------------------------------------------------------
     def _inc_deferred(self, cmd, reason):
 
@@ -1836,6 +1849,34 @@ class PostfixLogParser(object):
         self.results.rcpt_domain[domain].defers += 1
         if delay > self.results.rcpt_domain[domain].delay_max:
             self.results.rcpt_domain[domain].delay_max = delay
+
+    # -------------------------------------------------------------------------
+    def _inc_bounced(self, relay, reason):
+
+        if relay not in self.results.bounced:
+            self.results.bounced[relay] = {}
+        if reason not in self.results.bounced[relay]:
+            self.results.bounced[relay][reason] = 0
+        self.results.bounced[relay][reason] += 1
+
+    # -------------------------------------------------------------------------
+    def _eval_bounced_msg(self, addr, domain, relay, delay, rest):
+
+        qid = self._cur_qid
+        hour = self._cur_ts.hour
+
+        if self.detail_bounce:
+            m = self.re_bounce_reason.search(rest)
+            if m:
+                reason = m.group(1)
+                if not self.detail_verbose_msg:
+                    reason = self.said_string_trimmer(reason)
+                    reason = self.re_three_digits_at_start.sub('', reason)
+                self._inc_bounced(relay, reason)
+
+        self.results.bounced_messages_per_hour[hour] += 1
+        self.incr_msgs_per_day(3)
+        self.results.bounced_total += 1
 
     # -------------------------------------------------------------------------
     def _eval_relay_sent_msg(self, addr, domain, relay, delay, rest):
