@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -680,7 +680,7 @@ class PostfixLogParser(object):
 
         self.re_rej_from = re.compile(r'from=<([^>]+)>')
 
-        self.re_smtpd_client = re.compile(r'\[\d+\]: \w+: client=(.+?)(,|$)/')
+        self.re_smtpd_client = re.compile(r'\[\d+\]: \w+: client=(.+?)(,|$)')
         self.re_smtpd_reject = re.compile(r'\[\d+\]: \w+: (reject(?:_warning)?|hold|discard): ')
         self.re_smtpd_connect = re.compile(r': connect from ')
         self.re_smtpd_disconnect = re.compile(r': disconnect from ')
@@ -1416,7 +1416,7 @@ class PostfixLogParser(object):
     def eval_smtpd_msg(self):
         """Analyzing messages from smtpd."""
         if self.verbose > 3:
-            LOG.debug("Evaluating 'smtpd' command message.")
+            LOG.debug("Evaluating 'smtpd' command message: " + self._cur_msg)
 
         m = self.re_smtpd_client.search(self._cur_msg)
         if m:
