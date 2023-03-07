@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.5'
+__version__ = '0.5.6'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1363,12 +1363,12 @@ class PostfixLogParser(object):
     def _incr_smtpd_client_counters(self, client):
 
         qid = self._cur_qid
-        doamin = self.gimme_domain(client)
+        domain = self.gimme_domain(client)
         hour = self._cur_ts.hour
         if self.verbose > 2:
             msg = (
                 "Increasing smtpd_client_counters for client {c!r}, domain {d!r} and "
-                "qid {q!r}.").format(c=client, d=doamin, q=qid)
+                "qid {q!r}.").format(c=client, d=domain, q=qid)
             LOG.debug(msg)
 
         self.results.received_messages_per_hour[hour] += 1
