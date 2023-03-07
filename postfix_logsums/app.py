@@ -34,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 
 # =============================================================================
@@ -143,6 +143,7 @@ class PostfixLogsumsApp(object):
             appname=self.appname, verbose=self.verbose, day=self.args.day,
             compression=compression, zero_fill=self.args.zero_fill,
             detail_reject=self.detail_reject, detail_smtpd_warning=self.detail_smtpd_warning,
+            detail_bounce=self.detail_bounce, detail_deferral=self.detail_deferral,
             ignore_case=self.args.ignore_case, rej_add_from=self.args.rej_add_from,
             smtpd_stats=self.args.smtpd_stats, extended=self.args.extended,
             verp_mung=self.args.verp_mung, detail_verbose_msg=self.detail_verbose_msg)

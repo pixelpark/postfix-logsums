@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.4'
+__version__ = '0.5.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -374,7 +374,9 @@ class PostfixLogSums(object):
         self.connections_time = 0
         self.connections_total = 0
         self.days_counted = 0
-        self.defered_messages_per_hour = []
+        self.deferrals_total = 0
+        self.deferred_messages_per_hour = []
+        self.deferred_messages_total = 0
         self.delivered_messages_per_hour = []
         self.discards = {
             'cleanup': {},
@@ -399,6 +401,7 @@ class PostfixLogSums(object):
         self.messages_forwarded = 0
         self.messages_per_day = {}
         self.messages_received_total = 0
+        self.no_message_size = {}
         self.panics = {}
         self.rcpt_domain = {}
         self.rcpt_domain_count = 0
@@ -414,6 +417,7 @@ class PostfixLogSums(object):
         self.sending_domain_data = {}
         self.sending_user_count = 0
         self.sending_user_data = {}
+        self.size_delivered = 0
         self.smtpd_per_day = {}
         self.smtpd_per_domain = {}
         self.smtpd_messages_per_hour = []
@@ -426,7 +430,7 @@ class PostfixLogSums(object):
             self.received_messages_per_hour.append(0)
             self.rejected_messages_per_hour.append(0)
             self.delivered_messages_per_hour.append(0)
-            self.defered_messages_per_hour.append(0)
+            self.deferred_messages_per_hour.append(0)
             self.bounced_messages_per_hour.append(0)
             self.smtpd_messages_per_hour.append([0, 0, 0])
 
@@ -515,8 +519,9 @@ class PostfixLogParser(object):
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             zero_fill=False, detail_verbose_msg=False, detail_reject=True,
+            detail_deferral=False, detail_bounce=False,
             detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
-            smtpd_stats=False, extended=False,
+            smtpd_stats=False, extended=False, no_no_message_size=False,
             verp_mung=None, compression=None, encoding=DEFAULT_ENCODING):
         """Constructor."""
 
@@ -529,11 +534,14 @@ class PostfixLogParser(object):
         self._zero_fill = False
         self._detail_verbose_msg = False
         self._detail_reject = True
+        self._detail_deferral = True
+        self._detail_bounce = True
         self._detail_smtpd_warning = True
         self._ignore_case = False
         self._extended = False
         self._rej_add_from = False
         self._smtpd_stats = False
+        self._no_no_message_size = False
         self._verp_mung = None
 
         self._cur_ts = None
@@ -550,6 +558,7 @@ class PostfixLogParser(object):
         self._rcvd_msgs_qid = {}
         self._connection_times = {}
         self._message_size = {}
+        self._message_deferred_qid = {}
 
         if day:
             t_diff = datetime.timedelta(days=1)
@@ -575,10 +584,13 @@ class PostfixLogParser(object):
         self.zero_fill = zero_fill
         self.detail_verbose_msg = detail_verbose_msg
         self.detail_reject = detail_reject
+        self.detail_deferral = detail_deferral
+        self.detail_bounce = detail_bounce
         self.detail_smtpd_warning = detail_smtpd_warning
         self.extended = extended
         self.ignore_case = ignore_case
         self.rej_add_from = rej_add_from
+        self.no_no_message_size = no_no_message_size
         self.smtpd_stats = smtpd_stats
         self.verp_mung = verp_mung
 
@@ -669,6 +681,15 @@ class PostfixLogParser(object):
 
         self.re_forwarded_as = re.compile(r'forwarded as ')
 
+        self.re_defer_reason = re.compile(r', status=deferred \(([^\)]+)')
+        self.re_bounce_reason = re.compile(r', status=bounced \((.+)\)')
+
+        self.re_said = re.compile(r'^.* said: ')
+        self.re_said1 = re.compile(r'^.*: *')
+
+        self.re_three_digits_at_start = re.compile(r'^\d{3} ')
+        self.re_connected_to = re.compile(r'^connect to ')
+
         if encoding:
             self.encoding = encoding
         else:
@@ -696,6 +717,26 @@ class PostfixLogParser(object):
             trimmed = trimmed[0:ml] + '...'
 
         return trimmed
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def said_string_trimmer(cls, message, max_len=None):
+        """Trim a "said:" string, if necessary.  Add elipses to show it."""
+
+        if not max_len:
+            max_len = cls.default_max_trim_length
+
+        while len(message) > max_len:
+            if cls.re_said.match(message):
+                message = cls.re_said.sub('', message)
+            elif cls.re_said1.match(message):
+                message = cls.re_said1.sub('', message)
+            else:
+                ml = max_len - 3
+                message = message[0:ml] + '...'
+                break
+
+        return message
 
     # -----------------------------------------------------------
     @property
@@ -791,6 +832,32 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
+    def detail_bounce(self):
+        """Limit detailed bounce reports."""
+        return self._detail_bounce
+
+    @detail_bounce.setter
+    def detail_bounce(self, value):
+        if value is None:
+            self._detail_bounce = True
+            return
+        self._detail_bounce = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
+    def detail_deferral(self):
+        """Limit detailed deferral reports."""
+        return self._detail_deferral
+
+    @detail_deferral.setter
+    def detail_deferral(self, value):
+        if value is None:
+            self._detail_deferral = True
+            return
+        self._detail_deferral = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
     def detail_reject(self):
         """Display the full reason rather than a truncated deferral, bounce and reject messages."""
         return self._detail_reject
@@ -875,6 +942,16 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     @property
+    def no_no_message_size(self):
+        """Don't report messages without a message size."""
+        return self._no_no_message_size
+
+    @no_no_message_size.setter
+    def no_no_message_size(self, value):
+        self._no_no_message_size = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
     def verp_mung(self):
         """This option causes the entire email address to be lower-cased."""
         return self._verp_mung
@@ -922,13 +999,16 @@ class PostfixLogParser(object):
         res['__class_name__'] = self.__class__.__name__
         res['appname'] = self.appname
         res['compression'] = self.compression
+        res['detail_bounce'] = self.detail_bounce
+        res['detail_deferral'] = self.detail_deferral
         res['detail_reject'] = self.detail_reject
+        res['detail_smtpd_warning'] = self.detail_smtpd_warning
         res['detail_verbose_msg'] = self.detail_verbose_msg
         res['encoding'] = self.encoding
         res['extended'] = self.extended
         res['ignore_case'] = self.ignore_case
         res['initialized'] = self.initialized
-        res['detail_smtpd_warning'] = self.detail_smtpd_warning
+        res['no_no_message_size'] = self.no_no_message_size
         res['rej_add_from'] = self.rej_add_from
         res['results'] = self.results.as_dict(short=short)
         res['smtpd_stats'] = self.smtpd_stats
@@ -1638,6 +1718,16 @@ class PostfixLogParser(object):
                 status=m['status'], rest=m['rest'])
 
     # -------------------------------------------------------------------------
+    def _add_ext_msg_detail(self, qid, addr):
+
+        if not self.extended:
+            return
+
+        if qid not in self.results.message_details:
+            self.results.message_details[qid] = []
+        self.results.message_details[qid].append(addr)
+
+    # -------------------------------------------------------------------------
     def _eval_message_size(self, addr, size):
         qid = self._cur_qid
         if qid in self._message_size:
@@ -1656,10 +1746,7 @@ class PostfixLogParser(object):
             addr = "from=<>"
 
         self._message_size[qid] = size
-        if self.extended:
-            if qid not in self.results.message_details:
-                self.results.message_details[qid] = []
-            self.results.message_details[qid].append(addr)
+        self._add_ext_msg_detail(qid, addr)
 
         if qid in self._rcvd_msgs_qid:
 
@@ -1707,6 +1794,49 @@ class PostfixLogParser(object):
             self._eval_relay_sent_msg(addr, domain, relay, delay, rest)
             return
 
+        if status == 'deferred':
+            self._eval_deferred_msg(addr, domain, relay, delay, rest)
+            return
+
+    # -------------------------------------------------------------------------
+    def _inc_deferred(self, cmd, reason):
+
+        if cmd not in self.results.deferred:
+            self.results.deferred[cmd] = {}
+        if reason not in self.results.deferred[cmd]:
+            self.results.deferred[cmd][reason] = 0
+        self.results.deferred[cmd][reason] += 1
+
+    # -------------------------------------------------------------------------
+    def _eval_deferred_msg(self, addr, domain, relay, delay, rest):
+
+        qid = self._cur_qid
+        hour = self._cur_ts.hour
+
+        if self.detail_deferral:
+            m = self.re_defer_reason.search(rest)
+            if m:
+                reason = m.group(1)
+                if not self.detail_verbose_msg:
+                    reason = self.said_string_trimmer(reason)
+                    reason = self.re_three_digits_at_start.sub('', reason)
+                    reason = self.re_connected_to.sub('', reason)
+                self._inc_deferred(self._cur_pf_command, reason)
+
+        self.results.deferred_messages_per_hour[hour] += 1
+        self.incr_msgs_per_day(2)
+        self.results.deferrals_total += 1
+
+        if qid not in self._message_deferred_qid:
+            self.results.deferred_messages_total += 1
+            self._message_deferred_qid[qid] = 1
+
+        if domain not in self.results.rcpt_domain:
+            self.results.rcpt_domain[domain] = MessageStats()
+        self.results.rcpt_domain[domain].defers += 1
+        if delay > self.results.rcpt_domain[domain].delay_max:
+            self.results.rcpt_domain[domain].delay_max = delay
+
     # -------------------------------------------------------------------------
     def _eval_relay_sent_msg(self, addr, domain, relay, delay, rest):
         if self.re_forwarded_as.search(rest):
@@ -1730,6 +1860,20 @@ class PostfixLogParser(object):
         self.results.delivered_messages_per_hour[hour] += 1
         self.incr_msgs_per_day(1)
         self.results.messages_delivered += 1
+
+        qid = self._cur_qid
+        if qid in self._message_size:
+            size = self._message_size[qid]
+            self.results.rcpt_domain[domain].size += size
+            self.results.rcpt_user[addr].size += size
+            self.results.size_delivered += size
+        else:
+            if not self.no_no_message_size:
+                self.results.no_message_size[qid] = addr
+            self._add_ext_msg_detail(qid, '(sender not in log)')
+
+        self._add_ext_msg_detail(qid, addr)
+
 
 # =============================================================================
 
