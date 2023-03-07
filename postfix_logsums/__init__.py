@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.7'
+__version__ = '0.6.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -381,14 +381,10 @@ class PostfixLogSums(object):
         self.deferred_messages_per_hour = []
         self.deferred_messages_total = 0
         self.delivered_messages_per_hour = []
-        self.discards = {
-            'cleanup': {},
-        }
+        self.discards = {}
         self.fatals = {}
         self.files = []
-        self.holds = {
-            'cleanup': {},
-        }
+        self.holds = {}
         self.lines_considered = 0
         self.lines_total = 0
         self.master_msgs = {}
@@ -406,6 +402,8 @@ class PostfixLogSums(object):
         self.messages_received_total = 0
         self.no_message_size = {}
         self.panics = {}
+        self.postfix_messages = {}
+        self.postfix_script = {}
         self.rcpt_domain = {}
         self.rcpt_domain_count = 0
         self.rcpt_user = {}
@@ -413,21 +411,29 @@ class PostfixLogSums(object):
         self.received_messages_per_hour = []
         self.received_size = 0
         self.rejected_messages_per_hour = []
-        self.rejects = {
-            'cleanup': {},
-        }
+        self.rejects = {}
         self.sender_domain_count = 0
         self.sending_domain_data = {}
         self.sending_user_count = 0
         self.sending_user_data = {}
         self.size_delivered = 0
+        self.smtp_messages = {}
+        self.smtp_connection_details = {
+            'other': {},
+            'trusted': {},
+            'untrusted': {},
+        }
+        self.smtp_connections = {
+            'other': 0,
+            'total': 0,
+            'trusted': 0,
+            'untrusted': 0,
+        }
         self.smtpd_per_day = {}
         self.smtpd_per_domain = {}
         self.smtpd_messages_per_hour = []
         self.warnings = {}
-        self.warns = {
-            'cleanup': {},
-        }
+        self.warns = {}
 
         for hour in range(0, 24):
             self.received_messages_per_hour.append(0)
@@ -525,7 +531,7 @@ class PostfixLogParser(object):
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
             zero_fill=False, detail_verbose_msg=False, detail_reject=True,
-            detail_deferral=False, detail_bounce=False,
+            detail_deferral=False, detail_bounce=False, detail_smtp=True,
             detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
             smtpd_stats=False, extended=False, no_no_message_size=False,
             verp_mung=None, compression=None, encoding=DEFAULT_ENCODING):
@@ -542,6 +548,7 @@ class PostfixLogParser(object):
         self._detail_reject = True
         self._detail_deferral = True
         self._detail_bounce = True
+        self._detail_smtp = True
         self._detail_smtpd_warning = True
         self._ignore_case = False
         self._extended = False
@@ -592,6 +599,7 @@ class PostfixLogParser(object):
         self.detail_reject = detail_reject
         self.detail_deferral = detail_deferral
         self.detail_bounce = detail_bounce
+        self.detail_smtp = detail_smtp
         self.detail_smtpd_warning = detail_smtpd_warning
         self.extended = extended
         self.ignore_case = ignore_case
@@ -621,10 +629,14 @@ class PostfixLogParser(object):
 
         pattern_pf_script = r'^(?P<cmd>(?:postfix)(?:-script)?)(?:\[\d+\])?: (?P<qid>[^:\s]+)'
         self.re_pf_script = re.compile(pattern_pf_script)
+        self.re_pf_message = re.compile(r'^.*postfix\[\d+\]:\s+(\S.*)')
 
         pattern_cmd_cleanup = r'\/cleanup\[\d+\]: .*?\b(?P<subtype>reject|warning|hold|discard): '
         pattern_cmd_cleanup += r'(?P<part>header|body) (?P<cmd_msg>.*)$'
         self.re_cmd_cleanup = re.compile(pattern_cmd_cleanup)
+
+        self.re_removed = re.compile(r' removed(\b|$)')
+        self.re_skipped = re.compile(r' skipped(\b|$)')
 
         self.re_clean_from = re.compile(r'( from \S+?)?; from=<.*$')
         self.re_warning = re.compile(r'^.*warning: ')
@@ -691,7 +703,7 @@ class PostfixLogParser(object):
         self.re_bounce_reason = re.compile(r', status=bounced \((.+)\)')
 
         self.re_three_digits_at_start = re.compile(r'^\d{3} ')
-        self.re_connected_to = re.compile(r'^connect to ')
+        self.re_connect_to = re.compile(r'^connect to ')
 
         self.re_sender_uid = re.compile(r': (sender|uid)=')
 
@@ -699,6 +711,11 @@ class PostfixLogParser(object):
             r'.* connect to (\S+?): ([^;]+); address \S+ port.*$')
         self.re_connected_to_port = re.compile(
             r'.* connect to ([^[]+)\[\S+?\]: (.+?) \(port \d+\)$')
+        self.re_smtp_connect_to = re.compile(r'.* connect to (\S+?): (.+)')
+        self.re_smtp_connect_to_trusted = re.compile(
+            r'.* Trusted TLS connection established to (\S+?): (.+)', re.IGNORECASE)
+        self.re_smtp_connect_to_untrusted = re.compile(
+            r'.* Untrusted TLS connection established to (\S+?): (.+)', re.IGNORECASE)
 
         if encoding:
             self.encoding = encoding
@@ -852,6 +869,19 @@ class PostfixLogParser(object):
             self._detail_bounce = True
             return
         self._detail_bounce = bool(value)
+
+    # -------------------------------------------------------------------------
+    @property
+    def detail_smtp(self):
+        """Limit detailed smtp delivery reports."""
+        return self._detail_smtp
+
+    @detail_smtp.setter
+    def detail_smtp(self, value):
+        if value is None:
+            self._detail_smtp = True
+            return
+        self._detail_smtp = bool(value)
 
     # -------------------------------------------------------------------------
     @property
@@ -1012,6 +1042,7 @@ class PostfixLogParser(object):
         res['detail_bounce'] = self.detail_bounce
         res['detail_deferral'] = self.detail_deferral
         res['detail_reject'] = self.detail_reject
+        res['detail_smtp'] = self.detail_smtp
         res['detail_smtpd_warning'] = self.detail_smtpd_warning
         res['detail_verbose_msg'] = self.detail_verbose_msg
         res['encoding'] = self.encoding
@@ -1306,7 +1337,19 @@ class PostfixLogParser(object):
             m = self.re_cmd_cleanup.search(self._cur_msg)
             if m:
                 self._eval_cleanup_cmd(subtype=m['subtype'], part=m['part'], cmd_msg=m['cmd_msg'])
+            return
+
+        if self._cur_pf_command == 'qmgr':
+            if self.re_removed.search(self._cur_msg) or self.re_skipped.search(self._cur_msg):
                 return
+
+        if self._cur_pf_command == 'postfix-script':
+            self._eval_postfix_script()
+            return
+
+        if self._cur_pf_command == 'postfix':
+            self._eval_postfix_message()
+            return
 
         if self._cur_qid == 'warning':
             self._eval_warning_cmd()
@@ -1350,6 +1393,24 @@ class PostfixLogParser(object):
             return
 
         self.eval_other_msg()
+
+    # -------------------------------------------------------------------------
+    def _eval_postfix_script(self):
+        qid = self._cur_qid
+
+        if qid not in self.results.postfix_script:
+            self.results.postfix_script[qid] = 0
+        self.results.postfix_script[qid] += 1
+
+    # -------------------------------------------------------------------------
+    def _eval_postfix_message(self):
+
+        m = self.re_pf_message.search(self._cur_msg)
+        if m:
+            msg = m.group(1)
+            if msg not in self.results.postfix_messages:
+                self.results.postfix_messages[msg] = 0
+            self.results.postfix_messages[msg] += 1
 
     # -------------------------------------------------------------------------
     def eval_smtpd_msg(self):
@@ -1503,6 +1564,21 @@ class PostfixLogParser(object):
         self.results.panics[cmd][panic_msg] += 1
 
     # -------------------------------------------------------------------------
+    def _incr_cleanup_msg(self, counter_name, part, cmd_msg, cmd='cleanup'):
+
+        if not hasattr(self.results, counter_name):
+            setattr(self.results, counter_name, {})
+        counter = getattr(self.results, counter_name)
+
+        if cmd not in counter:
+            counter[cmd] = {}
+        if part not in counter[cmd]:
+            counter[cmd][part] = {}
+        if cmd_msg not in counter[cmd][part]:
+            counter[cmd][part][cmd_msg] = 0
+        counter[cmd][part][cmd_msg] += 1
+
+    # -------------------------------------------------------------------------
     def _eval_cleanup_cmd(self, subtype, part, cmd_msg):
         if self.verbose > 2:
             LOG.debug("Evaluating 'cleanup' command message.")
@@ -1519,41 +1595,25 @@ class PostfixLogParser(object):
         if subtype == 'reject':
             self.results.messages['rejected'] += 1
             if self.detail_reject:
-                if part not in self.results.rejects['cleanup']:
-                    self.results.rejects['cleanup'][part] = {}
-                if cmd_msg not in self.results.rejects['cleanup'][part]:
-                    self.results.rejects['cleanup'][part][cmd_msg] = 0
-                self.results.rejects['cleanup'][part][cmd_msg] += 1
+                self._incr_cleanup_msg('rejects', part, cmd_msg)
             return
 
         if subtype == 'warning':
             self.results.messages['warning'] += 1
             if self.detail_reject:
-                if part not in self.results.warns['cleanup']:
-                    self.results.warns['cleanup'][part] = {}
-                if cmd_msg not in self.results.warns['cleanup'][part]:
-                    self.results.warns['cleanup'][part][cmd_msg] = 0
-                self.results.warns['cleanup'][part][cmd_msg] += 1
+                self._incr_cleanup_msg('warns', part, cmd_msg)
             return
 
         if subtype == 'hold':
             self.results.messages['hold'] += 1
             if self.detail_reject:
-                if part not in self.results.holds['cleanup']:
-                    self.results.holds['cleanup'][part] = {}
-                if cmd_msg not in self.results.holds['cleanup'][part]:
-                    self.results.holds['cleanup'][part][cmd_msg] = 0
-                self.results.holds['cleanup'][part][cmd_msg] += 1
+                self._incr_cleanup_msg('holds', part, cmd_msg)
             return
 
         if subtype == 'discard':
             self.results.messages['discard'] += 1
             if self.detail_reject:
-                if part not in self.results.discards['cleanup']:
-                    self.results.discards['cleanup'][part] = {}
-                if cmd_msg not in self.results.discards['cleanup'][part]:
-                    self.results.discards['cleanup'][part][cmd_msg] = 0
-                self.results.discards['cleanup'][part][cmd_msg] += 1
+                self._incr_cleanup_msg('discards', part, cmd_msg)
 
     # -------------------------------------------------------------------------
     def do_verp_mung(self, address):
@@ -1732,6 +1792,15 @@ class PostfixLogParser(object):
             self._eval_pickup_msgs()
             return
 
+        if self._cur_pf_command == 'smtp':
+            self._eval_smtp()
+            return
+
+        if self.verbose > 1:
+            msg = "Unhandled message: {msg!r}\n    Command: {cmd!r}, Qid: {q!r}.".format(
+                msg=self._cur_msg, cmd=self._cur_pf_command, q=self._cur_qid)
+            LOG.debug(msg)
+
     # -------------------------------------------------------------------------
     def _add_ext_msg_detail(self, qid, addr):
 
@@ -1845,7 +1914,7 @@ class PostfixLogParser(object):
                 if not self.detail_verbose_msg:
                     reason = self.said_string_trimmer(reason)
                     reason = self.re_three_digits_at_start.sub('', reason)
-                    reason = self.re_connected_to.sub('', reason)
+                    reason = self.re_connect_to.sub('', reason)
                 self._inc_deferred(self._cur_pf_command, reason)
 
         self.results.deferred_messages_per_hour[hour] += 1
@@ -1935,6 +2004,79 @@ class PostfixLogParser(object):
         self.incr_msgs_per_day(0)
         self.results.messages_received_total += 1
         self._rcvd_msgs_qid[qid] = 'pickup'
+
+    # -------------------------------------------------------------------------
+    def _eval_smtp(self):
+
+        smtp_target = None
+        smtp_msg = None
+
+        m = self.re_smtp_connect_to_trusted.search(self._cur_msg)
+        if m:
+            smtp_target = m.group(1).lower()
+            smtp_msg = m.group(2)
+            self.results.smtp_connections['total'] += 1
+            self.results.smtp_connections['trusted'] += 1
+            if self.detail_smtp:
+                if smtp_target not in self.results.smtp_connection_details['trusted']:
+                    self.results.smtp_connection_details['trusted'][smtp_target] = {}
+                if smtp_msg not in self.results.smtp_connection_details['trusted'][smtp_target]:
+                    self.results.smtp_connection_details['trusted'][smtp_target][smtp_msg] = 0
+                self.results.smtp_connection_details['trusted'][smtp_target][smtp_msg] += 1
+            return
+
+        m = self.re_smtp_connect_to_untrusted.search(self._cur_msg)
+        if m:
+            smtp_target = m.group(1).lower()
+            smtp_msg = m.group(2)
+            self.results.smtp_connections['total'] += 1
+            self.results.smtp_connections['untrusted'] += 1
+            if self.detail_smtp:
+                if smtp_target not in self.results.smtp_connection_details['untrusted']:
+                    self.results.smtp_connection_details['untrusted'][smtp_target] = {}
+                if smtp_msg not in self.results.smtp_connection_details['untrusted'][smtp_target]:
+                    self.results.smtp_connection_details['untrusted'][smtp_target][smtp_msg] = 0
+                self.results.smtp_connection_details['untrusted'][smtp_target][smtp_msg] += 1
+            return
+
+        m = self.re_smtp_connect_to.search(self._cur_msg)
+        if m:
+            smtp_target = m.group(1).lower()
+            smtp_msg = m.group(2)
+            self.results.smtp_connections['other'] += 1
+            if self.detail_smtp:
+                if smtp_target not in self.results.smtp_connection_details['other']:
+                    self.results.smtp_connection_details['other'][smtp_target] = {}
+                if smtp_msg not in self.results.smtp_connection_details['other'][smtp_target]:
+                    self.results.smtp_connection_details['other'][smtp_target][smtp_msg] = 0
+                self.results.smtp_connection_details['other'][smtp_target][smtp_msg] += 1
+            return
+
+        if not self.detail_smtp:
+            return
+
+        m = self.re_connected_to_addr.search(self._cur_msg)
+        if m:
+            smtp_target = m.group(1).lower()
+            smtp_msg = m.group(2)
+
+        else:
+            m = self.re_connected_to_port.search(self._cur_msg)
+            if m:
+                smtp_target = m.group(1).lower()
+                smtp_msg = m.group(2)
+
+        if not smtp_target:
+            if self.verbose > 1:
+                msg = "Unhandled SMTP message: {msg!r}".format(msg=self._cur_msg)
+                LOG.debug(msg)
+                return
+
+        if smtp_target not in self.results.smtp_messages:
+            self.results.smtp_messages[smtp_target] = {}
+        if smtp_msg not in self.results.smtp_messages[smtp_target]:
+            self.results.smtp_messages[smtp_target] = 0
+        self.results.smtp_messages[smtp_target] += 1
 
 
 # =============================================================================
