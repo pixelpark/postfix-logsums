@@ -26,7 +26,7 @@ try:
 except ImportError:
     from collections import MutableMapping, Mapping
 
-__version__ = '0.5.6'
+__version__ = '0.5.7'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -513,6 +513,9 @@ class PostfixLogParser(object):
     re_bzip2 = re.compile(r'\.(bz2?|bzip2?)$', re.IGNORECASE)
     re_lzma = re.compile(r'\.(xz|lzma)$', re.IGNORECASE)
 
+    re_said = re.compile(r'^.* said: ')
+    re_said1 = re.compile(r'^.*: *')
+
     utc = datetime.timezone(datetime.timedelta(0), 'UTC')
 
     default_encoding = DEFAULT_ENCODING
@@ -687,11 +690,15 @@ class PostfixLogParser(object):
         self.re_defer_reason = re.compile(r', status=deferred \(([^\)]+)')
         self.re_bounce_reason = re.compile(r', status=bounced \((.+)\)')
 
-        self.re_said = re.compile(r'^.* said: ')
-        self.re_said1 = re.compile(r'^.*: *')
-
         self.re_three_digits_at_start = re.compile(r'^\d{3} ')
         self.re_connected_to = re.compile(r'^connect to ')
+
+        self.re_sender_uid = re.compile(r': (sender|uid)=')
+
+        self.re_connected_to_addr = re.compile(
+            r'.* connect to (\S+?): ([^;]+); address \S+ port.*$')
+        self.re_connected_to_port = re.compile(
+            r'.* connect to ([^[]+)\[\S+?\]: (.+?) \(port \d+\)$')
 
         if encoding:
             self.encoding = encoding
@@ -1719,6 +1726,11 @@ class PostfixLogParser(object):
             self._eval_relayed_msg(
                 addr=m['to'], relay=m['relay'], delay=float(m['delay']),
                 status=m['status'], rest=m['rest'])
+            return
+
+        if self._cur_pf_command == 'pickup' and self.re_sender_uid.search(self._cur_msg):
+            self._eval_pickup_msgs()
+            return
 
     # -------------------------------------------------------------------------
     def _add_ext_msg_detail(self, qid, addr):
@@ -1760,14 +1772,14 @@ class PostfixLogParser(object):
             if dom_addr not in self.results.sending_domain_data:
                 self.results.sending_domain_data[dom_addr] = MessageStats()
             if not self.results.sending_domain_data[dom_addr].count:
-                self.results.addr_domain_count += 1
+                self.results.sender_domain_count += 1
             self.results.sending_domain_data[dom_addr].count += 1
             self.results.sending_domain_data[dom_addr].size += size
 
             if addr not in self.results.sending_user_data:
                 self.results.sending_user_data[addr] = MessageStats()
             if not self.results.sending_user_data[addr].count:
-                self.sending_user_count += 1
+                self.results.sending_user_count += 1
             self.results.sending_user_data[addr].count += 1
             self.results.sending_user_data[addr].size += size
             self.results.received_size += size
@@ -1827,7 +1839,7 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
 
         if self.detail_deferral:
-            m = self.re_defer_reason.search(rest)
+            m = self.re_defer_reason.search(self._cur_msg)
             if m:
                 reason = m.group(1)
                 if not self.detail_verbose_msg:
@@ -1862,11 +1874,10 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def _eval_bounced_msg(self, addr, domain, relay, delay, rest):
 
-        qid = self._cur_qid
         hour = self._cur_ts.hour
 
         if self.detail_bounce:
-            m = self.re_bounce_reason.search(rest)
+            m = self.re_bounce_reason.search(self._cur_msg)
             if m:
                 reason = m.group(1)
                 if not self.detail_verbose_msg:
@@ -1914,6 +1925,16 @@ class PostfixLogParser(object):
             self._add_ext_msg_detail(qid, '(sender not in log)')
 
         self._add_ext_msg_detail(qid, addr)
+
+    # -------------------------------------------------------------------------
+    def _eval_pickup_msgs(self):
+        hour = self._cur_ts.hour
+        qid = self._cur_qid
+
+        self.results.received_messages_per_hour[hour] += 1
+        self.incr_msgs_per_day(0)
+        self.results.messages_received_total += 1
+        self._rcvd_msgs_qid[qid] = 'pickup'
 
 
 # =============================================================================
