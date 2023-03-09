@@ -20,7 +20,7 @@ except ImportError:
 # Own modules
 from .errors import PostfixLogsumsError, WrongMsgStatsKeyError
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -63,6 +63,8 @@ class MessageStats(MutableMapping):
     def _update_from_mapping(self, mapping):
 
         for key in mapping.keys():
+            if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+                key = self.valid_keys[key]
             if key not in self.valid_keys:
                 raise WrongMsgStatsKeyError(key)
             setattr(self, key, mapping[key])
@@ -183,6 +185,8 @@ class MessageStats(MutableMapping):
     # -------------------------------------------------------------------------
     def _get_item(self, key):
         """Return an arbitrary item by the key."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            key = self.valid_keys[key]
         if key not in self.valid_keys:
             raise WrongMsgStatsKeyError(key)
 
@@ -215,6 +219,8 @@ class MessageStats(MutableMapping):
     # -------------------------------------------------------------------------
     def __contains__(self, key):
         """Return, whether the given key exists(the 'in'-operator)."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            return True
         if key in self.valid_keys:
             return True
         return False
@@ -246,6 +252,8 @@ class MessageStats(MutableMapping):
     # -------------------------------------------------------------------------
     def __setitem__(self, key, value):
         """Set the value of the given key."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            key = self.valid_keys[key]
         if key not in self.valid_keys:
             raise WrongMsgStatsKeyError(key)
 
@@ -260,6 +268,8 @@ class MessageStats(MutableMapping):
     def __delitem__(self, key):
         """Should delete the entry on the given key.
         But in real the value if this key set to zero instead."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            key = self.valid_keys[key]
         if key not in self.valid_keys:
             raise WrongMsgStatsKeyError(key)
 
