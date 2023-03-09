@@ -13,15 +13,15 @@ import copy
 import logging
 
 try:
-    from collections.abc import MutableMapping, Mapping, MutableSequence, Sequence
+    from collections.abc import MutableMapping, Mapping, MutableSequence
 except ImportError:
-    from collections import MutableMapping, Mapping, MutableSequence, Sequence
+    from collections import MutableMapping, Mapping, MutableSequence
 
 # Own modules
-from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgStatsHourError
+from .errors import StatsError, WrongMsgStatsKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 

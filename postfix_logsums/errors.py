@@ -8,7 +8,7 @@
 @copyright: © 2023 by Frank Brehm, Berlin
 """
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -101,7 +101,6 @@ class MsgStatsHourInvalidMethodError(StatsError, RuntimeError):
         """Typecast into str."""
         msg = "Invalid method {m}() for a {w} object."
         return msg.format(m=self.method, w=self.obj_type)
-
 
 
 # =============================================================================
