@@ -9,7 +9,9 @@
 """
 from __future__ import absolute_import
 
-__version__ = '0.1.1'
+from .stats import HourlyStats
+
+__version__ = '0.2.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -29,16 +31,16 @@ class PostfixLogSums(object):
         self._files_index = None
         self.amavis_msgs = 0
         self.bounced = {}
-        self.bounced_messages_per_hour = []
+        self.bounced_messages_per_hour = HourlyStats()
         self.bounced_total = 0
         self.connections_time = 0
         self.connections_total = 0
         self.days_counted = 0
         self.deferrals_total = 0
         self.deferred = {}
-        self.deferred_messages_per_hour = []
+        self.deferred_messages_per_hour = HourlyStats()
         self.deferred_messages_total = 0
-        self.delivered_messages_per_hour = []
+        self.delivered_messages_per_hour = HourlyStats()
         self.discards = {}
         self.fatals = {}
         self.files = []
@@ -66,9 +68,9 @@ class PostfixLogSums(object):
         self.rcpt_domain_count = 0
         self.rcpt_user = {}
         self.rcpt_user_count = 0
-        self.received_messages_per_hour = []
+        self.received_messages_per_hour = HourlyStats()
         self.received_size = 0
-        self.rejected_messages_per_hour = []
+        self.rejected_messages_per_hour = HourlyStats()
         self.rejects = {}
         self.sender_domain_count = 0
         self.sending_domain_data = {}
@@ -89,17 +91,9 @@ class PostfixLogSums(object):
         }
         self.smtpd_per_day = {}
         self.smtpd_per_domain = {}
-        self.smtpd_messages_per_hour = []
+        self.smtpd_messages_per_hour = HourlyStats()
         self.warnings = {}
         self.warns = {}
-
-        for hour in range(0, 24):
-            self.received_messages_per_hour.append(0)
-            self.rejected_messages_per_hour.append(0)
-            self.delivered_messages_per_hour.append(0)
-            self.deferred_messages_per_hour.append(0)
-            self.bounced_messages_per_hour.append(0)
-            self.smtpd_messages_per_hour.append([0, 0, 0])
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):

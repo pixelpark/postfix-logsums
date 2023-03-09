@@ -13,17 +13,19 @@ import copy
 import logging
 
 try:
-    from collections.abc import MutableMapping, Mapping
+    from collections.abc import MutableMapping, Mapping, MutableSequence, Sequence
 except ImportError:
-    from collections import MutableMapping, Mapping
+    from collections import MutableMapping, Mapping, MutableSequence, Sequence
 
 # Own modules
-from .errors import PostfixLogsumsError, WrongMsgStatsKeyError
+from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgStatsHourError
+from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
+HOURS_PER_DAY = 24
 LOG = logging.getLogger(__name__)
 
 
@@ -54,7 +56,7 @@ class MessageStats(MutableMapping):
             else:
                 msg = "Object is not a {m} object, but a {w} object instead.".format(
                     m='Mapping', w=first_param.__class__.__qualname__)
-                raise PostfixLogsumsError(msg)
+                raise StatsError(msg)
 
         if kwargs:
             self._update_from_mapping(kwargs)
@@ -274,6 +276,154 @@ class MessageStats(MutableMapping):
             raise WrongMsgStatsKeyError(key)
 
         setattr(self, key, 0)
+
+
+# =============================================================================
+class HourlyStats(MutableSequence):
+    """A class for encapsulating per hour message statistics."""
+
+    hours_per_day = HOURS_PER_DAY
+
+    # -------------------------------------------------------------------------
+    def __init__(self, *args):
+        """Constructor."""
+
+        self._list = []
+        for hour in range(self.hours_per_day):
+            self._list.append(0)
+
+        if args:
+            if len(args) > self.hours_per_day:
+                msg = "Invalid number {} of statistics per hour give.".format(len(args))
+                raise StatsError(msg)
+            index = 0
+            for value in args:
+                self[index] = value
+                index += 1
+
+    # -------------------------------------------------------------------------
+    def __repr__(self):
+        """Typecast for reproduction."""
+        ret = "{}(".format(self.__class__.__name__)
+        index = 0
+        for value in self:
+            if index:
+                ret += ', '
+            ret += str(value)
+            index += 1
+        ret += ')'
+
+        return ret
+
+    # -------------------------------------------------------------------------
+    def __getitem__(self, hour):
+        """Returns the value of the given hour."""
+        return self._list[hour]
+
+    # -------------------------------------------------------------------------
+    def __len__(self):
+        """Returns the length of the current array."""
+        return len(self._list)
+
+    # -------------------------------------------------------------------------
+    def __contains__(self, value):
+        """Returns, whether the given value is one of the values in current list."""
+        for val in self:
+            if value == val:
+                return True
+        return False
+
+    # -------------------------------------------------------------------------
+    def __iter__(self):
+        """Return an iterator over all entries."""
+        for value in self._list:
+            yield value
+
+    # -------------------------------------------------------------------------
+    def __reversed__(self):
+        """Return an reversed iterator over all entries."""
+        index = len(self._list)
+        while index > 0:
+            index -= 1
+            yield self._list[index]
+
+    # -------------------------------------------------------------------------
+    def index(self, value, i=0, j=None):
+        """index of the first occurrence of x in s (at or after index i and before index j)."""
+
+        if j is None:
+            j = len(self._list)
+        while i < j:
+            if self._list[i] == value:
+                return i
+            i += 1
+
+        raise MsgStatsHourValNotfoundError(value)
+
+    # -------------------------------------------------------------------------
+    def count(self, value):
+        """total number of occurrences of svaluex in current list."""
+        number = 0
+        for val in self:
+            if value == val:
+                number += 1
+
+        return number
+
+    # -------------------------------------------------------------------------
+    def __setitem__(self, hour, value):
+        """Setting the value for the given hour."""
+        self._list[hour] = int(value)
+
+    # -------------------------------------------------------------------------
+    def __delitem__(self, hour):
+        """Deleting an item in the list - invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('__delitem__')
+
+    # -------------------------------------------------------------------------
+    def insert(self, hour, value):
+        """Insert an item in the list - invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('insert')
+
+    # -------------------------------------------------------------------------
+    def append(self, value):
+        """iAppending the given value to the current list - invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('append')
+
+    # -------------------------------------------------------------------------
+    def reverse(self):
+        """Reverses the values of the current list in place."""
+
+        self._list.reverse()
+
+    # -------------------------------------------------------------------------
+    def extend(self, other_list):
+        """Extends the current list with the contents of other_list - invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('extend')
+
+    # -------------------------------------------------------------------------
+    def pop(self, value):
+        """Retrieves the item at i and also removes it from s - invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('pop')
+
+    # -------------------------------------------------------------------------
+    def remove(self, value):
+        """Remove the first item from the current list where s[i] is equal to x -
+        invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('remove')
+
+    # -------------------------------------------------------------------------
+    def __iadd__(self, other_list):
+        """Extends the current list with the contents of other_list and return -
+        invalid action."""
+
+        raise MsgStatsHourInvalidMethodError('__iadd__')
 
 
 # =============================================================================
