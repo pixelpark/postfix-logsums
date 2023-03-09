@@ -11,7 +11,7 @@ from __future__ import absolute_import
 
 from .stats import HourlyStats
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -47,6 +47,8 @@ class PostfixLogSums(object):
         self.holds = {}
         self.lines_considered = 0
         self.lines_total = 0
+        self.logdate_oldest = None
+        self.logdate_latest = None
         self.master_msgs = {}
         self.message_details = {}
         self.messages = {

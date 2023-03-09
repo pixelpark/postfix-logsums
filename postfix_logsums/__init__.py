@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -787,13 +787,8 @@ class PostfixLogParser(object):
             if not matched:
                 return
 
-        result = self._eval_msg_ts(line)
-
-        if not result:
+        if not self._eval_msg_ts(line):
             return
-
-        self._cur_ts = result[0]
-        self._cur_msg = result[1].strip()
 
         current_date = self._cur_ts.date()
         if self.last_date is None or self.last_date != current_date:
@@ -844,10 +839,22 @@ class PostfixLogParser(object):
     def _eval_msg_ts(self, line):
 
         result = self._eval_msg_ts_traditional(line)
-        if result:
-            return result
+        if not result:
+            result = self._eval_msg_ts_rfc3339(line)
 
-        return self._eval_msg_ts_rfc3339(line)
+        if not result:
+            return None
+
+        self._cur_ts = result[0]
+        self._cur_msg = result[1].strip()
+
+        if self.results.logdate_oldest is None or self._cur_ts < self.results.logdate_oldest:
+            self.results.logdate_oldest = copy.copy(self._cur_ts)
+
+        if self.results.logdate_latest is None or self._cur_ts > self.results.logdate_latest:
+            self.results.logdate_latest = copy.copy(self._cur_ts)
+
+        return True
 
     # -------------------------------------------------------------------------
     def _eval_msg_ts_traditional(self, line):
