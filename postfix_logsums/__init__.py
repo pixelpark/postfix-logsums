@@ -175,6 +175,7 @@ class PostfixLogParser(object):
         self._connection_times = {}
         self._message_size = {}
         self._message_deferred_qid = {}
+        self.date_str = None
 
         if day:
             t_diff = datetime.timedelta(days=1)
@@ -185,6 +186,7 @@ class PostfixLogParser(object):
                 msg = "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.".format(
                     d=day, n='None', y='yesterday', t='today')
                 raise PostfixLogsumsError(msg)
+            self.date_str = used_date.isoformat()
             filter_pattern = r"^{m} {d:02d}\s".format(
                 m=self.month_names[used_date.month - 1], d=used_date.day)
             self.re_date_filter = re.compile(filter_pattern, re.IGNORECASE)

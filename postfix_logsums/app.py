@@ -758,9 +758,121 @@ class PostfixLogsumsApp(object):
         LOG.debug("And here wo go ...")
 
         self.parser.parse(*self.args.logfiles)
+        self.results = self.parser.results
 
         if self.verbose > 1:
-            LOG.info('Result of parsing:' + '\n' + pp(self.parser.results.as_dict()))
+            LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
+
+        print()
+        if self.parser.date_str:
+            msg = "Postfix log summaries for {}".format(self.parser.date_str)
+        else:
+            msg = "Postfix log summaries"
+        print(msg)
+        print('=' * len(msg))
+
+        self.print_grand_totals()
+
+        print()
+
+    # -------------------------------------------------------------------------
+    def print_grand_totals(self):
+        """Printing the grand total numbers and data."""
+        self.print_subsect_title('Grand Totals')
+
+        if self.results.logdate_oldest or self.results.logdate_latest:
+            lbl_oldest = 'Date of oldest log entry:'
+            lbl_latest = 'Date of latest log entry:'
+            max_len = len(lbl_oldest)
+            if len(lbl_latest) > max_len:
+                max_len = len(lbl_latest)
+            print()
+            if self.results.logdate_oldest:
+                dt = self.results.logdate_oldest.isoformat(' ')
+                print("{m:<{lng}}  {dt}".format(m=lbl_oldest, lng=max_len, dt=dt))
+            if self.results.logdate_latest:
+                dt = self.results.logdate_latest.isoformat(' ')
+                print("{m:<{lng}}  {dt}".format(m=lbl_latest, lng=max_len, dt=dt))
+
+        print()
+        print('Messages:')
+        print()
+
+        tpl = ' {value:6.0f}{unit}  {lbl}'
+        msgs_rejected_pct = 0
+        msgs_discarded_pct = 0
+        msgs_total = (
+            self.results.messages_delivered + self.results.messages['rejected'] + \
+            self.results.messages['discard'])
+        if msgs_total:
+            msgs_rejected_pct = self.results.messages['rejected'] / msgs_total * 100
+            msgs_discarded_pct = self.results.messages['discard'] / msgs_total * 100
+
+        print(tpl.format(
+            lbl='received', **self.adj_int_units(self.results.messages_received_total)))
+        print(tpl.format(
+            lbl='delivered', **self.adj_int_units(self.results.messages_delivered)))
+        print(tpl.format(
+            lbl='forwarded', **self.adj_int_units(self.results.messages_forwarded)))
+        print(tpl.format(
+            lbl='deferred', **self.adj_int_units(self.results.deferred_messages_total)),
+            end='')
+        if self.results.deferrals_total:
+            val = '  ({value:d}{unit} {lbl})'.format(
+                lbl='deferrals', **self.adj_int_units(self.results.deferrals_total))
+            print(val, end='')
+        print()
+        print(tpl.format(
+            lbl='bounced', **self.adj_int_units(self.results.bounced_total)))
+        print(tpl.format(
+            lbl='rejected', **self.adj_int_units(self.results.messages['rejected'])),
+            end='')
+        print(' ({:0.1f}%)'.format(msgs_rejected_pct))
+        print(tpl.format(
+            lbl='reject warnings', **self.adj_int_units(self.results.messages['warning'])))
+        print(tpl.format(
+            lbl='held', **self.adj_int_units(self.results.messages['hold'])))
+        print(tpl.format(
+            lbl='discarded', **self.adj_int_units(self.results.messages['discard'])),
+            end='')
+        print(' ({:0.1f}%)'.format(msgs_discarded_pct))
+        print()
+
+        print(tpl.format(
+            lbl='bytes received', **self.adj_int_units(self.results.received_size)))
+        print(tpl.format(
+            lbl='bytes delivered', **self.adj_int_units(self.results.size_delivered)))
+        print(tpl.format(
+            lbl='senders', **self.adj_int_units(self.results.sending_user_count)))
+        print(tpl.format(
+            lbl='sending hosts/domains', **self.adj_int_units(self.results.sender_domain_count)))
+
+
+        print()
+
+    # -------------------------------------------------------------------------
+    def print_subsect_title(self, title):
+        """Printing the title of a sub section."""
+        msg = str(title)
+        print()
+        print(msg)
+        print('-' * len(msg))
+
+    # -------------------------------------------------------------------------
+    def adj_int_units(self, value):
+
+        val = value
+        unit = ' '
+        if not value:
+            val = 0
+        if value > PostfixLogParser.div_by_one_mb_at:
+            val = value / PostfixLogParser.one_mb
+            unit = 'M'
+        elif value > PostfixLogParser.div_by_one_k_at:
+            val = value / PostfixLogParser.one_k
+            unit = 'K'
+
+        return {'value': val, 'unit': unit}
 
 
 # =============================================================================
