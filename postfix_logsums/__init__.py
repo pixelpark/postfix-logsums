@@ -673,12 +673,12 @@ class PostfixLogParser(object):
         self.results.reset()
 
         if not files:
-            LOG.info("Parsing from STDIN ...")
+            LOG.debug("Parsing from STDIN ...")
             self.results.start_logfile('STDIN')
             return self.parse_fh(sys.stdin, 'STDIN', self.compression)
 
         for logfile in files:
-            LOG.info("Parsing logfile {!r} ...".format(str(logfile)))
+            LOG.debug("Parsing logfile {!r} ...".format(str(logfile)))
             self.results.start_logfile(logfile)
             if not self.parse_file(logfile):
                 return False
@@ -806,7 +806,8 @@ class PostfixLogParser(object):
             self._cur_pf_command = result[0]
             self._cur_qid = result[1]
         else:
-            LOG.debug("Did not found Postfix command and QID from: {}".format(self._cur_msg))
+            if self.verbose > 1:
+                LOG.debug("Did not found Postfix command and QID from: {}".format(self._cur_msg))
             return
         if self.verbose > 3:
             LOG.debug("Postfix command {cmd!r}, qid {qid!r}, message: {msg}".format(
@@ -1482,7 +1483,8 @@ class PostfixLogParser(object):
             data = {
                 'addr': addr, 'domain': domain, 'relay': relay, 'delay': delay,
                 'status': status, 'rest': rest, }
-            LOG.debug("Processing relaying message:\n" + pp(data))
+            if self.verbose > 2:
+                LOG.debug("Processing relaying message:\n" + pp(data))
 
         if status == 'sent':
             self._eval_relay_sent_msg(addr, domain, relay, delay, rest)
