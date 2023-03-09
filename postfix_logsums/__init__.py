@@ -27,9 +27,9 @@ from .errors import PostfixLogsumsError
 
 from .results import PostfixLogSums
 
-from .stats import MessageStats
+from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.6.3'
+__version__ = '0.6.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -828,7 +828,7 @@ class PostfixLogParser(object):
 
         dt_fmt = self.cur_date_fmt()
         if dt_fmt not in self.results.messages_per_day:
-            self.results.messages_per_day[dt_fmt] = [0, 0, 0, 0, 0]
+            self.results.messages_per_day[dt_fmt] = MessageStatsPerDay()
 
         if index is None:
             return
@@ -1053,7 +1053,7 @@ class PostfixLogParser(object):
             LOG.debug(msg)
 
         self.results.received_messages_per_hour[hour] += 1
-        self.incr_msgs_per_day(4)
+        self.incr_msgs_per_day('rejected')
         self.results.messages_received_total += 1
         self._rcvd_msgs_qid[qid] = domain
 
@@ -1200,7 +1200,7 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
         self.results.rejected_messages_per_hour[hour] += 1
 
-        self.incr_msgs_per_day(4)
+        self.incr_msgs_per_day('rejected')
 
         if subtype == 'reject':
             self.results.messages['rejected'] += 1
@@ -1272,7 +1272,7 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
         self.results.rejected_messages_per_hour[hour] += 1
 
-        self.incr_msgs_per_day(4)
+        self.incr_msgs_per_day('rejected')
 
         if not self.detail_reject:
             return
@@ -1528,7 +1528,7 @@ class PostfixLogParser(object):
                 self._inc_deferred(self._cur_pf_command, reason)
 
         self.results.deferred_messages_per_hour[hour] += 1
-        self.incr_msgs_per_day(2)
+        self.incr_msgs_per_day('deferred')
         self.results.deferrals_total += 1
 
         if qid not in self._message_deferred_qid:
@@ -1565,7 +1565,7 @@ class PostfixLogParser(object):
                 self._inc_bounced(relay, reason)
 
         self.results.bounced_messages_per_hour[hour] += 1
-        self.incr_msgs_per_day(3)
+        self.incr_msgs_per_day('bounced')
         self.results.bounced_total += 1
 
     # -------------------------------------------------------------------------
@@ -1589,7 +1589,7 @@ class PostfixLogParser(object):
 
         hour = self._cur_ts.hour
         self.results.delivered_messages_per_hour[hour] += 1
-        self.incr_msgs_per_day(1)
+        self.incr_msgs_per_day('sent')
         self.results.messages_delivered += 1
 
         qid = self._cur_qid
@@ -1611,7 +1611,7 @@ class PostfixLogParser(object):
         qid = self._cur_qid
 
         self.results.received_messages_per_hour[hour] += 1
-        self.incr_msgs_per_day(0)
+        self.incr_msgs_per_day('received')
         self.results.messages_received_total += 1
         self._rcvd_msgs_qid[qid] = 'pickup'
 

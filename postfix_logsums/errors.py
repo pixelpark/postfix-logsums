@@ -8,7 +8,7 @@
 @copyright: © 2023 by Frank Brehm, Berlin
 """
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -38,6 +38,25 @@ class WrongMsgStatsKeyError(StatsError, KeyError):
         self.key = key
         self.obj_type = obj_type
         super(WrongMsgStatsKeyError, self).__init__()
+
+    # -------------------------------------------------------------------------
+    def __str__(self):
+        """Typecast into str."""
+        msg = "Invalid key {k!r} for a {w} object."
+        return msg.format(k=self.key, w=self.obj_type)
+
+
+# =============================================================================
+class WrongMsgPerDayKeyError(StatsError, KeyError):
+    """Error class for a wrong key for the MessageStatsPerDay object."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, key, obj_type='MessageStatsPerDay'):
+        """Initialise a WrongMsgPerDayKeyError exception."""
+
+        self.key = key
+        self.obj_type = obj_type
+        super(WrongMsgPerDayKeyError, self).__init__()
 
     # -------------------------------------------------------------------------
     def __str__(self):
