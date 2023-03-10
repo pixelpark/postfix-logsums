@@ -94,7 +94,6 @@ class TestStatsCollections(PostfixLogsumsTestcase):
         self.assertEqual(msg_stats.value_one, 6)
         self.assertEqual(msg_stats.value_two, 7)
 
-
     # -------------------------------------------------------------------------
     def test_base_stats_failures(self):
 
@@ -128,6 +127,110 @@ class TestStatsCollections(PostfixLogsumsTestcase):
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
 
+        msg_stats = BaseMessageStats(value_one=6, value_two=7)
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            del msg_stats.value_one
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+    # -------------------------------------------------------------------------
+    def test_common_msg_stats(self):
+
+        LOG.info("Testing init and attributes of a MessageStats object.")
+
+        from postfix_logsums.errors import PostfixLogsumsError
+        from postfix_logsums.stats import MessageStats
+
+        LOG.debug("Testing init of an empty MessageStats object.")
+
+        msg_stats = MessageStats()
+
+        LOG.debug("MessageStats %r: {!r}".format(msg_stats))
+        LOG.debug("MessageStats %s: {}".format(msg_stats))
+
+        exp_dict = {
+            'count': 0,
+            'size': 0,
+            'defers': 0,
+            'delay_avg': 0,
+            'delay_max': 0,
+        }
+        LOG.debug("Expecting from dict():\n" + pp(exp_dict))
+
+        got_dict = msg_stats.dict()
+        LOG.debug("Got dict():\n" + pp(got_dict))
+        self.assertEqual(got_dict, exp_dict)
+
+        exp_keys = ('count', 'size', 'defers', 'delay_avg', 'delay_max')
+        LOG.debug("Expected keys:\n" + pp(exp_keys))
+        got_keys = msg_stats.keys()
+        LOG.debug("Got keys:\n" + pp(got_keys))
+        self.assertEqual(exp_keys, got_keys)
+
+        LOG.debug("Testing access to attributes ...")
+        msg_stats.count = 4
+        msg_stats[0] = 3
+        msg_stats['count'] = 2
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            msg_stats = MessageStats({'value_one': 1})
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            msg_stats = MessageStats(value_two=2)
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+    # -------------------------------------------------------------------------
+    def test_msg_stats_per_day(self):
+
+        LOG.info("Testing init and attributes of a MessageStatsPerDay object.")
+
+        from postfix_logsums.errors import PostfixLogsumsError
+        from postfix_logsums.stats import MessageStatsPerDay
+
+        LOG.debug("Testing init of an empty MessageStatsPerDay object.")
+
+        msg_stats = MessageStatsPerDay()
+
+        LOG.debug("MessageStatsPerDay %r: {!r}".format(msg_stats))
+        LOG.debug("MessageStatsPerDay %s: {}".format(msg_stats))
+
+        exp_dict = {
+            'received': 0,
+            'sent': 0,
+            'deferred': 0,
+            'bounced': 0,
+            'rejected': 0,
+        }
+        LOG.debug("Expecting from dict():\n" + pp(exp_dict))
+
+        got_dict = msg_stats.dict()
+        LOG.debug("Got dict():\n" + pp(got_dict))
+        self.assertEqual(got_dict, exp_dict)
+
+        exp_keys = ('received', 'sent', 'deferred', 'bounced', 'rejected')
+        LOG.debug("Expected keys:\n" + pp(exp_keys))
+        got_keys = msg_stats.keys()
+        LOG.debug("Got keys:\n" + pp(got_keys))
+        self.assertEqual(exp_keys, got_keys)
+
+        LOG.debug("Testing access to attributes ...")
+        msg_stats.bounced = 4
+        msg_stats[3] = 3
+        msg_stats['bounced'] = 2
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            msg_stats = MessageStatsPerDay({'value_one': 1})
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            msg_stats = MessageStatsPerDay(defers=2)
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
 
 # =============================================================================
 if __name__ == '__main__':
@@ -144,6 +247,8 @@ if __name__ == '__main__':
     suite.addTest(TestStatsCollections('test_import', verbose))
     suite.addTest(TestStatsCollections('test_init_base_stats', verbose))
     suite.addTest(TestStatsCollections('test_base_stats_failures', verbose))
+    suite.addTest(TestStatsCollections('test_common_msg_stats', verbose))
+    suite.addTest(TestStatsCollections('test_msg_stats_per_day', verbose))
 
     runner = unittest.TextTestRunner(verbosity=verbose)
 
