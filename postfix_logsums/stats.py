@@ -22,7 +22,7 @@ from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -356,6 +356,14 @@ class HourlyStats(MutableSequence):
     # -------------------------------------------------------------------------
     def __setitem__(self, hour, value):
         """Setting the value for the given hour."""
+        try:
+            v = int(value)
+        except ValueError as e:
+            msg = "Wrong value {v!r} for a per hour stat: {e}".format(v=value, e=e)
+            raise WrongMsgStatsValueError(msg)
+        if v < 0:
+            msg = "Wrong value {v!r} for a per hour stat: must be >= 0".format(v=value)
+            raise WrongMsgStatsValueError(msg)
         self._list[hour] = int(value)
 
     # -------------------------------------------------------------------------
