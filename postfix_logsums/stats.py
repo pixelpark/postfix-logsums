@@ -22,7 +22,7 @@ from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -255,6 +255,13 @@ class MessageStats(BaseMessageStats):
 
 
 # =============================================================================
+class MessageStatsPerDay(BaseMessageStats):
+    """A class for encapsulating message statistics per day."""
+
+    valid_keys = ('received', 'sent', 'deferred', 'bounced', 'rejected')
+
+
+# =============================================================================
 class HourlyStats(MutableSequence):
     """A class for encapsulating per hour message statistics."""
 
@@ -400,256 +407,6 @@ class HourlyStats(MutableSequence):
         invalid action."""
 
         raise MsgStatsHourInvalidMethodError('__iadd__')
-
-
-# =============================================================================
-class MessageStatsPerDay(MutableMapping):
-    """A class for encapsulating message statistics per day."""
-
-    valid_keys = ('received', 'sent', 'deferred', 'bounced', 'rejected')
-
-    # -------------------------------------------------------------------------
-    def __init__(self, first_param=None, **kwargs):
-        """Constructor."""
-        self._received = 0
-        self._sent = 0
-        self._deferred = 0
-        self._bounced = 0
-        self._rejected = 0
-
-        if first_param is not None:
-
-            if self.verbose > 3:
-                LOG.debug("First parameter type {t!r}: {p!r}".format(
-                    t=type(first_param), p=first_param))
-
-            if isinstance(first_param, Mapping):
-                self._update_from_mapping(first_param)
-            elif first_param.__class__.__name__ == 'zip':
-                self._update_from_mapping(dict(first_param))
-            else:
-                msg = "Object is not a {m} object, but a {w} object instead.".format(
-                    m='Mapping', w=first_param.__class__.__qualname__)
-                raise StatsError(msg)
-
-        if kwargs:
-            self._update_from_mapping(kwargs)
-
-    # -------------------------------------------------------------------------
-    def _update_from_mapping(self, mapping):
-
-        for key in mapping.keys():
-            if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
-                key = self.valid_keys[key]
-            if key not in self.valid_keys:
-                raise WrongMsgStatsKeyError(key)
-            setattr(self, key, mapping[key])
-
-    # -----------------------------------------------------------
-    @property
-    def received(self):
-        """The number of received messages."""
-        return getattr(self, '_received', 0)
-
-    @received.setter
-    def received(self, value):
-        v = int(value)
-        if v >= 0:
-            self._received = v
-        else:
-            LOG.warning("Wrong number of received messages {!r}, must be >= 0".format(value))
-
-    # -----------------------------------------------------------
-    @property
-    def sent(self):
-        """The number of sent messages."""
-        return getattr(self, '_sent', 0)
-
-    @sent.setter
-    def sent(self, value):
-        v = int(value)
-        if v >= 0:
-            self._sent = v
-        else:
-            LOG.warning("Wrong number of sent messages {!r}, must be >= 0".format(value))
-
-    # -----------------------------------------------------------
-    @property
-    def deferred(self):
-        """The number of deferred messages."""
-        return getattr(self, '_deferred', 0)
-
-    @deferred.setter
-    def deferred(self, value):
-        v = int(value)
-        if v >= 0:
-            self._deferred = v
-        else:
-            LOG.warning("Wrong number of deferred messages {!r}, must be >= 0".format(value))
-
-    # -----------------------------------------------------------
-    @property
-    def bounced(self):
-        """The number of bounced messages."""
-        return getattr(self, '_bounced', 0)
-
-    @bounced.setter
-    def bounced(self, value):
-        v = int(value)
-        if v >= 0:
-            self._bounced = v
-        else:
-            LOG.warning("Wrong number of bounced {!r}, must be >= 0".format(value))
-
-    # -----------------------------------------------------------
-    @property
-    def rejected(self):
-        """The number of rejected messages."""
-        return getattr(self, '_rejected', 0)
-
-    @rejected.setter
-    def rejected(self, value):
-        v = int(value)
-        if v >= 0:
-            self._rejected = v
-        else:
-            LOG.warning("Wrong number of rejected messages {!r}, must be >= 0".format(value))
-
-    # -----------------------------------------------------------
-    def as_dict(self, pure=False):
-        """Transforms the elements of the object into a dict."""
-
-        res = {}
-        if not pure:
-            res['__class_name__'] = self.__class__.__name__
-        res['received'] = self.received
-        res['sent'] = self.sent
-        res['deferred'] = self.deferred
-        res['bounced'] = self.bounced
-        res['rejected'] = self.rejected
-
-        return res
-
-    # -------------------------------------------------------------------------
-    def dict(self):
-        """Typecast into a regular dict."""
-        return self.as_dict(pure=True)
-
-    # -----------------------------------------------------------
-    def __repr__(self):
-        """Typecast for reproduction."""
-        ret = "{}({{".format(self.__class__.__name__)
-        kargs = []
-        for pair in self.items():
-            arg = "{k!r}: {v!r}".format(k=pair[0], v=pair[1])
-            kargs.append(arg)
-        ret += ', '.join(kargs)
-        ret += '})'
-
-        return ret
-
-    # -------------------------------------------------------------------------
-    def __copy__(self):
-        """Return a copy of the current set."""
-        return self.__class__(self.dict())
-
-    # -------------------------------------------------------------------------
-    def copy(self):
-        """Return a copy of the current set."""
-        return self.__copy__()
-
-    # -------------------------------------------------------------------------
-    def _get_item(self, key):
-        """Return an arbitrary item by the key."""
-        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
-            key = self.valid_keys[key]
-        if key not in self.valid_keys:
-            raise WrongMsgPerDayKeyError(key)
-
-        return getattr(self, key, 0)
-
-    # -------------------------------------------------------------------------
-    def get(self, key):
-        """Return an arbitrary item by the key."""
-        return self._get_item(key)
-
-    # -------------------------------------------------------------------------
-    # The next four methods are requirements of the ABC.
-
-    # -------------------------------------------------------------------------
-    def __getitem__(self, key):
-        """Return an arbitrary item by the key."""
-        return self._get_item(key)
-
-    # -------------------------------------------------------------------------
-    def __iter__(self):
-        """Return an iterator over all keys."""
-        for key in self.keys():
-            yield key
-
-    # -------------------------------------------------------------------------
-    def __len__(self):
-        """Return the the nuber of entries (keys) in this dict."""
-        return 4
-
-    # -------------------------------------------------------------------------
-    def __contains__(self, key):
-        """Return, whether the given key exists(the 'in'-operator)."""
-        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
-            return True
-        if key in self.valid_keys:
-            return True
-        return False
-
-    # -------------------------------------------------------------------------
-    def keys(self):
-        """Return a list with all keys in original notation."""
-        return copy.copy(self.valid_keys)
-
-    # -------------------------------------------------------------------------
-    def items(self):
-        """Return a list of all items of the current dict.
-
-        An item is a tuple, with the key in original notation and the value.
-        """
-        item_list = []
-
-        for key in self.keys():
-            value = self.get(key)
-            item_list.append((key, value))
-
-        return item_list
-
-    # -------------------------------------------------------------------------
-    def values(self):
-        """Return a list with all values of the current dict."""
-        return list(map(lambda x: self.get(x), self.keys()))
-
-    # -------------------------------------------------------------------------
-    def __setitem__(self, key, value):
-        """Set the value of the given key."""
-        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
-            key = self.valid_keys[key]
-        if key not in self.valid_keys:
-            raise WrongMsgPerDayKeyError(key)
-
-        setattr(self, key, value)
-
-    # -------------------------------------------------------------------------
-    def set(self, key, value):
-        """Set the value of the given key."""
-        self[key] = value
-
-    # -------------------------------------------------------------------------
-    def __delitem__(self, key):
-        """Should delete the entry on the given key.
-        But in real the value if this key set to zero instead."""
-        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
-            key = self.valid_keys[key]
-        if key not in self.valid_keys:
-            raise WrongMsgPerDayKeyError(key)
-
-        setattr(self, key, 0)
 
 
 # =============================================================================
