@@ -231,6 +231,57 @@ class TestStatsCollections(PostfixLogsumsTestcase):
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
 
+    # -------------------------------------------------------------------------
+    def test_hourly_stats(self):
+
+        LOG.info("Testing init and attributes of a HourlyStats object ..""")
+
+        from postfix_logsums.errors import PostfixLogsumsError
+        from postfix_logsums.stats import HourlyStats
+
+        LOG.debug("Testing init of an empty HourlyStats object.")
+
+        msg_stats = HourlyStats()
+
+        LOG.debug("HourlyStats %r: {!r}".format(msg_stats))
+        LOG.debug("HourlyStats %s: {}".format(msg_stats))
+
+        for hour in range(24):
+            self.assertEqual(msg_stats[hour], 0)
+
+        LOG.debug("Testing wrong index 'bla' ...")
+        with self.assertRaises(TypeError) as cm:
+            uhu = msg_stats['bla']
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        LOG.debug("Testing wrong index 25 ...")
+        with self.assertRaises(IndexError) as cm:
+            uhu = msg_stats[25]
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        LOG.debug("Test setting correct value ...")
+        msg_stats[3] = 5
+        self.assertEqual(msg_stats[3], 5)
+
+        LOG.debug("Test setting incorrect value 'bla' ...")
+        with self.assertRaises(ValueError) as cm:
+            msg_stats[3] = 'bla'
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        LOG.debug("Test setting incorrect value -1 ...")
+        with self.assertRaises(ValueError) as cm:
+            msg_stats[3] = -1
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        LOG.debug("Test deleting a value in the list ...")
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            del msg_stats[3]
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
 
 # =============================================================================
 if __name__ == '__main__':
@@ -249,6 +300,7 @@ if __name__ == '__main__':
     suite.addTest(TestStatsCollections('test_base_stats_failures', verbose))
     suite.addTest(TestStatsCollections('test_common_msg_stats', verbose))
     suite.addTest(TestStatsCollections('test_msg_stats_per_day', verbose))
+    suite.addTest(TestStatsCollections('test_hourly_stats', verbose))
 
     runner = unittest.TextTestRunner(verbosity=verbose)
 
