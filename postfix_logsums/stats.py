@@ -20,13 +20,232 @@ except ImportError:
 # Own modules
 from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
+from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
 HOURS_PER_DAY = 24
 LOG = logging.getLogger(__name__)
+
+
+# =============================================================================
+class BaseMessageStats(MutableMapping):
+    """A base class for encapsulating message statistics."""
+
+    valid_keys = ('value_one', 'value_two')
+
+    # -------------------------------------------------------------------------
+    def __init__(self, first_param=None, **kwargs):
+        """Constructor."""
+
+        self._values = {}
+
+        if first_param is not None:
+
+            if self.verbose > 3:
+                LOG.debug("First parameter type {t!r}: {p!r}".format(
+                    t=type(first_param), p=first_param))
+
+            if isinstance(first_param, Mapping):
+                self._update_from_mapping(first_param)
+            elif first_param.__class__.__name__ == 'zip':
+                self._update_from_mapping(dict(first_param))
+            else:
+                msg = "Object is not a {m} object, but a {w} object instead.".format(
+                    m='Mapping', w=first_param.__class__.__qualname__)
+                raise StatsError(msg)
+
+        if kwargs:
+            self._update_from_mapping(kwargs)
+
+    # -------------------------------------------------------------------------
+    def __getattr__(self, name):
+        """Getting the value of a non-pre-defined attribute, epecially the statistics
+        values."""
+        if name not in self.valid_keys:
+            raise WrongMsgStatsAttributeError(name, self.__class__.__name__)
+
+        if name not in self._values:
+            self._values[name] = 0
+
+        return self._values[name]
+
+    # -------------------------------------------------------------------------
+    def __setattr__(self, name, value):
+        """Called when an attribute assignment is attempted."""
+        if name in ('_values', ):
+            return super(BaseMessageStats, self).__setattr__(name, value)
+
+        if name not in self.valid_keys:
+            raise WrongMsgStatsAttributeError(name, self.__class__.__name__)
+
+        try:
+            v = int(value)
+        except ValueError as e:
+            msg = "Wrong value {v!r} for a {w} value: {e}".format(
+                v=value, w=self.__class__.__name__, e=e)
+            raise WrongMsgStatsValueError(msg)
+
+        if v < 0:
+            msg = "Wrong value {v!r} for a {w} value: must be >= 0".format(
+                v=value, w=self.__class__.__name__)
+            raise WrongMsgStatsValueError(msg)
+
+        self._values[name] = v
+
+    # -------------------------------------------------------------------------
+    def __delattr__(self, name):
+        """Called, if an attribute should be deleted."""
+        msg = "Deleting attribute {a!r} of a {w} is not allowed.".format(
+                a=name, w=self.__class__.__name__)
+        raise StatsError(msg)
+
+    # -------------------------------------------------------------------------
+    def _update_from_mapping(self, mapping):
+
+        for key in mapping.keys():
+            if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+                key = self.valid_keys[key]
+            if key not in self.valid_keys:
+                raise WrongMsgStatsKeyError(key, self.__class__.__name__)
+            setattr(self, key, mapping[key])
+
+    # -----------------------------------------------------------
+    def as_dict(self, pure=False):
+        """Transforms the elements of the object into a dict."""
+
+        res = {}
+        if not pure:
+            res['__class_name__'] = self.__class__.__name__
+
+        for key in self.valid_keys:
+            value = getattr(self, key)
+            res[key] = value
+
+        return res
+
+    # -------------------------------------------------------------------------
+    def dict(self):
+        """Typecast into a regular dict."""
+        return self.as_dict(pure=True)
+
+    # -----------------------------------------------------------
+    def __repr__(self):
+        """Typecast for reproduction."""
+        ret = "{}({{".format(self.__class__.__name__)
+        kargs = []
+        for pair in self.items():
+            arg = "{k!r}: {v!r}".format(k=pair[0], v=pair[1])
+            kargs.append(arg)
+        ret += ', '.join(kargs)
+        ret += '})'
+
+        return ret
+
+    # -------------------------------------------------------------------------
+    def __copy__(self):
+        """Return a copy of the current set."""
+        return self.__class__(self.dict())
+
+    # -------------------------------------------------------------------------
+    def copy(self):
+        """Return a copy of the current set."""
+        return self.__copy__()
+
+    # -------------------------------------------------------------------------
+    def _get_item(self, key):
+        """Return an arbitrary item by the key."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            key = self.valid_keys[key]
+        if key not in self.valid_keys:
+            raise WrongMsgStatsKeyError(key)
+
+        return getattr(self, key, 0)
+
+    # -------------------------------------------------------------------------
+    def get(self, key):
+        """Return an arbitrary item by the key."""
+        return self._get_item(key)
+
+    # -------------------------------------------------------------------------
+    # The next four methods are requirements of the ABC.
+
+    # -------------------------------------------------------------------------
+    def __getitem__(self, key):
+        """Return an arbitrary item by the key."""
+        return self._get_item(key)
+
+    # -------------------------------------------------------------------------
+    def __iter__(self):
+        """Return an iterator over all keys."""
+        for key in self.keys():
+            yield key
+
+    # -------------------------------------------------------------------------
+    def __len__(self):
+        """Return the the nuber of entries (keys) in this dict."""
+        return 4
+
+    # -------------------------------------------------------------------------
+    def __contains__(self, key):
+        """Return, whether the given key exists(the 'in'-operator)."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            return True
+        if key in self.valid_keys:
+            return True
+        return False
+
+    # -------------------------------------------------------------------------
+    def keys(self):
+        """Return a list with all keys in original notation."""
+        return copy.copy(self.valid_keys)
+
+    # -------------------------------------------------------------------------
+    def items(self):
+        """Return a list of all items of the current dict.
+
+        An item is a tuple, with the key in original notation and the value.
+        """
+        item_list = []
+
+        for key in self.keys():
+            value = self.get(key)
+            item_list.append((key, value))
+
+        return item_list
+
+    # -------------------------------------------------------------------------
+    def values(self):
+        """Return a list with all values of the current dict."""
+        return list(map(lambda x: self.get(x), self.keys()))
+
+    # -------------------------------------------------------------------------
+    def __setitem__(self, key, value):
+        """Set the value of the given key."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            key = self.valid_keys[key]
+        if key not in self.valid_keys:
+            raise WrongMsgStatsKeyError(key)
+
+        setattr(self, key, value)
+
+    # -------------------------------------------------------------------------
+    def set(self, key, value):
+        """Set the value of the given key."""
+        self[key] = value
+
+    # -------------------------------------------------------------------------
+    def __delitem__(self, key):
+        """Should delete the entry on the given key.
+        But in real the value if this key set to zero instead."""
+        if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
+            key = self.valid_keys[key]
+        if key not in self.valid_keys:
+            raise WrongMsgStatsKeyError(key)
+
+        setattr(self, key, 0)
 
 
 # =============================================================================
