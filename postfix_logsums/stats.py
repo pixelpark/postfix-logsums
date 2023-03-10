@@ -22,7 +22,7 @@ from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -44,9 +44,8 @@ class BaseMessageStats(MutableMapping):
 
         if first_param is not None:
 
-            if self.verbose > 3:
-                LOG.debug("First parameter type {t!r}: {p!r}".format(
-                    t=type(first_param), p=first_param))
+            # LOG.debug("First parameter type {t!r}: {p!r}".format(
+            #     t=type(first_param), p=first_param))
 
             if isinstance(first_param, Mapping):
                 self._update_from_mapping(first_param)
