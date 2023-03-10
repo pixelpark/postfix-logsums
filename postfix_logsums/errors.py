@@ -8,7 +8,7 @@
 @copyright: © 2023 by Frank Brehm, Berlin
 """
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -23,6 +23,31 @@ class PostfixLogsumsError(Exception):
 # =============================================================================
 class StatsError(PostfixLogsumsError):
     """Base error class for all exceptions the statistics module."""
+
+    pass
+
+
+# =============================================================================
+class WrongMsgStatsAttributeError(StatsError, AttributeError):
+    """Error class for a wrong attribute in a MessageStats object."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, attribute, class_name):
+        """Initialise a WrongMsgStatsAttributeError exception."""
+        self.attribute = attribute
+        self.class_name = class_name
+        super(WrongMsgStatsAttributeError, self).__init__()
+
+    # -------------------------------------------------------------------------
+    def __str__(self):
+        """Typecast into str."""
+        msg = "Invalid attribute {attr!r} for a {w} object."
+        return msg.format(attr=self.attribute, w=self.class_name)
+
+
+# =============================================================================
+class WrongMsgStatsValueError(StatsError, ValueError):
+    """Error class for a wrong value for a MessageStats value."""
 
     pass
 
