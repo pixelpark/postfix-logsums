@@ -9,9 +9,9 @@
 """
 from __future__ import absolute_import
 
-from .stats import HourlyStats
+from .stats import HourlyStats, MessageStatsTotals
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -32,14 +32,14 @@ class PostfixLogSums(object):
         self.amavis_msgs = 0
         self.bounced = {}
         self.bounced_messages_per_hour = HourlyStats()
-        self.bounced_total = 0
+        # self.bounced_total = 0
         self.connections_time = 0
         self.connections_total = 0
         self.days_counted = 0
-        self.deferrals_total = 0
+        # self.deferrals_total = 0
         self.deferred = {}
         self.deferred_messages_per_hour = HourlyStats()
-        self.deferred_messages_total = 0
+        # self.deferred_messages_total = 0
         self.delivered_messages_per_hour = HourlyStats()
         self.discards = {}
         self.fatals = {}
@@ -51,17 +51,9 @@ class PostfixLogSums(object):
         self.logdate_latest = None
         self.master_msgs = {}
         self.message_details = {}
-        self.messages = {
-            'discard': 0,
-            'hold': 0,
-            'master': 0,
-            'rejected': 0,
-            'warning': 0,
-        }
-        self.messages_delivered = 0
-        self.messages_forwarded = 0
+        # self.messages_forwarded = 0
         self.messages_per_day = {}
-        self.messages_received_total = 0
+        self.msgs_total = MessageStatsTotals()
         self.no_message_size = {}
         self.panics = {}
         self.postfix_messages = {}
@@ -140,7 +132,10 @@ class PostfixLogSums(object):
         for key in self.__dict__:
             if short and key.startswith('_') and not key.startswith('__'):
                 continue
-            res[key] = self.__dict__[key]
+            if key == 'msgs_total':
+                res[key] = self.msgs_total.dict()
+            else:
+                res[key] = self.__dict__[key]
 
         res['__class_name__'] = self.__class__.__name__
 

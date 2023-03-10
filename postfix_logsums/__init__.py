@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.6.4'
+__version__ = '0.6.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -977,25 +977,25 @@ class PostfixLogParser(object):
             return
 
         if self._cur_qid == 'reject':
-            self.proc_smtpd_reject(self.results.messages['rejected'])
+            self.proc_smtpd_reject('rejected')
             return
 
         if self._cur_qid == 'reject_warning':
-            self.proc_smtpd_reject(self.results.messages['warning'])
+            self.proc_smtpd_reject('reject_warning')
             return
 
         if self._cur_qid == 'hold':
-            self.proc_smtpd_reject(self.results.messages['hold'])
+            self.proc_smtpd_reject('held')
             return
 
         if self._cur_qid == 'discard':
-            self.proc_smtpd_reject(self.results.messages['discard'])
+            self.proc_smtpd_reject('discarded')
             return
 
         if self._cur_pf_command == 'master':
             mparts = self.re_master.split(self._cur_msg)
             mpart = mparts[1]
-            self.results.messages['master'] += 1
+            self.results.msgs_total.master += 1
             if mpart not in self.results.master_msgs:
                 self.results.master_msgs[mpart] = 0
             self.results.master_msgs[mpart] += 1
@@ -1057,26 +1057,26 @@ class PostfixLogParser(object):
 
         self.results.received_messages_per_hour[hour] += 1
         self.incr_msgs_per_day('rejected')
-        self.results.messages_received_total += 1
+        self.results.msgs_total.received += 1
         self._rcvd_msgs_qid[qid] = domain
 
     # -------------------------------------------------------------------------
     def _eval_smtpd_rejects(self, sub_type):
 
         if sub_type == 'reject':
-            self.proc_smtpd_reject(self.results.messages['rejected'])
+            self.proc_smtpd_reject('rejected')
             return
 
         if sub_type == 'reject_warning':
-            self.proc_smtpd_reject(self.results.messages['warning'])
+            self.proc_smtpd_reject('reject_warning')
             return
 
         if sub_type == 'hold':
-            self.proc_smtpd_reject(self.results.messages['hold'])
+            self.proc_smtpd_reject('held')
             return
 
         if sub_type == 'discard':
-            self.proc_smtpd_reject(self.results.messages['discard'])
+            self.proc_smtpd_reject('discarded')
             return
 
     # -------------------------------------------------------------------------
@@ -1206,25 +1206,25 @@ class PostfixLogParser(object):
         self.incr_msgs_per_day('rejected')
 
         if subtype == 'reject':
-            self.results.messages['rejected'] += 1
+            self.results.msgs_total.rejected += 1
             if self.detail_reject:
                 self._incr_cleanup_msg('rejects', part, cmd_msg)
             return
 
         if subtype == 'warning':
-            self.results.messages['warning'] += 1
+            self.results.msgs_total.reject_warning += 1
             if self.detail_reject:
                 self._incr_cleanup_msg('warns', part, cmd_msg)
             return
 
         if subtype == 'hold':
-            self.results.messages['hold'] += 1
+            self.results.msgs_total.held += 1
             if self.detail_reject:
                 self._incr_cleanup_msg('holds', part, cmd_msg)
             return
 
         if subtype == 'discard':
-            self.results.messages['discard'] += 1
+            self.results.msgs_total.discarded += 1
             if self.detail_reject:
                 self._incr_cleanup_msg('discards', part, cmd_msg)
 
@@ -1270,7 +1270,8 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def proc_smtpd_reject(self, counter):
 
-        counter += 1
+        self.results.msgs_total[counter] += 1
+        # counter += 1
 
         hour = self._cur_ts.hour
         self.results.rejected_messages_per_hour[hour] += 1
@@ -1533,10 +1534,10 @@ class PostfixLogParser(object):
 
         self.results.deferred_messages_per_hour[hour] += 1
         self.incr_msgs_per_day('deferred')
-        self.results.deferrals_total += 1
+        self.results.msgs_total.deferrals += 1
 
         if qid not in self._message_deferred_qid:
-            self.results.deferred_messages_total += 1
+            self.results.msgs_total.deferred += 1
             self._message_deferred_qid[qid] = 1
 
         if domain not in self.results.rcpt_domain:
@@ -1570,12 +1571,12 @@ class PostfixLogParser(object):
 
         self.results.bounced_messages_per_hour[hour] += 1
         self.incr_msgs_per_day('bounced')
-        self.results.bounced_total += 1
+        self.results.msgs_total.bounced += 1
 
     # -------------------------------------------------------------------------
     def _eval_relay_sent_msg(self, addr, domain, relay, delay, rest):
         if self.re_forwarded_as.search(rest):
-            self.results.messages_forwarded += 1
+            self.results.msgs_total.forwarded += 1
             return
 
         if domain not in self.results.rcpt_domain:
@@ -1594,7 +1595,7 @@ class PostfixLogParser(object):
         hour = self._cur_ts.hour
         self.results.delivered_messages_per_hour[hour] += 1
         self.incr_msgs_per_day('sent')
-        self.results.messages_delivered += 1
+        self.results.msgs_total.delivered += 1
 
         qid = self._cur_qid
         if qid in self._message_size:
@@ -1616,7 +1617,7 @@ class PostfixLogParser(object):
 
         self.results.received_messages_per_hour[hour] += 1
         self.incr_msgs_per_day('received')
-        self.results.messages_received_total += 1
+        self.results.msgs_total.received += 1
         self._rcvd_msgs_qid[qid] = 'pickup'
 
     # -------------------------------------------------------------------------

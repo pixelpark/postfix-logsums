@@ -22,7 +22,7 @@ from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -259,6 +259,16 @@ class MessageStatsPerDay(BaseMessageStats):
     """A class for encapsulating message statistics per day."""
 
     valid_keys = ('received', 'sent', 'deferred', 'bounced', 'rejected')
+
+
+# =============================================================================
+class MessageStatsTotals(BaseMessageStats):
+    """A class for encapsulating total message statistics."""
+
+    valid_keys = (
+        'received', 'delivered', 'forwarded', 'deferred', 'deferrals', 'rejected',
+        'discarded', 'bounced', 'reject_warning', 'held', 'bytes_received',
+        'bytes_delivered', 'users', 'domains', 'master')
 
 
 # =============================================================================

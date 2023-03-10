@@ -34,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname
 from . import PostfixLogParser
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 
 # =============================================================================
@@ -798,42 +798,54 @@ class PostfixLogsumsApp(object):
         print('Messages:')
         print()
 
+        # Variable renamings:
+        #  - self.results.bounced_total => self.results.msgs_total.bounced
+        #  - self.results.deferrals_total => self.results.msgs_total.deferrals
+        #  - self.results.deferred_messages_total => self.results.msgs_total.deferred
+        #  - self.results.messages_delivered => self.results.msgs_total.delivered
+        #  - self.results.messages_forwarded => self.results.msgs_total.forwarded
+        #  - self.results.messages_received_total => self.results.msgs_total.received
+        #  - self.results.messages['rejected'] => self.results.msgs_total.rejected
+        #  - self.results.messages['warning'] => self.results.msgs_total.reject_warning
+        #  - self.results.messages['hold'] => self.results.msgs_total.held
+        #  - self.results.messages['discard'] => self.results.msgs_total.discarded
+
         tpl = ' {value:6.0f}{unit}  {lbl}'
         msgs_rejected_pct = 0
         msgs_discarded_pct = 0
         msgs_total = (
-            self.results.messages_delivered + self.results.messages['rejected'] + \
-            self.results.messages['discard'])
+            self.results.msgs_total.delivered + self.results.msgs_total.rejected + \
+            self.results.msgs_total.discarded)
         if msgs_total:
-            msgs_rejected_pct = self.results.messages['rejected'] / msgs_total * 100
-            msgs_discarded_pct = self.results.messages['discard'] / msgs_total * 100
+            msgs_rejected_pct = self.results.msgs_total.rejected / msgs_total * 100
+            msgs_discarded_pct = self.results.msgs_total.discarded / msgs_total * 100
 
         print(tpl.format(
-            lbl='received', **self.adj_int_units(self.results.messages_received_total)))
+            lbl='received', **self.adj_int_units(self.results.msgs_total.received)))
         print(tpl.format(
-            lbl='delivered', **self.adj_int_units(self.results.messages_delivered)))
+            lbl='delivered', **self.adj_int_units(self.results.msgs_total.delivered)))
         print(tpl.format(
-            lbl='forwarded', **self.adj_int_units(self.results.messages_forwarded)))
+            lbl='forwarded', **self.adj_int_units(self.results.msgs_total.forwarded)))
         print(tpl.format(
-            lbl='deferred', **self.adj_int_units(self.results.deferred_messages_total)),
+            lbl='deferred', **self.adj_int_units(self.results.msgs_total.deferred)),
             end='')
-        if self.results.deferrals_total:
+        if self.results.msgs_total.deferrals:
             val = '  ({value:d}{unit} {lbl})'.format(
-                lbl='deferrals', **self.adj_int_units(self.results.deferrals_total))
+                lbl='deferrals', **self.adj_int_units(self.results.msgs_total.deferrals))
             print(val, end='')
         print()
         print(tpl.format(
-            lbl='bounced', **self.adj_int_units(self.results.bounced_total)))
+            lbl='bounced', **self.adj_int_units(self.results.msgs_total.bounced)))
         print(tpl.format(
-            lbl='rejected', **self.adj_int_units(self.results.messages['rejected'])),
+            lbl='rejected', **self.adj_int_units(self.results.msgs_total.rejected)),
             end='')
         print(' ({:0.1f}%)'.format(msgs_rejected_pct))
         print(tpl.format(
-            lbl='reject warnings', **self.adj_int_units(self.results.messages['warning'])))
+            lbl='reject warnings', **self.adj_int_units(self.results.msgs_total.reject_warning)))
         print(tpl.format(
-            lbl='held', **self.adj_int_units(self.results.messages['hold'])))
+            lbl='held', **self.adj_int_units(self.results.msgs_total.held)))
         print(tpl.format(
-            lbl='discarded', **self.adj_int_units(self.results.messages['discard'])),
+            lbl='discarded', **self.adj_int_units(self.results.msgs_total.discarded)),
             end='')
         print(' ({:0.1f}%)'.format(msgs_discarded_pct))
         print()
