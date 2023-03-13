@@ -59,18 +59,18 @@ class PostfixLogSums(object):
         self.postfix_messages = {}
         self.postfix_script = {}
         self.rcpt_domain = {}
-        self.rcpt_domain_count = 0
+        # self.rcpt_domain_count = 0
         self.rcpt_user = {}
-        self.rcpt_user_count = 0
+        # self.rcpt_user_count = 0
         self.received_messages_per_hour = HourlyStats()
-        self.received_size = 0
+        # self.received_size = 0
         self.rejected_messages_per_hour = HourlyStats()
         self.rejects = {}
-        self.sender_domain_count = 0
+        # self.sender_domain_count = 0
         self.sending_domain_data = {}
-        self.sending_user_count = 0
+        # self.sending_user_count = 0
         self.sending_user_data = {}
-        self.size_delivered = 0
+        # self.size_delivered = 0
         self.smtp_messages = {}
         self.smtp_connection_details = {
             'other': {},

@@ -1129,7 +1129,7 @@ class PostfixLogParser(object):
                 if seconds > self.results.smtpd_per_domain[host_id][2]:
                     self.results.smtpd_per_domain[host_id][2] = seconds
 
-                self.results.connections_total += 1
+                self.results.msgs_total.connections += 1
                 self.results.connections_time += seconds
 
     # -------------------------------------------------------------------------
@@ -1455,17 +1455,17 @@ class PostfixLogParser(object):
             if dom_addr not in self.results.sending_domain_data:
                 self.results.sending_domain_data[dom_addr] = MessageStats()
             if not self.results.sending_domain_data[dom_addr].count:
-                self.results.sender_domain_count += 1
+                self.results.msgs_total.sending_domains += 1
             self.results.sending_domain_data[dom_addr].count += 1
             self.results.sending_domain_data[dom_addr].size += size
 
             if addr not in self.results.sending_user_data:
                 self.results.sending_user_data[addr] = MessageStats()
             if not self.results.sending_user_data[addr].count:
-                self.results.sending_user_count += 1
+                self.results.msgs_total.sending_users += 1
             self.results.sending_user_data[addr].count += 1
             self.results.sending_user_data[addr].size += size
-            self.results.received_size += size
+            self.results.msgs_total.bytes_received += size
 
             del self._rcvd_msgs_qid[qid]
 
@@ -1581,7 +1581,8 @@ class PostfixLogParser(object):
 
         if domain not in self.results.rcpt_domain:
             self.results.rcpt_domain[domain] = MessageStats()
-            self.results.rcpt_domain_count += 1
+            # self.results.rcpt_domain_count += 1
+            self.results.msgs_total.rcpt_domains += 1
         self.results.rcpt_domain[domain].count += 1
         self.results.rcpt_domain[domain].delay_avg += delay
         if delay > self.results.rcpt_domain[domain].delay_max:
@@ -1589,7 +1590,8 @@ class PostfixLogParser(object):
 
         if addr not in self.results.rcpt_user:
             self.results.rcpt_user[addr] = MessageStats()
-            self.results.rcpt_user_count += 1
+            # self.results.rcpt_user_count += 1
+            self.results.msgs_total.rcpt_users += 1
         self.results.rcpt_user[addr].count += 1
 
         hour = self._cur_ts.hour
@@ -1602,7 +1604,7 @@ class PostfixLogParser(object):
             size = self._message_size[qid]
             self.results.rcpt_domain[domain].size += size
             self.results.rcpt_user[addr].size += size
-            self.results.size_delivered += size
+            self.results.msgs_total.bytes_delivered += size
         else:
             if not self.no_no_message_size:
                 self.results.no_message_size[qid] = addr

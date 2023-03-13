@@ -268,7 +268,8 @@ class MessageStatsTotals(BaseMessageStats):
     valid_keys = (
         'received', 'delivered', 'forwarded', 'deferred', 'deferrals', 'rejected',
         'discarded', 'bounced', 'reject_warning', 'held', 'bytes_received',
-        'bytes_delivered', 'users', 'domains', 'master')
+        'bytes_delivered', 'sending_users', 'sending_domains', 'rcpt_users',
+        'rcpt_domains', 'connections', 'master')
 
 
 # =============================================================================

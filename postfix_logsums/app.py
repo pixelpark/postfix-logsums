@@ -773,6 +773,9 @@ class PostfixLogsumsApp(object):
 
         self.print_grand_totals()
 
+        if self.args.smtpd_stats:
+            self.print_smtpd_stats()
+
         print()
 
     # -------------------------------------------------------------------------
@@ -851,13 +854,17 @@ class PostfixLogsumsApp(object):
         print()
 
         print(tpl.format(
-            lbl='bytes received', **self.adj_int_units(self.results.received_size)))
+            lbl='bytes received', **self.adj_int_units(self.results.msgs_total.bytes_received)))
         print(tpl.format(
-            lbl='bytes delivered', **self.adj_int_units(self.results.size_delivered)))
+            lbl='bytes delivered', **self.adj_int_units(self.results.msgs_total.bytes_delivered)))
         print(tpl.format(
-            lbl='senders', **self.adj_int_units(self.results.sending_user_count)))
+            lbl='senders', **self.adj_int_units(self.results.msgs_total.sending_users)))
         print(tpl.format(
-            lbl='sending hosts/domains', **self.adj_int_units(self.results.sender_domain_count)))
+            lbl='sending hosts/domains', **self.adj_int_units(self.results.msgs_total.sending_domains)))
+        print(tpl.format(
+            lbl='recipients', **self.adj_int_units(self.results.msgs_total.rcpt_users)))
+        print(tpl.format(
+            lbl='recipient hosts/domains', **self.adj_int_units(self.results.msgs_total.rcpt_domains)))
 
 
         print()
@@ -885,6 +892,28 @@ class PostfixLogsumsApp(object):
             unit = 'K'
 
         return {'value': val, 'unit': unit}
+
+    # -------------------------------------------------------------------------
+    def print_smtpd_stats(self):
+
+        tpl = ' {value:6.0f}{unit}  {lbl}'
+        count_domains = len(self.results.smtpd_per_domain.keys())
+        total_conn = self.results.msgs_total.connections
+        time_conn = self.results.connections_time
+        avg_time = 0.0
+        if total_conn:
+            avg_time = (time_conn / total_conn) + 0.5
+
+        print()
+        print('Smtpd:')
+        print()
+
+        print(tpl.format(
+            lbl='connections', **self.adj_int_units(total_conn)))
+        print(tpl.format(
+            lbl='hosts/domains', value=count_domains, unit=' '))
+        print(tpl.format(
+            lbl='avg. connect time (seconds)', value=avg_time, unit=' '))
 
 
 # =============================================================================
