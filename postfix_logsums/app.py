@@ -915,7 +915,7 @@ class PostfixLogsumsApp(object):
             lbl='hosts/domains', value=count_domains, unit=' '))
         print(tpl.format(
             lbl='avg. connect time (seconds)', value=avg_time, unit=' '))
-        print(' {h:d}:{m:02d}:{s:02d}  {lbl}'.format(
+        print(' {h:d}:{m:02d}:{s:02.0f}  {lbl}'.format(
             h=total_time_splitted[2], m=total_time_splitted[1],
             s=total_time_splitted[0], lbl='total connect time'))
 
