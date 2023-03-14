@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1147,7 +1147,7 @@ class PostfixLogParser(object):
     def _eval_warning_cmd(self):
 
         cmd = self._cur_pf_command
-        if cmd == 'smtpd' and self.detail_smtpd_warning:
+        if cmd == 'smtpd' and self.detail_smtpd_warning == 0:
             return
 
         warn_msg = self.re_warning.sub('', self._cur_msg)
