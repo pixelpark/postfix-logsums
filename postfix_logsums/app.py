@@ -831,6 +831,8 @@ class PostfixLogsumsApp(object):
         if self.args.problems_first:
             self.print_problems_reports()
 
+        self.print_per_day_summary()
+
         if not self.args.problems_first:
             self.print_problems_reports()
 
@@ -1088,6 +1090,60 @@ class PostfixLogsumsApp(object):
         self.print_nested_hash(data=self.results.panics, label="Panics", count=0)
         self.print_hash_by_cnt_vals(
             data=self.results.master_msgs, title='Master daemon messages', count=0)
+
+    # -------------------------------------------------------------------------
+    def print_per_day_summary(self):
+        """Print "per-day" traffic summary."""
+        self.print_subsect_title("Per-Day Traffic Summary")
+        indent = '  '
+
+        fields = ('date', 'received', 'sent', 'deferred', 'bounced', 'rejected')
+        labels = {
+            'date': 'Date',
+            'received': 'Received',
+            'sent': 'Delivered',
+            'deferred': 'Deferred',
+            'bounced': 'Bounced',
+            'rejected': 'Rejected',
+        }
+        widths = {
+            'date': 12,
+            'received': 8,
+            'sent': 8,
+            'deferred': 8,
+            'bounced': 8,
+            'rejected': 8,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{date:<{w}}}'.format(w=widths['date'])
+        tpl += '  {{received:>{w}}}'.format(w=widths['received'])
+        tpl += '  {{sent:>{w}}}'.format(w=widths['sent'])
+        tpl += '  {{deferred:>{w}}}'.format(w=widths['deferred'])
+        tpl += '  {{bounced:>{w}}}'.format(w=widths['bounced'])
+        tpl += '  {{rejected:>{w}}}'.format(w=widths['rejected'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        tpl = '{{date:<{w}}}'.format(w=widths['date'])
+        tpl += '  {{received:>{w:n}}}'.format(w=widths['received'])
+        tpl += '  {{sent:>{w:n}}}'.format(w=widths['sent'])
+        tpl += '  {{deferred:>{w:n}}}'.format(w=widths['deferred'])
+        tpl += '  {{bounced:>{w:n}}}'.format(w=widths['bounced'])
+        tpl += '  {{rejected:>{w:n}}}'.format(w=widths['rejected'])
+
+        for day in sorted(self.results.messages_per_day.keys()):
+
+            stats = self.results.messages_per_day[day].dict()
+            stats['date'] = day
+            line = tpl.format(**stats)
+            print(indent + line)
 
 
 # =============================================================================
