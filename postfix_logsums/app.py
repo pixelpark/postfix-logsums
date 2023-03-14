@@ -34,7 +34,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
-__version__ = '0.6.3'
+__version__ = '0.6.4'
 
 
 # =============================================================================
@@ -124,6 +124,7 @@ class PostfixLogsumsApp(object):
         self._appname = get_generic_appname()
         self._version = __version__
         self._verbose = 0
+        self._quiet = False
         self._initialized = False
         self.parser = None
 
@@ -196,6 +197,16 @@ class PostfixLogsumsApp(object):
             LOG.warning("Wrong verbose level {!r}, must be >= 0".format(value))
 
     # -----------------------------------------------------------
+    @property
+    def quiet(self):
+        """Don't print headings for empty reports."""
+        return self._quiet
+
+    @quiet.setter
+    def quiet(self, value):
+        self._quiet = bool(value)
+
+     # -----------------------------------------------------------
     @property
     def initialized(self):
         """The initialisation of this object is complete."""
@@ -362,6 +373,7 @@ class PostfixLogsumsApp(object):
         res['detail_verbose_msg'] = self.detail_verbose_msg
         if self.parser:
             res['parser'] = self.parser.as_dict(short=short)
+        res['quiet'] = self.quiet
         res['version'] = self.version
         res['verbose'] = self.verbose
 
@@ -608,15 +620,6 @@ class PostfixLogsumsApp(object):
         output_options.add_argument(
             '--iso-date-time', dest='iso_date', action="store_true", help=desc)
 
-        # --quiet
-        desc = self.wrap_msg("quiet - don't print headings for empty reports.", arg_width)
-        desc += '\n'
-        desc += self.wrap_msg(
-            'NOTE: headings for warning, fatal, and "master"  messages will always be '
-            'printed.', arg_width)
-        output_options.add_argument(
-            '-q', '--quiet', dest='quiet', action="store_true", help=desc)
-
         # --verbose-msg-detail
         desc = self.wrap_msg(
             'For the message deferral, bounce and reject summaries: display the full "reason", '
@@ -637,9 +640,20 @@ class PostfixLogsumsApp(object):
         # General stuff
         general_group = self.arg_parser.add_argument_group('General_options')
 
+        verbose_group = general_group.add_mutually_exclusive_group()
+
         desc = 'Increase the verbosity level.'
-        general_group.add_argument(
+        verbose_group.add_argument(
             "-v", "--verbose", action="count", dest='verbose', help=desc)
+
+        # --quiet
+        desc = self.wrap_msg("quiet - don't print headings for empty reports.", arg_width)
+        desc += '\n'
+        desc += self.wrap_msg(
+            'NOTE: headings for warning, fatal, and "master"  messages will always be '
+            'printed.', arg_width)
+        verbose_group.add_argument(
+            '-q', '--quiet', dest='quiet', action="store_true", help=desc)
 
         general_group.add_argument(
             "--help", action='help', dest='help',
@@ -668,6 +682,8 @@ class PostfixLogsumsApp(object):
 
         if self.args.verbose is not None and self.args.verbose > self.verbose:
             self.verbose = self.args.verbose
+        elif self.args.quiet:
+            self.quiet = True
 
     # -------------------------------------------------------------------------
     def init_logging(self):
