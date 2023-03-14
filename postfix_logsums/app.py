@@ -26,6 +26,10 @@ from argparse import RawTextHelpFormatter
 
 from pathlib import Path
 
+from functools import cmp_to_key
+
+from locale import strcoll
+
 LOG = logging.getLogger(__name__)
 
 from . import __version__ as GLOBAL_VERSION
@@ -34,7 +38,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
-__version__ = '0.6.4'
+__version__ = '0.6.5'
 
 
 # =============================================================================
@@ -109,6 +113,38 @@ class PostfixLogsumsApp(object):
         max_width = MAX_TERMINAL_WIDTH
 
     re_first_letter = re.compile(r'^(.)(.*)')
+    pat_ipv4_tuple = r'(\d|[1-9]\d|1\d\d|2(?:[04]\d|5[0-5]))'
+    pat_ipv4 = r'^' + r'.'.join(pat_ipv4_tuple) + r'$'
+    re_ipv4 = re.compile(pat_ipv4)
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def sorted_keys_by_count_and_key(cls, data):
+        """Returns all keys of tha data dict sorted."""
+        sorted_keys = []
+
+        # ---------------------------------------------
+        def sort_by_count_and_key(key_one, key_two):
+            val_one = data[key_one]
+            val_two = data[key_two]
+            if val_one != val_two:
+                if val_one < val_two:
+                    return 1
+                else:
+                    return -1
+            lkey_one = key_one.lower()
+            lkey_two = key_two.lower()
+            m_one = cls.re_ipv4.match(key_one)
+            m_two = cls.re_ipv4.match(key_two)
+            if m_one and m_two:
+                lkey_one = ''.join(map(lambda x: chr(int(x)), m_one.groups()))
+                lkey_two = ''.join(map(lambda x: chr(int(x)), m_two.groups()))
+            return strcoll(lkey_one, lkey_two)
+
+        for key in sorted(data.keys(), key=cmp_to_key(sort_by_count_and_key)):
+            sorted_keys.append(key)
+
+        return sorted_keys
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -545,7 +581,7 @@ class PostfixLogsumsApp(object):
             'individual settings.', arg_width) + '\n'
         desc += self.wrap_msg('--detail 0 suppresses *all* detail.', arg_width)
         output_options.add_argument(
-            '--detail', type=int, metavar='COUNT', dest='detail', default=1,
+            '-D', '--detail', type=int, metavar='COUNT', dest='detail',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --bounce-detail
@@ -792,6 +828,12 @@ class PostfixLogsumsApp(object):
         if self.args.smtpd_stats:
             self.print_smtpd_stats()
 
+        if self.args.problems_first:
+            self.print_problems_reports()
+
+        if not self.args.problems_first:
+            self.print_problems_reports()
+
         print()
 
     # -------------------------------------------------------------------------
@@ -934,6 +976,72 @@ class PostfixLogsumsApp(object):
         print(' {h:d}:{m:02d}:{s:02.0f}  {lbl}'.format(
             h=total_time_splitted[2], m=total_time_splitted[1],
             s=total_time_splitted[0], lbl='total connect time'))
+        print()
+
+    # -------------------------------------------------------------------------
+    def print_nested_hash(self, data, label, count):
+        if not len(data.keys()):
+            if self.quiet:
+                return
+            print('\n{lbl}: {n}'.format(lbl=label, n='none'))
+            return
+        print('\n{lbl}'.format(lbl=label))
+        print('-' * len(label))
+        self.walk_nested_hash(data, count)
+
+    # -------------------------------------------------------------------------
+    def walk_nested_hash(self, data, count, level=0):
+        """# 'walk' a 'nested' hash"""
+        if not len(data.keys()):
+            return
+        level += 1
+        indent = '  ' * level
+        sorted_keys = sorted(data.keys(), key=str.lower)
+        first_key = sorted_keys[0]
+        first_value = data[first_key]
+
+        if isinstance(first_value, dict):
+            for key in sorted_keys:
+                print('{i}{k}'.format(i=indent, k=key), end='')
+                first_key2 = sorted(data[key].keys(), key=str.lower)[0]
+                first_value2 = data[key][first_key2]
+                if not isinstance(first_value2, dict):
+                    if count is not None and count > 0:
+                        print(' ({lbl}: {c})'.format(lbl='top', c=count), end='')
+                    total_count = 0
+                    for key2 in data[key].keys():
+                        total_count += data[key][key2]
+                    print(' ({lbl}: {c})'.format(lbl='total', c=total_count), end='')
+                print()
+                self.walk_nested_hash(data[key], count, level)
+        else:
+            self.really_print_hash_by_cnt_vals(data, count, indent)
+
+    # -------------------------------------------------------------------------
+    def really_print_hash_by_cnt_vals(self, data, count, indent):
+        """*really* print hash contents sorted by numeric values in descending
+        order (i.e.: highest first), then by IP/addr, in ascending order."""
+        tpl = '{i}{value:6.0f}{unit}  {lbl}'
+
+        i = 0
+        for key in self.sorted_keys_by_count_and_key(data):
+            print(tpl.format(i=indent, lbl=key, **self.adj_int_units(data[key])))
+            if count is not None:
+                i += 1
+                if i >= count:
+                    break
+
+    # -------------------------------------------------------------------------
+    def print_problems_reports(self):
+        """Print "problems" reports."""
+        if self.detail_deferral != 0:
+            self.print_nested_hash(
+                data=self.results.deferred, label="Message deferral detail",
+                count=self.detail_deferral)
+
+        self.print_nested_hash(data=self.results.fatals, label="Fatal Errors", count=0)
+        self.print_nested_hash(data=self.results.panics, label="Panics", count=0)
+
 
 
 # =============================================================================
