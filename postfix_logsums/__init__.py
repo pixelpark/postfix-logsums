@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.6.5'
+__version__ = '0.6.6'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -169,7 +169,6 @@ class PostfixLogParser(object):
 
         self.re_date_filter = None
         self.re_date_filter_rfc3339 = None
-        self.results = PostfixLogSums()
 
         self._rcvd_msgs_qid = {}
         self._connection_times = {}
@@ -326,6 +325,8 @@ class PostfixLogParser(object):
             self.encoding = encoding
         else:
             self.encoding = self.default_encoding
+
+        self.results = PostfixLogSums(smtpd_stats=self.smtpd_stats)
 
         self._initialized = True
 
@@ -1110,10 +1111,10 @@ class PostfixLogParser(object):
 
                 seconds = time_diff.total_seconds()
 
-                self.results.smtpd_messages_per_hour[hour][0] += 1
-                self.results.smtpd_messages_per_hour[hour][1] += seconds
-                if seconds > self.results.smtpd_messages_per_hour[hour][2]:
-                    self.results.smtpd_messages_per_hour[hour][2] = seconds
+                self.results.smtpd_messages_per_hour[hour].count += 1
+                self.results.smtpd_messages_per_hour[hour].time_total += seconds
+                if seconds > self.results.smtpd_messages_per_hour[hour].time_max:
+                    self.results.smtpd_messages_per_hour[hour].time_max = seconds
 
                 if dt_fmt not in self.results.smtpd_per_day:
                     self.results.smtpd_per_day[dt_fmt] = [0, 0, 0]

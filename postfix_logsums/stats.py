@@ -22,7 +22,7 @@ from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.4.5'
+__version__ = '0.5.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -133,13 +133,13 @@ class BaseMessageStats(MutableMapping):
     # -----------------------------------------------------------
     def __repr__(self):
         """Typecast for reproduction."""
-        ret = "{}({{".format(self.__class__.__name__)
+        ret = "{}(".format(self.__class__.__name__)
         kargs = []
         for pair in self.items():
-            arg = "{k!r}: {v!r}".format(k=pair[0], v=pair[1])
+            arg = "{k}={v!r}".format(k=pair[0], v=pair[1])
             kargs.append(arg)
         ret += ', '.join(kargs)
-        ret += '})'
+        ret += ')'
 
         return ret
 
@@ -246,12 +246,26 @@ class BaseMessageStats(MutableMapping):
 
         setattr(self, key, 0)
 
+    # -------------------------------------------------------------------------
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        return self._values == other._values
+
 
 # =============================================================================
 class MessageStats(BaseMessageStats):
     """A class for encapsulating common message statistics."""
 
     valid_keys = ('count', 'size', 'defers', 'delay_avg', 'delay_max')
+
+
+# =============================================================================
+class SmtpdStatsPerHour(BaseMessageStats):
+    """A class for encapsulating message statistics per day."""
+
+    valid_keys = ('count', 'time_total', 'time_max')
 
 
 # =============================================================================
@@ -299,13 +313,11 @@ class HourlyStats(MutableSequence):
     def __repr__(self):
         """Typecast for reproduction."""
         ret = "{}(".format(self.__class__.__name__)
-        index = 0
+        pairs = []
+
         for value in self:
-            if index:
-                ret += ', '
-            ret += str(value)
-            index += 1
-        ret += ')'
+            pairs.append(repr(value))
+        ret += ', '.join(pairs) + ')'
 
         return ret
 
@@ -426,6 +438,57 @@ class HourlyStats(MutableSequence):
         invalid action."""
 
         raise MsgStatsHourInvalidMethodError('__iadd__')
+
+
+# =============================================================================
+class HourlyStatsSmtpd(HourlyStats):
+    """A class for encapsulating per hour message statistics."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, *args):
+        """Constructor."""
+
+        self._list = []
+        for hour in range(self.hours_per_day):
+            self._list.append(SmtpdStatsPerHour())
+
+        if args:
+            if len(args) > self.hours_per_day:
+                msg = "Invalid number {} of statistics per hour give.".format(len(args))
+                raise StatsError(msg)
+            index = 0
+            for value in args:
+                if value is not None:
+                    self[index] = value
+                index += 1
+
+    # -------------------------------------------------------------------------
+    def __setitem__(self, hour, value):
+        """Setting the value for the given hour."""
+        if isinstance(value, SmtpdStatsPerHour):
+            self._list[hour] = value
+            return
+
+        if isinstance(value, (list, tuple)):
+            if len(value) != 3:
+                msg = (
+                    "Wrong value {v!r} for a per hour stat of smtp - "
+                    "must have three numbers.").format(value)
+                raise WrongMsgStatsValueError(msg)
+            v = SmtpdStatsPerHour()
+            v[0] = value[0]
+            v[1] = value[1]
+            v[2] = value[2]
+            self._list[hour] = v
+            return
+
+        if isinstance(value, dict):
+            v = SmtpdStatsPerHour(**value)
+            self._list[hour] = v
+            return
+
+        msg = "Wrong value {v!r} for a per hour stat.".format(v=value)
+        raise WrongMsgStatsValueError(msg)
 
 
 # =============================================================================

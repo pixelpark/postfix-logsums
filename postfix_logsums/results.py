@@ -9,9 +9,9 @@
 """
 from __future__ import absolute_import
 
-from .stats import HourlyStats, MessageStatsTotals
+from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -21,9 +21,22 @@ class PostfixLogSums(object):
     """A class for encaplsulating the results of parsing of postfix logfiles."""
 
     # -------------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self, smtpd_stats=False):
         """Constructor."""
+        self._smtpd_stats = False
+        self.smtpd_stats = smtpd_stats
+
         self.reset()
+
+    # -------------------------------------------------------------------------
+    @property
+    def smtpd_stats(self):
+        """Generate smtpd connection statistics."""
+        return self._smtpd_stats
+
+    @smtpd_stats.setter
+    def smtpd_stats(self, value):
+        self._smtpd_stats = bool(value)
 
     # -------------------------------------------------------------------------
     def reset(self):
@@ -85,7 +98,9 @@ class PostfixLogSums(object):
         }
         self.smtpd_per_day = {}
         self.smtpd_per_domain = {}
-        self.smtpd_messages_per_hour = HourlyStats()
+        self.smtpd_messages_per_hour = None
+        if self.smtpd_stats:
+            self.smtpd_messages_per_hour = HourlyStatsSmtpd()
         self.warnings = {}
         self.warns = {}
 
@@ -134,6 +149,13 @@ class PostfixLogSums(object):
                 continue
             if key == 'msgs_total':
                 res[key] = self.msgs_total.dict()
+            elif key == 'smtpd_messages_per_hour':
+                if self.smtpd_messages_per_hour is None:
+                    res[key] = None
+                else:
+                    res[key] = []
+                    for stat in self.smtpd_messages_per_hour:
+                        res[key].append(repr(stat))
             else:
                 res[key] = self.__dict__[key]
 
