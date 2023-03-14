@@ -902,7 +902,7 @@ class PostfixLogsumsApp(object):
         print(tpl.format(
             lbl='rejected', **self.adj_int_units(self.results.msgs_total.rejected)),
             end='')
-        print(' ({:0.1f}%)'.format(msgs_rejected_pct))
+        print(' ({:0.1n}%)'.format(msgs_rejected_pct))
         print(tpl.format(
             lbl='reject warnings', **self.adj_int_units(self.results.msgs_total.reject_warning)))
         print(tpl.format(
@@ -1108,11 +1108,11 @@ class PostfixLogsumsApp(object):
         }
         widths = {
             'date': 12,
-            'received': 8,
-            'sent': 8,
-            'deferred': 8,
-            'bounced': 8,
-            'rejected': 8,
+            'received': 11,
+            'sent': 11,
+            'deferred': 11,
+            'bounced': 11,
+            'rejected': 11,
         }
 
         for field in labels.keys():
