@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.6.6'
+__version__ = '0.7.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -94,6 +94,16 @@ def get_generic_appname(appname=None):
     aname = re.sub(r'\.py$', '', aname, flags=re.IGNORECASE)
     return os.path.basename(aname)
 
+
+# =============================================================================
+def get_smh(seconds):
+    """Get seconds, minutes and hours from seconds."""
+    hours = int(seconds / 3600)
+    seconds -= hours * 3600
+    minutes = int(seconds / 60)
+    seconds -= minutes * 60
+
+    return (seconds, minutes, hours)
 
 # =============================================================================
 class PostfixLogParser(object):

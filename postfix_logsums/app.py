@@ -31,7 +31,7 @@ LOG = logging.getLogger(__name__)
 from . import __version__ as GLOBAL_VERSION
 from . import pp, to_bytes, MAX_TERMINAL_WIDTH
 from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
-from . import get_generic_appname
+from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
 __version__ = '0.6.3'
@@ -903,6 +903,7 @@ class PostfixLogsumsApp(object):
         avg_time = 0.0
         if total_conn:
             avg_time = (time_conn / total_conn) + 0.5
+        total_time_splitted = get_smh(time_conn)
 
         print()
         print('Smtpd:')
@@ -914,6 +915,9 @@ class PostfixLogsumsApp(object):
             lbl='hosts/domains', value=count_domains, unit=' '))
         print(tpl.format(
             lbl='avg. connect time (seconds)', value=avg_time, unit=' '))
+        print(' {h:d}:{m:02d}:{s:02d}  {lbl}'.format(
+            h=total_time_splitted[2], m=total_time_splitted[1],
+            s=total_time_splitted[0], lbl='total connect time'))
 
 
 # =============================================================================
