@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1225,7 +1225,7 @@ class PostfixLogParser(object):
         if subtype == 'warning':
             self.results.msgs_total.reject_warning += 1
             if self.detail_reject:
-                self._incr_cleanup_msg('warns', part, cmd_msg)
+                self._incr_cleanup_msg('cleanup_warnings', part, cmd_msg)
             return
 
         if subtype == 'hold':
@@ -1698,7 +1698,7 @@ class PostfixLogParser(object):
             if self.verbose > 1:
                 msg = "Unhandled SMTP message: {msg!r}".format(msg=self._cur_msg)
                 LOG.debug(msg)
-                return
+            return
 
         if smtp_target not in self.results.smtp_messages:
             self.results.smtp_messages[smtp_target] = {}

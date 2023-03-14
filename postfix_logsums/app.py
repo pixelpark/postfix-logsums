@@ -38,7 +38,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
-__version__ = '0.6.5'
+__version__ = '0.6.6'
 
 
 # =============================================================================
@@ -50,7 +50,7 @@ class NonNegativeItegerOptionAction(argparse.Action):
         try:
             val = int(value)
         except Exception as e:
-            msg = "Got a {c} for converting {v!r} into an integer value: {e}".format(
+            Gmsg = "Got a {c} for converting {v!r} into an integer value: {e}".format(
                 c=e.__class__.__name__, v=value, e=e)
             raise argparse.ArgumentError(self, msg)
 
@@ -1018,6 +1018,23 @@ class PostfixLogsumsApp(object):
             self.really_print_hash_by_cnt_vals(data, count, indent)
 
     # -------------------------------------------------------------------------
+    def print_hash_by_cnt_vals(self, data, title, count):
+        """Print hash contents sorted by numeric values in descending
+        order (i.e.: highest first)."""
+        if count:
+            title = "{top} {c} ".format(top="top", c=count) + title
+        if not len(data.keys()):
+            if self.quiet:
+                return
+            print('\n{lbl}: {n}'.format(lbl=title, n='none'))
+            return
+
+        print('\n{lbl}'.format(lbl=title))
+        print('-' * len(title))
+
+        self.really_print_hash_by_cnt_vals(data, count, ' ')
+
+    # -------------------------------------------------------------------------
     def really_print_hash_by_cnt_vals(self, data, count, indent):
         """*really* print hash contents sorted by numeric values in descending
         order (i.e.: highest first), then by IP/addr, in ascending order."""
@@ -1039,9 +1056,38 @@ class PostfixLogsumsApp(object):
                 data=self.results.deferred, label="Message deferral detail",
                 count=self.detail_deferral)
 
+        if self.detail_bounce != 0:
+            self.print_nested_hash(
+                data=self.results.bounced, label="Message bounce detail (by relay)",
+                count=self.detail_bounce)
+
+        if self.detail_reject != 0:
+            self.print_nested_hash(
+                data=self.results.rejects, label="Message reject detail",
+                count=self.detail_reject)
+            self.print_nested_hash(
+                data=self.results.warnings, label="Message reject warning detail",
+                count=self.detail_reject)
+            self.print_nested_hash(
+                data=self.results.holds, label="Message hold detail",
+                count=self.detail_reject)
+            self.print_nested_hash(
+                data=self.results.discards, label="Message discard detail",
+                count=self.detail_reject)
+
+        if self.detail_smtp != 0:
+            self.print_nested_hash(
+                data=self.results.smtp_messages, label="SMTP delivery failures",
+                count=self.detail_smtp)
+
+        if self.detail_smtpd_warning != 0:
+            self.print_nested_hash(
+                data=self.results.warnings, label="Warnings", count=self.detail_smtpd_warning)
+
         self.print_nested_hash(data=self.results.fatals, label="Fatal Errors", count=0)
         self.print_nested_hash(data=self.results.panics, label="Panics", count=0)
-
+        self.print_hash_by_cnt_vals(
+            data=self.results.master_msgs, title='Master daemon messages', count=0)
 
 
 # =============================================================================

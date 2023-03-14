@@ -11,7 +11,7 @@ from __future__ import absolute_import
 
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -46,6 +46,7 @@ class PostfixLogSums(object):
         self.bounced = {}
         self.bounced_messages_per_hour = HourlyStats()
         # self.bounced_total = 0
+        self.cleanup_warnings = {}
         self.connections_time = 0
         self.connections_total = 0
         self.days_counted = 0
@@ -102,7 +103,6 @@ class PostfixLogSums(object):
         if self.smtpd_stats:
             self.smtpd_messages_per_hour = HourlyStatsSmtpd()
         self.warnings = {}
-        self.warns = {}
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
