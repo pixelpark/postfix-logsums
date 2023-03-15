@@ -1459,7 +1459,15 @@ class PostfixLogParser(object):
         self._message_size[qid] = size
         self._add_ext_msg_detail(qid, addr)
 
+        if self.verbose > 2:
+            LOG.debug(
+                "Eval message size: qid: {q!r}, addr: {a!r}, size{s!r}.".format(
+                    q=qid, a=addr, s=size))
+
         if qid in self._rcvd_msgs_qid:
+
+            if self.verbose > 2:
+                LOG.debug("Bla: {!r}".format(self._rcvd_msgs_qid[qid}))
 
             dom_addr = self.re_domain_addr.sub(r'\1', addr)
             if dom_addr == addr:
