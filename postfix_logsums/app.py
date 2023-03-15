@@ -943,6 +943,10 @@ class PostfixLogsumsApp(object):
         self.print_recip_domain_summary()
         self.print_sending_domain_summary()
 
+        if self.args.smtpd_stats:
+            if self.nr_days > 1:
+                self.print_per_day_smtpd()
+
         if not self.args.problems_first:
             self.print_problems_reports()
 
@@ -1462,6 +1466,15 @@ class PostfixLogsumsApp(object):
             i += 1
             if count is not None and i >= count:
                 break
+
+    # -------------------------------------------------------------------------
+    def print_per_day_smtpd(self):
+        """print "per-day" smtpd connection summary"""
+        title = 'Per-Day SMTPD Connection Summary'
+        self.print_subsect_title(title)
+        indent = '  '
+
+        # self.results.smtpd_per_day
 
 
 # =============================================================================
