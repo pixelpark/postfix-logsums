@@ -11,7 +11,7 @@ from __future__ import absolute_import
 
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -45,15 +45,12 @@ class PostfixLogSums(object):
         self.amavis_msgs = 0
         self.bounced = {}
         self.bounced_messages_per_hour = HourlyStats()
-        # self.bounced_total = 0
         self.cleanup_warnings = {}
         self.connections_time = 0
         self.connections_total = 0
         self.days_counted = 0
-        # self.deferrals_total = 0
         self.deferred = {}
         self.deferred_messages_per_hour = HourlyStats()
-        # self.deferred_messages_total = 0
         self.delivered_messages_per_hour = HourlyStats()
         self.discards = {}
         self.fatals = {}
@@ -65,7 +62,6 @@ class PostfixLogSums(object):
         self.logdate_latest = None
         self.master_msgs = {}
         self.message_details = {}
-        # self.messages_forwarded = 0
         self.messages_per_day = {}
         self.msgs_total = MessageStatsTotals()
         self.no_message_size = {}
@@ -73,18 +69,12 @@ class PostfixLogSums(object):
         self.postfix_messages = {}
         self.postfix_script = {}
         self.rcpt_domain = {}
-        # self.rcpt_domain_count = 0
         self.rcpt_user = {}
-        # self.rcpt_user_count = 0
         self.received_messages_per_hour = HourlyStats()
-        # self.received_size = 0
         self.rejected_messages_per_hour = HourlyStats()
         self.rejects = {}
-        # self.sender_domain_count = 0
         self.sending_domain_data = {}
-        # self.sending_user_count = 0
         self.sending_user_data = {}
-        # self.size_delivered = 0
         self.smtp_messages = {}
         self.smtp_connection_details = {
             'other': {},

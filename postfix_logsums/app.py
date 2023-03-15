@@ -31,6 +31,8 @@ from functools import cmp_to_key
 
 from locale import strcoll, format_string
 
+from operator import itemgetter, attrgetter
+
 LOG = logging.getLogger(__name__)
 
 from . import __version__ as GLOBAL_VERSION
@@ -41,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.6.9'
+__version__ = '0.6.10'
 
 
 # =============================================================================
@@ -152,6 +154,28 @@ def adj_int_units_localized(value, digits=1, dec_digits=0, no_unit=False):
     return ret
 
 # =============================================================================
+def adj_time_units(seconds, digits=1, dec_digits=1):
+    """Return (value + unit) for time"""
+
+    val = seconds
+    unit = 's'
+    if seconds > 3600 * 1.5:
+        val = seconds / 3600
+        unit = 'h'
+    elif seconds > 90:
+        val = seconds / 60
+        unit = 'm'
+
+    tpl = '%{}.0f'.format(digits)
+    if dec_digits:
+        tpl = '%{dig}.{dec}f'.format(dig=digits, dec=dec_digits)
+    ret = format_string(tpl, val, grouping=True)
+    ret += unit
+
+    return ret
+
+
+# =============================================================================
 class PostfixLogsumsApp(object):
 
     term_size = shutil.get_terminal_size((DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT))
@@ -197,8 +221,36 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     @classmethod
+    def sorted_keys_of_msg_stats(cls, data):
+        """Returns all keys of tha data dict sorted."""
+        sorted_keys = []
+
+        # ---------------------------------------------
+        def by_count_then_size(key_one, key_two):
+            stats_one = data[key_one]
+            stats_two = data[key_two]
+
+            if stats_one.count != stats_two.count:
+                if stats_one.count > stats_two.count:
+                    return -1
+                else:
+                    return 1
+
+            if stats_one.size > stats_two.size:
+                return -1
+            if stats_one.size < stats_two.size:
+                return 1
+            return 0
+
+        for key in sorted(data.keys(), key=cmp_to_key(by_count_then_size)):
+            sorted_keys.append(key)
+
+        return sorted_keys
+
+    # -------------------------------------------------------------------------
+    @classmethod
     def wrap_msg(cls, message, width=None):
-        """Wrap the given message to the max terminal witdt.."""
+        """Wrap the given message to the max terminal width ..."""
         if width is None:
             width = cls.max_width
         return textwrap.fill(message, width)
@@ -884,6 +936,8 @@ class PostfixLogsumsApp(object):
 
         self.print_per_day_summary()
         self.print_per_hour_summary()
+        self.print_recip_domain_summary()
+        self.print_sending_domain_summary()
 
         if not self.args.problems_first:
             self.print_problems_reports()
@@ -1265,6 +1319,156 @@ class PostfixLogsumsApp(object):
 
             line = tpl.format(**values)
             print(indent + line)
+
+    # -------------------------------------------------------------------------
+    def print_recip_domain_summary(self):
+        """Print "per-recipient-domain" traffic summary."""
+        indent = '  '
+        count = self.detail_host
+        if count == 0:
+            return
+
+        title = 'Host/Domain Summary: Message Delivery'
+        if count is not None:
+            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
+        self.print_subsect_title(title)
+
+        if not len(self.results.rcpt_domain.keys()):
+            print('{i}{n}'.format(i=indent, n='None.'))
+            return
+
+        labels = {
+            'sent': 'Sent count',
+            'bytes': 'Bytes',
+            'defers': 'Defers',
+            'avg_delay': 'Avg. delay',
+            'max_delay': 'Max. delay',
+            'domain': 'Host/Domain',
+        }
+        widths = {
+            'sent': 8,
+            'bytes': 8,
+            'defers': 8,
+            'avg_delay': 8,
+            'max_delay': 8,
+            'domain': 20,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{sent:>{w}}}'.format(w=widths['sent'])
+        tpl += '  {{bytes:>{w}}}'.format(w=widths['bytes'])
+        tpl += '  {{defers:>{w}}}'.format(w=widths['defers'])
+        tpl += '  {{avg_delay:>{w}}}'.format(w=widths['avg_delay'])
+        tpl += '  {{max_delay:>{w}}}'.format(w=widths['max_delay'])
+        tpl += '  {{domain:<{w}}}'.format(w=widths['domain'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        i = 0
+        for domain in self.sorted_keys_of_msg_stats(self.results.rcpt_domain):
+            count = self.results.rcpt_domain[domain].count
+            size = self.results.rcpt_domain[domain].size
+            defers = self.results.rcpt_domain[domain].defers
+            avg_delay = 0
+            if count:
+                avg_delay = self.results.rcpt_domain[domain].delay_avg / count
+            delay_max = self.results.rcpt_domain[domain].delay_max
+            values = {}
+            values['sent'] = adj_int_units_localized(count)
+            values['bytes'] = adj_int_units_localized(size)
+            values['defers'] = adj_int_units_localized(defers)
+            values['avg_delay'] = adj_time_units(avg_delay)
+            values['max_delay'] = adj_time_units(delay_max)
+            values['domain'] = domain
+
+            line = tpl.format(**values)
+            print(indent + line)
+
+            i += 1
+            if count is not None and i >= count:
+                break
+
+    # -------------------------------------------------------------------------
+    def print_sending_domain_summary(self):
+        """Print "per-sender-domain" traffic summary."""
+        indent = '  '
+        count = self.detail_host
+        if count == 0:
+            return
+
+        title = 'Host/Domain Summary: Messages Received'
+        if count is not None:
+            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
+        self.print_subsect_title(title)
+
+        if not len(self.results.smtpd_per_domain.keys()):
+            print('{i}{n}'.format(i=indent, n='None.'))
+            return
+
+        labels = {
+            'received': 'Message count',
+            'bytes': 'Bytes',
+            'domain': 'Host/Domain',
+        }
+        widths = {
+            'received': 8,
+            'bytes': 8,
+            'domain': 20,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{received:>{w}}}'.format(w=widths['received'])
+        tpl += '  {{bytes:>{w}}}'.format(w=widths['bytes'])
+        tpl += '  {{domain:<{w}}}'.format(w=widths['domain'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        # ---------------------------------------------
+        def domain_by_count_then_size(dom_one, dom_two):
+            stats_one = self.results.smtpd_per_domain[dom_one]
+            stats_two = self.results.smtpd_per_domain[dom_two]
+
+            if stats_one[0] != stats_two[0]:
+                if stats_one[0] > stats_two[0]:
+                    return -1
+                else:
+                    return 1
+
+            if stats_one[1] > stats_two[1]:
+                return -1
+            if stats_one[1] < stats_two[1]:
+                return 1
+            return 0
+
+        i = 0
+        for domain in sorted(
+                self.results.smtpd_per_domain.keys(),
+                key=cmp_to_key(domain_by_count_then_size)):
+            count = self.results.smtpd_per_domain[domain][0]
+            size = self.results.smtpd_per_domain[domain][1]
+            values = {}
+            values['received'] = adj_int_units_localized(count)
+            values['bytes'] = adj_int_units_localized(size)
+            values['domain'] = domain
+
+            line = tpl.format(**values)
+            print(indent + line)
+
+            i += 1
+            if count is not None and i >= count:
+                break
 
 
 # =============================================================================
