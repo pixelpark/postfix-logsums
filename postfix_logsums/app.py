@@ -1407,7 +1407,7 @@ class PostfixLogsumsApp(object):
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
         self.print_subsect_title(title)
 
-        if not len(self.results.smtpd_per_domain.keys()):
+        if not len(self.results.sending_domain_data.keys()):
             print('{i}{n}'.format(i=indent, n='None.'))
             return
 
@@ -1435,29 +1435,10 @@ class PostfixLogsumsApp(object):
         print(indent + header)
         print(indent + ('-' * len(header)))
 
-        # ---------------------------------------------
-        def domain_by_count_then_size(dom_one, dom_two):
-            stats_one = self.results.smtpd_per_domain[dom_one]
-            stats_two = self.results.smtpd_per_domain[dom_two]
-
-            if stats_one[0] != stats_two[0]:
-                if stats_one[0] > stats_two[0]:
-                    return -1
-                else:
-                    return 1
-
-            if stats_one[1] > stats_two[1]:
-                return -1
-            if stats_one[1] < stats_two[1]:
-                return 1
-            return 0
-
         i = 0
-        for domain in sorted(
-                self.results.smtpd_per_domain.keys(),
-                key=cmp_to_key(domain_by_count_then_size)):
-            count = self.results.smtpd_per_domain[domain][0]
-            size = self.results.smtpd_per_domain[domain][1]
+        for domain in self.sorted_keys_of_msg_stats(self.results.sending_domain_data):
+            count = self.results.sending_domain_data[domain].count
+            size = self.results.sending_domain_data[domain].size
             values = {}
             values['received'] = adj_int_units_localized(count)
             values['bytes'] = adj_int_units_localized(size)
