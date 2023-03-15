@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1069,7 +1069,7 @@ class PostfixLogParser(object):
             LOG.debug(msg)
 
         self.results.received_messages_per_hour[hour] += 1
-        self.incr_msgs_per_day('rejected')
+        self.incr_msgs_per_day('received')
         self.results.msgs_total.received += 1
         self._rcvd_msgs_qid[qid] = domain
 
