@@ -38,7 +38,7 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
-__version__ = '0.6.6'
+__version__ = '0.6.7'
 
 
 # =============================================================================
@@ -647,7 +647,7 @@ class PostfixLogsumsApp(object):
             'Emit "problems" reports (bounces, defers, warnings, etc.) before "normal" stats.',
             arg_width)
         output_options.add_argument(
-            '--problems-first', dest='problems_first', action="store_true", help=desc)
+            '--pf', '--problems-first', dest='problems_first', action="store_true", help=desc)
 
         # --iso-date-time
         desc = self.wrap_msg(
