@@ -38,7 +38,9 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
-__version__ = '0.6.7'
+from .stats import HOURS_PER_DAY
+
+__version__ = '0.6.8'
 
 
 # =============================================================================
@@ -116,6 +118,8 @@ class PostfixLogsumsApp(object):
     pat_ipv4_tuple = r'(\d|[1-9]\d|1\d\d|2(?:[04]\d|5[0-5]))'
     pat_ipv4 = r'^' + r'.'.join(pat_ipv4_tuple) + r'$'
     re_ipv4 = re.compile(pat_ipv4)
+
+    hours_per_day = HOURS_PER_DAY
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -832,6 +836,7 @@ class PostfixLogsumsApp(object):
             self.print_problems_reports()
 
         self.print_per_day_summary()
+        self.print_per_hour_summary()
 
         if not self.args.problems_first:
             self.print_problems_reports()
@@ -1145,6 +1150,86 @@ class PostfixLogsumsApp(object):
             line = tpl.format(**stats)
             print(indent + line)
 
+    # -------------------------------------------------------------------------
+    def print_per_hour_summary(self):
+        """Print "per-hour" traffic summary."""
+        indent = '  '
+
+        nr_days = len(self.results.messages_per_day.keys())
+
+        if nr_days == 1:
+            title = 'Per-Hour Traffic Summary'
+        else:
+            title = 'Per-Hour Traffic Daily Average'
+        self.print_subsect_title(title)
+
+        fields = ('hour', 'received', 'sent', 'deferred', 'bounced', 'rejected')
+        labels = {
+            'hour': 'Hour',
+            'received': 'Received',
+            'sent': 'Delivered',
+            'deferred': 'Deferred',
+            'bounced': 'Bounced',
+            'rejected': 'Rejected',
+        }
+        widths = {
+            'hour': 13,
+            'received': 11,
+            'sent': 11,
+            'deferred': 11,
+            'bounced': 11,
+            'rejected': 11,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{hour:<{w}}}'.format(w=widths['hour'])
+        tpl += '  {{received:>{w}}}'.format(w=widths['received'])
+        tpl += '  {{sent:>{w}}}'.format(w=widths['sent'])
+        tpl += '  {{deferred:>{w}}}'.format(w=widths['deferred'])
+        tpl += '  {{bounced:>{w}}}'.format(w=widths['bounced'])
+        tpl += '  {{rejected:>{w}}}'.format(w=widths['rejected'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        tpl = '{{hour:<{w}}}'.format(w=widths['hour'])
+        tpl += '  {{received:>{w:n}}}'.format(w=widths['received'])
+        tpl += '  {{sent:>{w:n}}}'.format(w=widths['sent'])
+        tpl += '  {{deferred:>{w:n}}}'.format(w=widths['deferred'])
+        tpl += '  {{bounced:>{w:n}}}'.format(w=widths['bounced'])
+        tpl += '  {{rejected:>{w:n}}}'.format(w=widths['rejected'])
+
+        for hour in range(self.hours_per_day):
+            next_hour = hour + 1
+            if next_hour >= self.hours_per_day:
+                next_hour = 0
+            hour_show = '{:>02d}:00 - {:>02d}:00'.format(hour, next_hour)
+            values = {
+                'hour': hour_show,
+                'received': 0,
+                'sent': 0,
+                'deferred': 0,
+                'bounced': 0,
+                'rejected': 0,
+            }
+            if hour < len(self.results.received_messages_per_hour):
+                values['received'] += self.results.received_messages_per_hour[hour]
+            if hour < len(self.results.delivered_messages_per_hour):
+                values['sent'] += self.results.delivered_messages_per_hour[hour]
+            if hour < len(self.results.deferred_messages_per_hour):
+                values['deferred'] += self.results.deferred_messages_per_hour[hour]
+            if hour < len(self.results.bounced_messages_per_hour):
+                values['bounced'] += self.results.bounced_messages_per_hour[hour]
+            if hour < len(self.results.rejected_messages_per_hour):
+                values['rejected'] += self.results.rejected_messages_per_hour[hour]
+
+            line = tpl.format(**values)
+            print(indent + line)
 
 # =============================================================================
 
