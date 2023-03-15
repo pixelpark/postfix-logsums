@@ -41,7 +41,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.6.8'
+__version__ = '0.6.9'
 
 
 # =============================================================================
@@ -53,7 +53,7 @@ class NonNegativeItegerOptionAction(argparse.Action):
         try:
             val = int(value)
         except Exception as e:
-            Gmsg = "Got a {c} for converting {v!r} into an integer value: {e}".format(
+            msg = "Got a {c} for converting {v!r} into an integer value: {e}".format(
                 c=e.__class__.__name__, v=value, e=e)
             raise argparse.ArgumentError(self, msg)
 
@@ -105,7 +105,6 @@ class LogFilesOptionAction(argparse.Action):
             logfiles.append(path.resolve())
 
         setattr(namespace, self.dest, logfiles)
-
 
 # =============================================================================
 def adj_int_units(value):
@@ -292,7 +291,7 @@ class PostfixLogsumsApp(object):
     def quiet(self, value):
         self._quiet = bool(value)
 
-     # -----------------------------------------------------------
+    # -----------------------------------------------------------
     @property
     def initialized(self):
         """The initialisation of this object is complete."""
@@ -927,18 +926,22 @@ class PostfixLogsumsApp(object):
         #  - self.results.messages['discard'] => self.results.msgs_total.discarded
 
         tpl_loc = ' {val:>8}  {lbl}'
+
+        msgs_received = self.results.msgs_total.received
+        msgs_delivered = self.results.msgs_total.delivered
+        msgs_rejected = self.results.msgs_total.rejected
+        msgs_discarded = self.results.msgs_total.discarded
+        msgs_total = msgs_delivered + msgs_rejected + msgs_discarded
+
         msgs_rejected_pct = 0
         msgs_discarded_pct = 0
-        msgs_total = (
-            self.results.msgs_total.delivered + self.results.msgs_total.rejected + \
-            self.results.msgs_total.discarded)
         if msgs_total:
-            msgs_rejected_pct = self.results.msgs_total.rejected / msgs_total * 100
-            msgs_discarded_pct = self.results.msgs_total.discarded / msgs_total * 100
+            msgs_rejected_pct = msgs_rejected / msgs_total * 100
+            msgs_discarded_pct = msgs_discarded / msgs_total * 100
 
-        nr = adj_int_units_localized(self.results.msgs_total.received)
+        nr = adj_int_units_localized(msgs_received)
         print(tpl_loc.format(val=nr, lbl='received'))
-        nr = adj_int_units_localized(self.results.msgs_total.delivered)
+        nr = adj_int_units_localized(msgs_delivered)
         print(tpl_loc.format(val=nr, lbl='delivered'))
         nr = adj_int_units_localized(self.results.msgs_total.forwarded)
         print(tpl_loc.format(val=nr, lbl='forwarded'))
@@ -1130,7 +1133,6 @@ class PostfixLogsumsApp(object):
         self.print_subsect_title("Per-Day Traffic Summary")
         indent = '  '
 
-        fields = ('date', 'received', 'sent', 'deferred', 'bounced', 'rejected')
         labels = {
             'date': 'Date',
             'received': 'Received',
@@ -1169,15 +1171,15 @@ class PostfixLogsumsApp(object):
             stats = {}
             stats['date'] = day
             stats['received'] = adj_int_units_localized(
-                    self.results.messages_per_day[day].received, no_unit=True).rstrip()
+                self.results.messages_per_day[day].received, no_unit=True).rstrip()
             stats['sent'] = adj_int_units_localized(
-                    self.results.messages_per_day[day].sent, no_unit=True).rstrip()
+                self.results.messages_per_day[day].sent, no_unit=True).rstrip()
             stats['deferred'] = adj_int_units_localized(
-                    self.results.messages_per_day[day].deferred, no_unit=True).rstrip()
+                self.results.messages_per_day[day].deferred, no_unit=True).rstrip()
             stats['bounced'] = adj_int_units_localized(
-                    self.results.messages_per_day[day].bounced, no_unit=True).rstrip()
+                self.results.messages_per_day[day].bounced, no_unit=True).rstrip()
             stats['rejected'] = adj_int_units_localized(
-                    self.results.messages_per_day[day].rejected, no_unit=True).rstrip()
+                self.results.messages_per_day[day].rejected, no_unit=True).rstrip()
             line = tpl.format(**stats)
             print(indent + line)
 
@@ -1194,7 +1196,6 @@ class PostfixLogsumsApp(object):
             title = 'Per-Hour Traffic Daily Average'
         self.print_subsect_title(title)
 
-        fields = ('hour', 'received', 'sent', 'deferred', 'bounced', 'rejected')
         labels = {
             'hour': 'Hour',
             'received': 'Received',
@@ -1264,6 +1265,7 @@ class PostfixLogsumsApp(object):
 
             line = tpl.format(**values)
             print(indent + line)
+
 
 # =============================================================================
 

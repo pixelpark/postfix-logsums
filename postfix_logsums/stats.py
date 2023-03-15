@@ -18,11 +18,11 @@ except ImportError:
     from collections import MutableMapping, Mapping, MutableSequence
 
 # Own modules
-from .errors import StatsError, WrongMsgStatsKeyError, WrongMsgPerDayKeyError
+from .errors import StatsError, WrongMsgStatsKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.5.0'
+__version__ = '0.5.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -98,7 +98,7 @@ class BaseMessageStats(MutableMapping):
     def __delattr__(self, name):
         """Called, if an attribute should be deleted."""
         msg = "Deleting attribute {a!r} of a {w} is not allowed.".format(
-                a=name, w=self.__class__.__name__)
+            a=name, w=self.__class__.__name__)
         raise StatsError(msg)
 
     # -------------------------------------------------------------------------
@@ -473,7 +473,7 @@ class HourlyStatsSmtpd(HourlyStats):
             if len(value) != 3:
                 msg = (
                     "Wrong value {v!r} for a per hour stat of smtp - "
-                    "must have three numbers.").format(value)
+                    "must have three numbers.").format(v=value)
                 raise WrongMsgStatsValueError(msg)
             v = SmtpdStatsPerHour()
             v[0] = value[0]
