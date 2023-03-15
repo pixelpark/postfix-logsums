@@ -111,10 +111,12 @@ class PostfixLogParser(object):
 
     # Class variables as constants
 
-    div_by_one_k_at = 512 * 1024
+    div_by_one_kb_at = 512 * 1024
     div_by_one_mb_at = 512 * 1024 * 1024
-    one_k = 1024
+    div_by_one_gb_at = 512 * 1024 * 1024 * 1024
+    one_kb = 1024
     one_mb = 1024 * 1024
+    one_gb = 1024 * 1024 * 1024
 
     month_names = (
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')

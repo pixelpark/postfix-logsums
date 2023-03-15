@@ -20,6 +20,7 @@ import copy
 import re
 import textwrap
 import shutil
+import locale
 
 # from argparse import RawDescriptionHelpFormatter
 from argparse import RawTextHelpFormatter
@@ -28,7 +29,7 @@ from pathlib import Path
 
 from functools import cmp_to_key
 
-from locale import strcoll
+from locale import strcoll, format_string
 
 LOG = logging.getLogger(__name__)
 
@@ -105,6 +106,51 @@ class LogFilesOptionAction(argparse.Action):
 
         setattr(namespace, self.dest, logfiles)
 
+
+# =============================================================================
+def adj_int_units(value):
+
+    val = value
+    unit = ' '
+    if value > PostfixLogParser.div_by_one_gb_at:
+        val = value / PostfixLogParser.one_gb
+        unit = 'G'
+    elif value > PostfixLogParser.div_by_one_mb_at:
+        val = value / PostfixLogParser.one_mb
+        unit = 'M'
+    elif value > PostfixLogParser.div_by_one_kb_at:
+        val = value / PostfixLogParser.one_kb
+        unit = 'K'
+    elif not value:
+        val = 0
+
+    return {'value': val, 'unit': unit}
+
+# =============================================================================
+def adj_int_units_localized(value, digits=1, dec_digits=0, no_unit=False):
+    """Generating a string with localized value."""
+    val = value
+    unit = ' '
+    if not value:
+        val = 0
+    if not no_unit:
+        if value > PostfixLogParser.div_by_one_gb_at:
+            val = value / PostfixLogParser.one_gb
+            unit = 'G'
+        elif value > PostfixLogParser.div_by_one_mb_at:
+            val = value / PostfixLogParser.one_mb
+            unit = 'M'
+        elif value > PostfixLogParser.div_by_one_kb_at:
+            val = value / PostfixLogParser.one_kb
+            unit = 'K'
+
+    tpl = '%{}.0f'.format(digits)
+    if dec_digits:
+        tpl = '%{dig}.{dec}f'.format(dig=digits, dec=dec_digits)
+    ret = format_string(tpl, val, grouping=True)
+    ret += unit
+
+    return ret
 
 # =============================================================================
 class PostfixLogsumsApp(object):
@@ -813,6 +859,8 @@ class PostfixLogsumsApp(object):
 
         LOG.debug("And here wo go ...")
 
+        locale.setlocale(locale.LC_ALL, '')
+
         self.parser.parse(*self.args.logfiles)
         self.results = self.parser.results
 
@@ -878,7 +926,7 @@ class PostfixLogsumsApp(object):
         #  - self.results.messages['hold'] => self.results.msgs_total.held
         #  - self.results.messages['discard'] => self.results.msgs_total.discarded
 
-        tpl = ' {value:6.0f}{unit}  {lbl}'
+        tpl_loc = ' {val:>8}  {lbl}'
         msgs_rejected_pct = 0
         msgs_discarded_pct = 0
         msgs_total = (
@@ -888,49 +936,45 @@ class PostfixLogsumsApp(object):
             msgs_rejected_pct = self.results.msgs_total.rejected / msgs_total * 100
             msgs_discarded_pct = self.results.msgs_total.discarded / msgs_total * 100
 
-        print(tpl.format(
-            lbl='received', **self.adj_int_units(self.results.msgs_total.received)))
-        print(tpl.format(
-            lbl='delivered', **self.adj_int_units(self.results.msgs_total.delivered)))
-        print(tpl.format(
-            lbl='forwarded', **self.adj_int_units(self.results.msgs_total.forwarded)))
-        print(tpl.format(
-            lbl='deferred', **self.adj_int_units(self.results.msgs_total.deferred)),
-            end='')
+        nr = adj_int_units_localized(self.results.msgs_total.received)
+        print(tpl_loc.format(val=nr, lbl='received'))
+        nr = adj_int_units_localized(self.results.msgs_total.delivered)
+        print(tpl_loc.format(val=nr, lbl='delivered'))
+        nr = adj_int_units_localized(self.results.msgs_total.forwarded)
+        print(tpl_loc.format(val=nr, lbl='forwarded'))
+        nr = adj_int_units_localized(self.results.msgs_total.deferred)
+        print(tpl_loc.format(val=nr, lbl='deferred'), end='')
         if self.results.msgs_total.deferrals:
-            val = '  ({value:d}{unit} {lbl})'.format(
-                lbl='deferrals', **self.adj_int_units(self.results.msgs_total.deferrals))
+            nr = adj_int_units_localized(self.results.msgs_total.deferrals)
+            val = '  ({val} {lbl})'.format(lbl='deferrals', val=nr)
             print(val, end='')
         print()
-        print(tpl.format(
-            lbl='bounced', **self.adj_int_units(self.results.msgs_total.bounced)))
-        print(tpl.format(
-            lbl='rejected', **self.adj_int_units(self.results.msgs_total.rejected)),
-            end='')
+        nr = adj_int_units_localized(self.results.msgs_total.bounced)
+        print(tpl_loc.format(val=nr, lbl='bounced'))
+        nr = adj_int_units_localized(self.results.msgs_total.rejected)
+        print(tpl_loc.format(val=nr, lbl='rejected'), end='')
         print(' ({:0.1n}%)'.format(msgs_rejected_pct))
-        print(tpl.format(
-            lbl='reject warnings', **self.adj_int_units(self.results.msgs_total.reject_warning)))
-        print(tpl.format(
-            lbl='held', **self.adj_int_units(self.results.msgs_total.held)))
-        print(tpl.format(
-            lbl='discarded', **self.adj_int_units(self.results.msgs_total.discarded)),
-            end='')
+        nr = adj_int_units_localized(self.results.msgs_total.reject_warning)
+        print(tpl_loc.format(val=nr, lbl='reject warnings'))
+        nr = adj_int_units_localized(self.results.msgs_total.held)
+        print(tpl_loc.format(val=nr, lbl='held'))
+        nr = adj_int_units_localized(self.results.msgs_total.discarded)
+        print(tpl_loc.format(val=nr, lbl='discarded'), end='')
         print(' ({:0.1f}%)'.format(msgs_discarded_pct))
         print()
 
-        print(tpl.format(
-            lbl='bytes received', **self.adj_int_units(self.results.msgs_total.bytes_received)))
-        print(tpl.format(
-            lbl='bytes delivered', **self.adj_int_units(self.results.msgs_total.bytes_delivered)))
-        print(tpl.format(
-            lbl='senders', **self.adj_int_units(self.results.msgs_total.sending_users)))
-        print(tpl.format(
-            lbl='sending hosts/domains', **self.adj_int_units(self.results.msgs_total.sending_domains)))
-        print(tpl.format(
-            lbl='recipients', **self.adj_int_units(self.results.msgs_total.rcpt_users)))
-        print(tpl.format(
-            lbl='recipient hosts/domains', **self.adj_int_units(self.results.msgs_total.rcpt_domains)))
-
+        nr = adj_int_units_localized(self.results.msgs_total.bytes_received)
+        print(tpl_loc.format(val=nr, lbl='bytes received'))
+        nr = adj_int_units_localized(self.results.msgs_total.bytes_delivered)
+        print(tpl_loc.format(val=nr, lbl='bytes delivered'))
+        nr = adj_int_units_localized(self.results.msgs_total.sending_users)
+        print(tpl_loc.format(val=nr, lbl='senders'))
+        nr = adj_int_units_localized(self.results.msgs_total.sending_domains)
+        print(tpl_loc.format(val=nr, lbl='sending hosts/domains'))
+        nr = adj_int_units_localized(self.results.msgs_total.rcpt_users)
+        print(tpl_loc.format(val=nr, lbl='recipients'))
+        nr = adj_int_units_localized(self.results.msgs_total.rcpt_domains)
+        print(tpl_loc.format(val=nr, lbl='recipients hosts/domains'))
 
         print()
 
@@ -943,25 +987,9 @@ class PostfixLogsumsApp(object):
         print('-' * len(msg))
 
     # -------------------------------------------------------------------------
-    def adj_int_units(self, value):
-
-        val = value
-        unit = ' '
-        if not value:
-            val = 0
-        if value > PostfixLogParser.div_by_one_mb_at:
-            val = value / PostfixLogParser.one_mb
-            unit = 'M'
-        elif value > PostfixLogParser.div_by_one_k_at:
-            val = value / PostfixLogParser.one_k
-            unit = 'K'
-
-        return {'value': val, 'unit': unit}
-
-    # -------------------------------------------------------------------------
     def print_smtpd_stats(self):
 
-        tpl = ' {value:6.0f}{unit}  {lbl}'
+        tpl_loc = ' {val:>8}  {lbl}'
         count_domains = len(self.results.smtpd_per_domain.keys())
         total_conn = self.results.msgs_total.connections
         time_conn = self.results.connections_time
@@ -974,13 +1002,11 @@ class PostfixLogsumsApp(object):
         print('Smtpd:')
         print()
 
-        print(tpl.format(
-            lbl='connections', **self.adj_int_units(total_conn)))
-        print(tpl.format(
-            lbl='hosts/domains', value=count_domains, unit=' '))
-        print(tpl.format(
-            lbl='avg. connect time (seconds)', value=avg_time, unit=' '))
-        print(' {h:d}:{m:02d}:{s:02.0f}  {lbl}'.format(
+        print(tpl_loc.format(val=adj_int_units_localized(total_conn), lbl='connections'))
+        print(tpl_loc.format(val=adj_int_units_localized(count_domains), lbl='hosts/domains'))
+        print(tpl_loc.format(
+            val=adj_int_units_localized(avg_time, no_unit=True), lbl='connections'))
+        print('  {h:d}:{m:02d}:{s:02.0f}  {lbl}'.format(
             h=total_time_splitted[2], m=total_time_splitted[1],
             s=total_time_splitted[0], lbl='total connect time'))
         print()
@@ -1018,7 +1044,8 @@ class PostfixLogsumsApp(object):
                     total_count = 0
                     for key2 in data[key].keys():
                         total_count += data[key][key2]
-                    print(' ({lbl}: {c})'.format(lbl='total', c=total_count), end='')
+                    val = adj_int_units_localized(total_count, no_unit=True).rstrip()
+                    print(' ({lbl}: {c})'.format(lbl='total', c=val), end='')
                 print()
                 self.walk_nested_hash(data[key], count, level)
         else:
@@ -1045,11 +1072,12 @@ class PostfixLogsumsApp(object):
     def really_print_hash_by_cnt_vals(self, data, count, indent):
         """*really* print hash contents sorted by numeric values in descending
         order (i.e.: highest first), then by IP/addr, in ascending order."""
-        tpl = '{i}{value:6.0f}{unit}  {lbl}'
+        tpl = '{i}{val:>8}  {lbl}'
 
         i = 0
         for key in self.sorted_keys_by_count_and_key(data):
-            print(tpl.format(i=indent, lbl=key, **self.adj_int_units(data[key])))
+            val = adj_int_units_localized(data[key])
+            print(tpl.format(i=indent, lbl=key, val=val))
             if count is not None:
                 i += 1
                 if i >= count:
@@ -1136,17 +1164,20 @@ class PostfixLogsumsApp(object):
         print(indent + header)
         print(indent + ('-' * len(header)))
 
-        tpl = '{{date:<{w}}}'.format(w=widths['date'])
-        tpl += '  {{received:>{w:n}}}'.format(w=widths['received'])
-        tpl += '  {{sent:>{w:n}}}'.format(w=widths['sent'])
-        tpl += '  {{deferred:>{w:n}}}'.format(w=widths['deferred'])
-        tpl += '  {{bounced:>{w:n}}}'.format(w=widths['bounced'])
-        tpl += '  {{rejected:>{w:n}}}'.format(w=widths['rejected'])
-
         for day in sorted(self.results.messages_per_day.keys()):
 
-            stats = self.results.messages_per_day[day].dict()
+            stats = {}
             stats['date'] = day
+            stats['received'] = adj_int_units_localized(
+                    self.results.messages_per_day[day].received, no_unit=True).rstrip()
+            stats['sent'] = adj_int_units_localized(
+                    self.results.messages_per_day[day].sent, no_unit=True).rstrip()
+            stats['deferred'] = adj_int_units_localized(
+                    self.results.messages_per_day[day].deferred, no_unit=True).rstrip()
+            stats['bounced'] = adj_int_units_localized(
+                    self.results.messages_per_day[day].bounced, no_unit=True).rstrip()
+            stats['rejected'] = adj_int_units_localized(
+                    self.results.messages_per_day[day].rejected, no_unit=True).rstrip()
             line = tpl.format(**stats)
             print(indent + line)
 
@@ -1197,13 +1228,6 @@ class PostfixLogsumsApp(object):
         print(indent + header)
         print(indent + ('-' * len(header)))
 
-        tpl = '{{hour:<{w}}}'.format(w=widths['hour'])
-        tpl += '  {{received:>{w:n}}}'.format(w=widths['received'])
-        tpl += '  {{sent:>{w:n}}}'.format(w=widths['sent'])
-        tpl += '  {{deferred:>{w:n}}}'.format(w=widths['deferred'])
-        tpl += '  {{bounced:>{w:n}}}'.format(w=widths['bounced'])
-        tpl += '  {{rejected:>{w:n}}}'.format(w=widths['rejected'])
-
         for hour in range(self.hours_per_day):
             next_hour = hour + 1
             if next_hour >= self.hours_per_day:
@@ -1218,15 +1242,25 @@ class PostfixLogsumsApp(object):
                 'rejected': 0,
             }
             if hour < len(self.results.received_messages_per_hour):
-                values['received'] += self.results.received_messages_per_hour[hour]
+                val = self.results.received_messages_per_hour[hour]
+                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                values['received'] = val
             if hour < len(self.results.delivered_messages_per_hour):
-                values['sent'] += self.results.delivered_messages_per_hour[hour]
+                val = self.results.delivered_messages_per_hour[hour]
+                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                values['sent'] = val
             if hour < len(self.results.deferred_messages_per_hour):
-                values['deferred'] += self.results.deferred_messages_per_hour[hour]
+                val = self.results.deferred_messages_per_hour[hour]
+                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                values['deferred'] = val
             if hour < len(self.results.bounced_messages_per_hour):
-                values['bounced'] += self.results.bounced_messages_per_hour[hour]
+                val = self.results.bounced_messages_per_hour[hour]
+                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                values['bounced'] = val
             if hour < len(self.results.rejected_messages_per_hour):
-                values['rejected'] += self.results.rejected_messages_per_hour[hour]
+                val = self.results.rejected_messages_per_hour[hour]
+                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                values['rejected'] = val
 
             line = tpl.format(**values)
             print(indent + line)
