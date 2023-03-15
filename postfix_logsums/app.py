@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.6.10'
+__version__ = '0.6.11'
 
 
 # =============================================================================
@@ -268,6 +268,8 @@ class PostfixLogsumsApp(object):
         self.init_arg_parser()
         self.perform_arg_parser()
         self.init_logging()
+
+        self.nr_days = 0
 
         compression = None
         if self.args.gzip:
@@ -914,6 +916,7 @@ class PostfixLogsumsApp(object):
 
         self.parser.parse(*self.args.logfiles)
         self.results = self.parser.results
+        self.nr_days = len(self.results.messages_per_day.keys())
 
         if self.verbose > 1:
             LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
@@ -934,7 +937,8 @@ class PostfixLogsumsApp(object):
         if self.args.problems_first:
             self.print_problems_reports()
 
-        self.print_per_day_summary()
+        if self.nr_days > 1:
+            self.print_per_day_summary()
         self.print_per_hour_summary()
         self.print_recip_domain_summary()
         self.print_sending_domain_summary()
@@ -1242,9 +1246,7 @@ class PostfixLogsumsApp(object):
         """Print "per-hour" traffic summary."""
         indent = '  '
 
-        nr_days = len(self.results.messages_per_day.keys())
-
-        if nr_days == 1:
+        if self.nr_days == 1:
             title = 'Per-Hour Traffic Summary'
         else:
             title = 'Per-Hour Traffic Daily Average'
@@ -1298,22 +1300,32 @@ class PostfixLogsumsApp(object):
             }
             if hour < len(self.results.received_messages_per_hour):
                 val = self.results.received_messages_per_hour[hour]
+                if self.nr_days:
+                    val /= self.nr_days
                 val = adj_int_units_localized(val, no_unit=True).rstrip()
                 values['received'] = val
             if hour < len(self.results.delivered_messages_per_hour):
                 val = self.results.delivered_messages_per_hour[hour]
+                if self.nr_days:
+                    val /= self.nr_days
                 val = adj_int_units_localized(val, no_unit=True).rstrip()
                 values['sent'] = val
             if hour < len(self.results.deferred_messages_per_hour):
                 val = self.results.deferred_messages_per_hour[hour]
+                if self.nr_days:
+                    val /= self.nr_days
                 val = adj_int_units_localized(val, no_unit=True).rstrip()
                 values['deferred'] = val
             if hour < len(self.results.bounced_messages_per_hour):
                 val = self.results.bounced_messages_per_hour[hour]
+                if self.nr_days:
+                    val /= self.nr_days
                 val = adj_int_units_localized(val, no_unit=True).rstrip()
                 values['bounced'] = val
             if hour < len(self.results.rejected_messages_per_hour):
                 val = self.results.rejected_messages_per_hour[hour]
+                if self.nr_days:
+                    val /= self.nr_days
                 val = adj_int_units_localized(val, no_unit=True).rstrip()
                 values['rejected'] = val
 
