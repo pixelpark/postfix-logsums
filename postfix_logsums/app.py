@@ -1384,15 +1384,15 @@ class PostfixLogsumsApp(object):
 
         i = 0
         for domain in self.sorted_keys_of_msg_stats(self.results.rcpt_domain):
-            count = self.results.rcpt_domain[domain].count
+            nr_sent = self.results.rcpt_domain[domain].count
             size = self.results.rcpt_domain[domain].size
             defers = self.results.rcpt_domain[domain].defers
             avg_delay = 0
-            if count:
-                avg_delay = self.results.rcpt_domain[domain].delay_avg / count
+            if nr_sent:
+                avg_delay = self.results.rcpt_domain[domain].delay_avg / nr_sent
             delay_max = self.results.rcpt_domain[domain].delay_max
             values = {}
-            values['sent'] = adj_int_units_localized(count)
+            values['sent'] = adj_int_units_localized(nr_sent)
             values['bytes'] = adj_int_units_localized(size)
             values['defers'] = adj_int_units_localized(defers)
             values['avg_delay'] = adj_time_units(avg_delay)
@@ -1449,10 +1449,10 @@ class PostfixLogsumsApp(object):
 
         i = 0
         for domain in self.sorted_keys_of_msg_stats(self.results.sending_domain_data):
-            count = self.results.sending_domain_data[domain].count
+            nr = self.results.sending_domain_data[domain].count
             size = self.results.sending_domain_data[domain].size
             values = {}
-            values['received'] = adj_int_units_localized(count)
+            values['received'] = adj_int_units_localized(nr)
             values['bytes'] = adj_int_units_localized(size)
             values['domain'] = domain
 

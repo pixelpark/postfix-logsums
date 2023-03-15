@@ -1461,7 +1461,7 @@ class PostfixLogParser(object):
 
         if self.verbose > 2:
             LOG.debug(
-                "Eval message size: qid: {q!r}, addr: {a!r}, size{s!r}.".format(
+                    "Eval message size: qid: {q!r}, addr: {a!r}, size: {s!r}.".format(
                     q=qid, a=addr, s=size))
 
         if qid in self._rcvd_msgs_qid:
