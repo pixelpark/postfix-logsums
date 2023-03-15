@@ -1619,6 +1619,8 @@ class PostfixLogParser(object):
             self.results.rcpt_user[addr].size += size
             self.results.msgs_total.bytes_delivered += size
         else:
+            self.results.rcpt_domain[domain].size += 0
+            self.results.rcpt_user[addr].size += 0
             if not self.no_no_message_size:
                 self.results.no_message_size[qid] = addr
             self._add_ext_msg_detail(qid, '(sender not in log)')
