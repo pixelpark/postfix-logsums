@@ -1474,7 +1474,61 @@ class PostfixLogsumsApp(object):
         self.print_subsect_title(title)
         indent = '  '
 
-        # self.results.smtpd_per_day
+        if not len(self.results.smtpd_per_day.keys()):
+            print('{i}{n}'.format(i=indent, n='None.'))
+            return
+
+        labels = {
+            'date': 'Date',
+            'connections': 'Connections',
+            'time_conn': 'Time connections total',
+            'avg_time': 'Avg. time connection',
+            'max_time': 'Max. time connection',
+        }
+        widths = {
+            'date': 12,
+            'connections': 11,
+            'time_conn': 11,
+            'avg_time': 11,
+            'max_time': 11,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{date:<{w}}}'.format(w=widths['date'])
+        tpl += '  {{connections:>{w}}}'.format(w=widths['connections'])
+        tpl += '  {{time_conn:>{w}}}'.format(w=widths['time_conn'])
+        tpl += '  {{avg_time:>{w}}}'.format(w=widths['avg_time'])
+        tpl += '  {{max_time:>{w}}}'.format(w=widths['max_time'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        for day in sorted(self.results.smtpd_per_day.keys()):
+
+            stats = self.results.smtpd_per_day[day]
+            total_time_splitted = get_smh(stats[1])
+            total_time = '{h:d}:{m:02d}:{s:02.0f}'.format(
+                h=total_time_splitted[2], m=total_time_splitted[1], s=total_time_splitted[0])
+            avg = 0.0
+            if stats[0]:
+                avg = stats[1] / stats[0]
+
+            values = {}
+            values['date'] = day
+            values['connections'] = adj_int_units_localized(stats[0])
+            values['time_conn'] = total_time
+            values['avg_time'] = '{:0.1f}'.format(avg)
+            values['max_time'] = '{:0.1f}'.format(stats[2])
+            if self.verbose > 0:
+                LOG.debug("Daily SMTP stat:\n" + pp(values))
+
+            line = tpl.format(**values)
+            print(indent + line)
 
 
 # =============================================================================
