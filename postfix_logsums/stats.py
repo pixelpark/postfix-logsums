@@ -11,23 +11,36 @@ from __future__ import absolute_import
 
 import copy
 import logging
+import datetime
+import re
 
 try:
-    from collections.abc import MutableMapping, Mapping, MutableSequence
+    from collections.abc import MutableMapping, Mapping, MutableSequence, Sequence
 except ImportError:
-    from collections import MutableMapping, Mapping, MutableSequence
+    from collections import MutableMapping, Mapping, MutableSequence, Sequence
 
 # Own modules
-from .errors import StatsError, WrongMsgStatsKeyError
+from .errors import StatsError, WrongDateKeyError, WrongMsgStatsKeyError, WrongDailyKeyError
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.5.2'
+__version__ = '0.6.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
 HOURS_PER_DAY = 24
 LOG = logging.getLogger(__name__)
+
+# =============================================================================
+def is_sequence(arg):
+    """Return, whether the given value is a sequential object, but nat a str."""
+    if not isinstance(arg, Sequence):
+        return False
+
+    if hasattr(arg, "strip"):
+        return False
+
+    return True
 
 
 # =============================================================================
@@ -287,6 +300,310 @@ class MessageStatsTotals(BaseMessageStats):
 
 
 # =============================================================================
+class DailyStatsDict(MutableMapping):
+    """A dict like class for containing message statistics per day."""
+
+    re_isoformat = re.compile(r'^(?P<year>\d{1,4})-?(?P<month>\d{2})-?(?P<day>\d{2})$')
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def key_to_date(cls, key):
+        """Typecasting given date into a datetime.date object."""
+        if isinstance(key, datetime.date):
+            return key
+        if isinstance(key, datetime.datetime):
+            return key.date()
+        if isinstance(key, int):
+            return datetime.date.fromtimestamp(key)
+        if is_sequence(key):
+            try:
+                return datetime.date(*key)
+            except (ValueError, KeyError) as e:
+                raise WrongDateKeyError(key, str(e))
+        if isinstance(key, str):
+            try:
+                m = cls.re_isoformat.match(key)
+                if m:
+                    return datetime.date(m['year'], m['month'], m['day'])
+                raise WrongDateKeyError(key)
+            except (ValueError, KeyError) as e:
+                raise WrongDateKeyError(key, str(e))
+        raise WrongDateKeyError(key)
+
+    # -------------------------------------------------------------------------
+    def __init__(self, stats_class=BaseMessageStats, first_param=None, **kwargs):
+        """Constructor."""
+
+        self._stats = {}
+        if not issubclass(stats_class, BaseMessageStats):
+            msg = "Wrong class {c} for using as an item class, must be a subclas of {sc}.".format(
+                c=stats_class.__name__, sc='BaseMessageStats')
+            raise TypeError(msg)
+        self._stats_class = stats_class
+
+        if first_param is not None:
+
+            if isinstance(first_param, self.__class__):
+                self._update_from_other(first_param)
+            elif isinstance(first_param, Mapping):
+                self._update_from_mapping(first_param)
+            elif first_param.__class__.__name__ == 'zip': 
+                self._update_from_mapping(dict(first_param))
+            else:
+                msg = "Object is not a {m} object, but a {w} object instead.".format(
+                    m='Mapping', w=first_param.__class__.__qualname__)
+                raise StatsError(msg)
+
+        if kwargs:
+            self._update_from_mapping(kwargs)
+
+    # -------------------------------------------------------------------------
+    def _update_from_mapping(self, mapping):
+
+        for key in mapping.keys():
+            used_key = self.key_to_date(key)
+            stats = self._stats_class(mapping[key])
+            self._stats[used_key] = stats
+
+    # -------------------------------------------------------------------------
+    def __copy__(self):
+        """Return a copy of the current dict."""
+        new = self.__class__(self._stats_class)
+        for key in self:
+            new[key] = copy.copy(self[key])
+
+        return new
+
+    # -------------------------------------------------------------------------
+    def copy(self):
+        """Return a copy of the current set."""
+        return self.__copy__()
+
+    # -------------------------------------------------------------------------
+    def _get_item(self, key):
+        """Return an arbitrary item by the key."""
+        used_key = self.key_to_date(key)
+        return self._stats[used_key]
+
+    # -------------------------------------------------------------------------
+    def get(self, key):
+        """Return an arbitrary item by the key."""
+        return self._get_item(key)
+
+    # -------------------------------------------------------------------------
+    def __getitem__(self, key):
+        """Return an arbitrary item by the key."""
+        return self._get_item(key)
+
+    # -------------------------------------------------------------------------
+    def __iter__(self):
+        """Return an iterator over all keys."""
+        for key in self.keys():
+            yield key
+
+    # -------------------------------------------------------------------------
+    def __len__(self):
+        """Return the the nuber of entries (keys) in this dict."""
+        return len(self._stats)
+
+    # -------------------------------------------------------------------------
+    def __repr__(self):
+        """Typecast into string for reproduction."""
+        ret = "{cn}({{stats_class={sc}".format(
+            cn=self.__class__.__name__, sc=self._stats_class.__name__)
+        if len(self) == 0:
+            return ret + '})'
+
+        kargs = ['']
+        for pair in self.items():
+            arg = "{k!r}: {v!r}".format(k=pair[0], v=pair[1])
+            kargs.append(arg)
+        ret += ', '.join(kargs)
+        ret += '})'
+
+        return ret
+
+    # -------------------------------------------------------------------------
+    def as_dict(self, pure=False):
+        """
+        Transform the elements of the object into a dict.
+
+        @param pure: Only include keys and values of the internal map
+        @type pure: bool
+
+        @return: structure as dict
+        @rtype:  dict
+        """
+        res = {}
+        if not pure:
+            res['__class_name__'] = self.__class__.__name__
+            res['__stats_class__'] = self._stats_class.__name__
+
+        for pair in self.items():
+            key = pair[0]
+            val = pair[1].as_dict()
+            if pure:
+                key = pair[0].isoformat()
+                val = pair[1].dict()
+            res[key] = val
+
+        return res
+
+    # -------------------------------------------------------------------------
+    def dict(self):
+        """Typecast into a regular dict."""
+        return self.as_dict(pure=True)
+
+    # -------------------------------------------------------------------------
+    def __contains__(self, key):
+        """Return, whether the given key exists(the 'in'-operator)."""
+        used_key = self.key_to_date(key)
+        if used_key in self._stats:
+            return True
+        return False
+
+    # -------------------------------------------------------------------------
+    def keys(self):
+        """Return a list with all keys in original notation."""
+        return sorted(self._stats.keys())
+
+    # -------------------------------------------------------------------------
+    def items(self):
+        """Return a list of all items of the current dict.
+
+        An item is a tuple, with the key in original notation and the value.
+        """
+        item_list = []
+
+        for key in self.keys():
+            value = self._stats[key]
+            item_list.append((key, value))
+
+        return item_list
+
+    # -------------------------------------------------------------------------
+    def values(self):
+        """Return a list with all values of the current dict."""
+        return list(map(lambda x: self._stats[x], self.keys()))
+
+    # -------------------------------------------------------------------------
+    def __eq__(self, other):
+        """Return the equality of current dict with another (the '=='-operator)."""
+        if not isinstance(other, DailyStatsDict):
+            return False
+        if self._stats_class.__name__ != other._stats_class.__name__:
+            return False
+        if len(self) != len(other):
+            return False
+        if len(self) == 0:
+            return True
+
+        for key in self.keys():
+            if key not in other:
+                return False
+            if self[key] != other[key]:
+                return False
+
+        return True
+
+    # -------------------------------------------------------------------------
+    def __setitem__(self, key, value):
+        """Set the value of the given key."""
+        used_key = self.key_to_date(key)
+        stats = self._stats_class(value)
+        self._stats[used_key] = stats
+
+    # -------------------------------------------------------------------------
+    def set(self, key, value):
+        """Set the value of the given key."""
+        self[key] = value
+
+    # -------------------------------------------------------------------------
+    def __delitem__(self, key):
+        """Delete the entry on the given key.
+
+        Raise a KeyError, if the does not exists.
+        """
+        used_key = self.key_to_date(key)
+        try:
+            del self._stats[used_key]
+        except KeyError as e:
+            raise WrongDailyKeyError(key, str(e))
+
+    # -------------------------------------------------------------------------
+    def pop(self, key, *args):
+        """Remove and return an arbitrary element from the dict."""
+        used_key = self.key_to_date(key)
+
+        if len(args) > 1:
+            msg = _("The method {met}() expected at most {max} arguments, got {got}.").format(
+                met='pop', max=2, got=(len(args) + 1))
+            raise TypeError(msg)
+
+        if used_key not in self._stats:
+            if args:
+                return args[0]
+            raise WrongDailyKeyError(key)
+
+        val = self._stats[used_key]
+        del self._stats[used_key]
+
+        return val
+
+    # -------------------------------------------------------------------------
+    def popitem(self):
+        """Remove and return the first element from the dict."""
+        if not len(self._stats):
+            return None
+
+        key = self.keys()[0]
+        value = self[key]
+        del self._stats[key]
+        return (key, value)
+
+    # -------------------------------------------------------------------------
+    def clear(self):
+        """Remove all items from the dict."""
+        self._stats = dict()
+
+    # -------------------------------------------------------------------------
+    def setdefault(self, key, default=None):
+        """Set the item of the given key to a default value."""
+        used_key = self.key_to_date(key)
+
+        if key in self:
+            return self[key]
+
+        self[key] = default
+        return default
+
+    # -------------------------------------------------------------------------
+    def update(self, other):
+        """Update the current dict with the items of the other dict."""
+        if isinstance(other, self.__class__):
+            self._update_from_other(other)
+        elif isinstance(other, Mapping):
+            self._update_from_mapping(other)
+        elif other.__class__.__name__ == 'zip':
+            self._update_from_mapping(dict(other))
+        else:
+            msg = "Object is not a {m} object, but a {w} object instead.".format(
+                m='Mapping', w=first_param.__class__.__qualname__)
+            raise StatsError(msg)
+
+    # -------------------------------------------------------------------------
+    def _update_from_other(self, other):
+        if not isinstance(other, self.__class__):
+            raise StatsError("Wtf, not a {} class?!?".format(self.__class__.__name__))
+        if self._stats_class.__name__ != other._stats_class.__name__:
+            msg = "Invalid stats class {oc!r}, must be class {sc!r}.".format(
+                oc=other._stats_class.__name__, sc=self._stats_class.__name__)
+            raise StatsError(msg)
+        for key in other.keys():
+            self[key] = other[key]
+
+
+# =============================================================================
 class HourlyStats(MutableSequence):
     """A class for encapsulating per hour message statistics."""
 
@@ -494,6 +811,17 @@ class HourlyStatsSmtpd(HourlyStats):
 
         msg = "Wrong value {v!r} for a per hour stat.".format(v=value)
         raise WrongMsgStatsValueError(msg)
+
+    # -------------------------------------------------------------------------
+    def as_list(self, pure=False):
+        """Typecasting into a simple list."""
+        vals = []
+        for stat in self:
+            if pure:
+                vals.append(stat.dict())
+            else:
+                vals.append(repr(stat))
+        return vals
 
 
 # =============================================================================
