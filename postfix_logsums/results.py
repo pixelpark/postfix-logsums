@@ -9,11 +9,15 @@
 """
 from __future__ import absolute_import
 
+import logging
+
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
+
+LOG = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -140,15 +144,15 @@ class PostfixLogSums(object):
         for key in self.__dict__:
             if short and key.startswith('_') and not key.startswith('__'):
                 continue
+            # LOG.debug("Typecasting {!r} ...".format(key))
             if key == 'msgs_total':
                 res[key] = self.msgs_total.dict()
             elif key == 'smtpd_messages_per_hour':
+                # LOG.debug("Typecasting smtpd_messages_per_hour into a list ...")
                 if self.smtpd_messages_per_hour is None:
                     res[key] = None
                 else:
-                    res[key] = []
-                    for stat in self.smtpd_messages_per_hour:
-                        res[key].append(repr(stat))
+                    res[key] = self.smtpd_messages_per_hour.as_list(pure=pure)
             elif key in (
                     'bounced_messages_per_hour', 'deferred_messages_per_hour',
                     'delivered_messages_per_hour', 'received_messages_per_hour',
