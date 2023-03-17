@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay
 
-__version__ = '0.7.3'
+__version__ = '0.7.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1423,7 +1423,7 @@ class PostfixLogParser(object):
             self._eval_smtp()
             return
 
-        if self.verbose > 1:
+        if self.verbose > 2:
             msg = "Unhandled message: {msg!r}\n    Command: {cmd!r}, Qid: {q!r}.".format(
                 msg=self._cur_msg, cmd=self._cur_pf_command, q=self._cur_qid)
             LOG.debug(msg)
@@ -1522,7 +1522,7 @@ class PostfixLogParser(object):
             self._eval_bounced_msg(addr, domain, relay, delay, rest)
             return
 
-        if self.verbose > 1:
+        if self.verbose > 2:
             msg = (
                 "Unhandled message: addr={a!r}, relay={r!r}, delay={d!r}, status={s!r}, "
                 "rest={rst!r}.").format(a=addr, r=relay, d=delay, s=status, rst=rest)
