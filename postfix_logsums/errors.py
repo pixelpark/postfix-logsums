@@ -8,7 +8,7 @@
 @copyright: © 2023 by Frank Brehm, Berlin
 """
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -26,6 +26,46 @@ class StatsError(PostfixLogsumsError):
 
     pass
 
+
+# =============================================================================
+class WrongDateKeyError(StatsError, ValueError):
+    """Error class for a wrong date key for a DailyStatsDict."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, key, err_msg=None):
+        """Initialise a WrongDateKeyError exception."""
+        self.key = key
+        self.err_msg = err_msg
+        super(WrongDateKeyError, self).__init__()
+
+    # -------------------------------------------------------------------------
+    def __str__(self):
+        """Typecast into str."""
+        if self.err_msg:
+            msg = "Invalid key {k!r} for a {what}, must be valid date: {e}"
+        else:
+            msg = "Invalid key {k!r} for a {what}, must be valid date."
+        return msg.format(k=self.key, what='DailyStatsDict', e=self.err_msg)
+
+# =============================================================================
+class WrongDailyKeyError(StatsError, KeyError):
+    """Error class for a invalid key for a DailyStatsDict."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, key, err_msg=None):
+        """Initialise a WrongDailyKeyError exception."""
+        self.key = key
+        self.err_msg = err_msg
+        super(WrongDailyKeyError, self).__init__()
+
+    # -------------------------------------------------------------------------
+    def __str__(self):
+        """Typecast into str."""
+        if self.err_msg:
+            msg = "Key error for key {k!r} for a {what}: {e}"
+        else:
+            msg = "Key error for {k!r} for a {what}."
+        return msg.format(k=self.key, what='DailyStatsDict', e=self.err_msg)
 
 # =============================================================================
 class WrongMsgStatsAttributeError(StatsError, AttributeError):
