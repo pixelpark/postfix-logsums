@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.6.11'
+__version__ = '0.6.12'
 
 
 # =============================================================================
@@ -1522,9 +1522,9 @@ class PostfixLogsumsApp(object):
             values['date'] = day
             values['connections'] = adj_int_units_localized(stats[0])
             values['time_conn'] = total_time
-            values['avg_time'] = '{:0.1f}'.format(avg)
-            values['max_time'] = '{:0.1f}'.format(stats[2])
-            if self.verbose > 0:
+            values['avg_time'] = format_string('%0.1f', avg, grouping=True)
+            values['max_time'] = '{:0.0f}'.format(stats[2])
+            if self.verbose > 4:
                 LOG.debug("Daily SMTP stat:\n" + pp(values))
 
             line = tpl.format(**values)
