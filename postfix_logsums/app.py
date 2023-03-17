@@ -1306,31 +1306,31 @@ class PostfixLogsumsApp(object):
                 val = self.results.received_messages_per_hour[hour]
                 if self.nr_days:
                     val /= self.nr_days
-                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                val = format_string('%0.1f', val, grouping=True)
                 values['received'] = val
             if hour < len(self.results.delivered_messages_per_hour):
                 val = self.results.delivered_messages_per_hour[hour]
                 if self.nr_days:
                     val /= self.nr_days
-                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                val = format_string('%0.1f', val, grouping=True)
                 values['sent'] = val
             if hour < len(self.results.deferred_messages_per_hour):
                 val = self.results.deferred_messages_per_hour[hour]
                 if self.nr_days:
                     val /= self.nr_days
-                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                val = format_string('%0.1f', val, grouping=True)
                 values['deferred'] = val
             if hour < len(self.results.bounced_messages_per_hour):
                 val = self.results.bounced_messages_per_hour[hour]
                 if self.nr_days:
                     val /= self.nr_days
-                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                val = format_string('%0.1f', val, grouping=True)
                 values['bounced'] = val
             if hour < len(self.results.rejected_messages_per_hour):
                 val = self.results.rejected_messages_per_hour[hour]
                 if self.nr_days:
                     val /= self.nr_days
-                val = adj_int_units_localized(val, no_unit=True).rstrip()
+                val = format_string('%0.1f', val, grouping=True)
                 values['rejected'] = val
 
             line = tpl.format(**values)
