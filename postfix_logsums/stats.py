@@ -322,6 +322,11 @@ class HourlyStats(MutableSequence):
         return ret
 
     # -------------------------------------------------------------------------
+    def as_list(self):
+        """Typecasting into a simple list."""
+        return copy.copy(self._list)
+
+    # -------------------------------------------------------------------------
     def __getitem__(self, hour):
         """Returns the value of the given hour."""
         return self._list[hour]

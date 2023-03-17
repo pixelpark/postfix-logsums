@@ -11,7 +11,7 @@ from __future__ import absolute_import
 
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 
-__version__ = '0.3.3'
+__version__ = '0.4.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -122,7 +122,7 @@ class PostfixLogSums(object):
             self.files[self._files_index]['lines_considered'] += increment
 
     # -------------------------------------------------------------------------
-    def as_dict(self, short=True):
+    def as_dict(self, short=True, pure=False):
         """
         Transforms the elements of the object into a dict
 
@@ -132,6 +132,9 @@ class PostfixLogSums(object):
         @return: structure as dict
         @rtype:  dict
         """
+
+        if pure:
+            sort = True
 
         res = {}
         for key in self.__dict__:
@@ -146,12 +149,44 @@ class PostfixLogSums(object):
                     res[key] = []
                     for stat in self.smtpd_messages_per_hour:
                         res[key].append(repr(stat))
+            elif key in (
+                    'bounced_messages_per_hour', 'deferred_messages_per_hour',
+                    'delivered_messages_per_hour', 'received_messages_per_hour',
+                    'rejected_messages_per_hour'):
+                if pure:
+                    res[key] = getattr(self, key).as_list()
+                else:
+                    res[key] = self.__dict__[key]
+            elif key in ('logdate_latest', 'logdate_oldest'):
+                if pure:
+                    dt = getattr(self, key, None)
+                    if dt:
+                        dt = dt.isoformat(' ')
+                    res[key] = dt
+                else:
+                    res[key] = self.__dict__[key]
+            elif key in ('messages_per_day', ):
+                if pure:
+                    stats_dict = getattr(self, key)
+                    if isinstance(stats_dict, dict):
+                        res[key] = {}
+                        for day in getattr(self, key).keys():
+                            stats = stats_dict[day].dict()
+                            res[key][day] = stats
+                    else:
+                        res[key] = None
             else:
                 res[key] = self.__dict__[key]
 
-        res['__class_name__'] = self.__class__.__name__
+        if not pure:
+            res['__class_name__'] = self.__class__.__name__
 
         return res
+
+    # -------------------------------------------------------------------------
+    def dict(self):
+        """Typecast into a regular dict."""
+        return self.as_dict(pure=True)
 
 
 # =============================================================================

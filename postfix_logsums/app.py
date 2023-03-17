@@ -919,7 +919,7 @@ class PostfixLogsumsApp(object):
         self.nr_days = len(self.results.messages_per_day.keys())
 
         if self.verbose > 1:
-            LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
+            LOG.info('Result of parsing:' + '\n' + pp(self.results.dict()))
 
         print()
         if self.parser.date_str:
