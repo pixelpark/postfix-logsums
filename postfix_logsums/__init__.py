@@ -27,9 +27,9 @@ from .errors import PostfixLogsumsError
 
 from .results import PostfixLogSums
 
-from .stats import MessageStats, MessageStatsPerDay
+from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.7.4'
+__version__ = '0.7.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -842,14 +842,14 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def incr_msgs_per_day(self, index=None):
 
-        dt_fmt = self.cur_date_fmt()
-        if dt_fmt not in self.results.messages_per_day:
-            self.results.messages_per_day[dt_fmt] = MessageStatsPerDay()
+        cur_date = self._cur_ts.date()
+        if cur_date not in self.results.messages_per_day:
+            self.results.messages_per_day[cur_date] = MessageStatsPerDay()
 
         if index is None:
             return
 
-        self.results.messages_per_day[dt_fmt][index] += 1
+        self.results.messages_per_day[cur_date][index] += 1
 
     # -------------------------------------------------------------------------
     def _eval_msg_ts(self, line):
@@ -1128,19 +1128,20 @@ class PostfixLogParser(object):
                 if seconds > self.results.smtpd_messages_per_hour[hour].time_max:
                     self.results.smtpd_messages_per_hour[hour].time_max = seconds
 
-                if dt_fmt not in self.results.smtpd_per_day:
-                    self.results.smtpd_per_day[dt_fmt] = [0, 0, 0]
-                self.results.smtpd_per_day[dt_fmt][0] += 1
-                self.results.smtpd_per_day[dt_fmt][1] += seconds
-                if seconds > self.results.smtpd_per_day[dt_fmt][2]:
-                    self.results.smtpd_per_day[dt_fmt][2] = seconds
+                cur_date = self._cur_ts.date()
+                if cur_date not in self.results.smtpd_per_day:
+                    self.results.smtpd_per_day[cur_date] = SmtpdStats()
+                self.results.smtpd_per_day[cur_date].connections += 1
+                self.results.smtpd_per_day[cur_date].connect_time_total += seconds
+                if seconds > self.results.smtpd_per_day[cur_date].connect_time_max:
+                    self.results.smtpd_per_day[cur_date].connect_time_max = seconds
 
                 if host_id not in self.results.smtpd_per_domain:
-                    self.results.smtpd_per_domain[host_id] = [0, 0, 0]
-                self.results.smtpd_per_domain[host_id][0] += 1
-                self.results.smtpd_per_domain[host_id][1] += seconds
-                if seconds > self.results.smtpd_per_domain[host_id][2]:
-                    self.results.smtpd_per_domain[host_id][2] = seconds
+                    self.results.smtpd_per_domain[host_id] = SmtpdStats()
+                self.results.smtpd_per_domain[host_id].connections += 1
+                self.results.smtpd_per_domain[host_id].connect_time_total += seconds
+                if seconds > self.results.smtpd_per_domain[host_id].connect_time_max:
+                    self.results.smtpd_per_domain[host_id].connect_time_max = seconds
 
                 self.results.msgs_total.connections += 1
                 self.results.connections_time += seconds

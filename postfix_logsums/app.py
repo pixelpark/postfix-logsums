@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.6.12'
+__version__ = '0.7.0'
 
 
 # =============================================================================
@@ -1228,10 +1228,10 @@ class PostfixLogsumsApp(object):
         print(indent + header)
         print(indent + ('-' * len(header)))
 
-        for day in sorted(self.results.messages_per_day.keys()):
+        for day in self.results.messages_per_day.keys():
 
             stats = {}
-            stats['date'] = day
+            stats['date'] = day.isoformat()
             stats['received'] = adj_int_units_localized(
                 self.results.messages_per_day[day].received, no_unit=True).rstrip()
             stats['sent'] = adj_int_units_localized(
@@ -1508,22 +1508,22 @@ class PostfixLogsumsApp(object):
         print(indent + header)
         print(indent + ('-' * len(header)))
 
-        for day in sorted(self.results.smtpd_per_day.keys()):
+        for day in self.results.smtpd_per_day.keys():
 
             stats = self.results.smtpd_per_day[day]
-            total_time_splitted = get_smh(stats[1])
+            total_time_splitted = get_smh(stats.connect_time_total)
             total_time = '{h:d}:{m:02d}:{s:02.0f}'.format(
                 h=total_time_splitted[2], m=total_time_splitted[1], s=total_time_splitted[0])
             avg = 0.0
-            if stats[0]:
-                avg = stats[1] / stats[0]
+            if stats.connections:
+                avg = stats.connect_time_total / stats.connections
 
             values = {}
-            values['date'] = day
-            values['connections'] = adj_int_units_localized(stats[0])
+            values['date'] = day.isoformat()
+            values['connections'] = adj_int_units_localized(stats.connections)
             values['time_conn'] = total_time
             values['avg_time'] = format_string('%0.1f', avg, grouping=True)
-            values['max_time'] = '{:0.0f}'.format(stats[2])
+            values['max_time'] = '{:0.0f}'.format(stats.connect_time_max)
             if self.verbose > 4:
                 LOG.debug("Daily SMTP stat:\n" + pp(values))
 

@@ -12,8 +12,9 @@ from __future__ import absolute_import
 import logging
 
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
+from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -66,7 +67,7 @@ class PostfixLogSums(object):
         self.logdate_latest = None
         self.master_msgs = {}
         self.message_details = {}
-        self.messages_per_day = {}
+        self.messages_per_day = DailyStatsDict(stats_class=MessageStatsPerDay)
         self.msgs_total = MessageStatsTotals()
         self.no_message_size = {}
         self.panics = {}
@@ -91,7 +92,7 @@ class PostfixLogSums(object):
             'trusted': 0,
             'untrusted': 0,
         }
-        self.smtpd_per_day = {}
+        self.smtpd_per_day = DailyStatsDict(stats_class=SmtpdStats)
         self.smtpd_per_domain = {}
         self.smtpd_messages_per_hour = None
         if self.smtpd_stats:
@@ -145,8 +146,8 @@ class PostfixLogSums(object):
             if short and key.startswith('_') and not key.startswith('__'):
                 continue
             # LOG.debug("Typecasting {!r} ...".format(key))
-            if key == 'msgs_total':
-                res[key] = self.msgs_total.dict()
+            if key in ('msgs_total', 'messages_per_day', 'smtpd_per_day'):
+                res[key] = getattr(self, key).dict()
             elif key == 'smtpd_messages_per_hour':
                 # LOG.debug("Typecasting smtpd_messages_per_hour into a list ...")
                 if self.smtpd_messages_per_hour is None:
