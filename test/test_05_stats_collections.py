@@ -11,6 +11,7 @@
 import os
 import sys
 import logging
+import datetime
 
 try:
     import unittest2 as unittest
@@ -283,6 +284,52 @@ class TestStatsCollections(PostfixLogsumsTestcase):
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
 
+    # -------------------------------------------------------------------------
+    def test_daily_stats(self):
+
+        LOG.info("Testing init and attributes of a DailyStatsDict object ..""")
+
+        from postfix_logsums.errors import PostfixLogsumsError
+        from postfix_logsums.stats import DailyStatsDict, BaseMessageStats
+
+        daily_stats = DailyStatsDict()
+
+        LOG.debug("DailyStatsDict %r: {!r}".format(daily_stats))
+        LOG.debug("DailyStatsDict %s: {}".format(daily_stats))
+        LOG.debug("DailyStatsDict as a dict: {}".format(pp(daily_stats.as_dict())))
+        LOG.debug("DailyStatsDict as a pure dict: {}".format(pp(daily_stats.dict())))
+
+        LOG.debug("Assigning valid values ....")
+        daily_stats[datetime.date.today()] = {'value_one': 1, 'value_two': 2}
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        daily_stats[yesterday] = BaseMessageStats({'value_one': 3, 'value_two': 4})
+        one_week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
+        daily_stats[one_week_ago] = {'value_one': 5, 'value_two': 6}
+        daily_stats['2023-03-01'] = BaseMessageStats(value_one=7, value_two=8)
+        daily_stats[123456789] = {}
+        daily_stats[(2020, 1, 1)] = {'value_one': 2020}
+        daily_stats[[2021, 1, 1]] = {'value_two': 2021}
+        LOG.debug("DailyStatsDict as a dict:\n{}".format(pp(daily_stats.as_dict())))
+        LOG.debug("DailyStatsDict as a pure dict:\n{}".format(pp(daily_stats.dict())))
+
+        LOG.debug("Using wrong keys and values ...")
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            daily_stats['uhu'] = 'bla'
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            daily_stats['2022-12-32'] = {'value_one': 1, 'value_two': 2}
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+        with self.assertRaises(PostfixLogsumsError) as cm:
+            daily_stats['2022-12-12'] = 'bla'
+        e = cm.exception
+        LOG.debug("%s raised: %s", e.__class__.__name__, e)
+
+
 # =============================================================================
 if __name__ == '__main__':
 
@@ -301,6 +348,7 @@ if __name__ == '__main__':
     suite.addTest(TestStatsCollections('test_common_msg_stats', verbose))
     suite.addTest(TestStatsCollections('test_msg_stats_per_day', verbose))
     suite.addTest(TestStatsCollections('test_hourly_stats', verbose))
+    suite.addTest(TestStatsCollections('test_daily_stats', verbose))
 
     runner = unittest.TextTestRunner(verbosity=verbose)
 
