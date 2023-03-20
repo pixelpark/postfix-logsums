@@ -24,7 +24,7 @@ from .errors import StatsError, WrongDateKeyError, WrongMsgStatsKeyError, WrongD
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -309,10 +309,11 @@ class DailyStatsDict(MutableMapping):
     @classmethod
     def key_to_date(cls, key):
         """Typecasting given date into a datetime.date object."""
-        if isinstance(key, datetime.date):
-            return key
+        # LOG.debug("Init key for a {c} object: {k!r}".format(c=cls.__name__, k=key))
         if isinstance(key, datetime.datetime):
             return key.date()
+        if isinstance(key, datetime.date):
+            return key
         if isinstance(key, int):
             return datetime.date.fromtimestamp(key)
         if is_sequence(key):
@@ -324,9 +325,11 @@ class DailyStatsDict(MutableMapping):
             try:
                 m = cls.re_isoformat.match(key)
                 if m:
-                    return datetime.date(m['year'], m['month'], m['day'])
+                    return datetime.date(int(m['year']), int(m['month']), int(m['day']))
                 raise WrongDateKeyError(key)
             except (ValueError, KeyError) as e:
+                if isinstance(e, WrongDateKeyError):
+                    raise e
                 raise WrongDateKeyError(key, str(e))
         raise WrongDateKeyError(key)
 
