@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 
 # =============================================================================
@@ -919,7 +919,7 @@ class PostfixLogsumsApp(object):
         self.nr_days = len(self.results.messages_per_day.keys())
 
         if self.verbose > 1:
-            LOG.info('Result of parsing:' + '\n' + pp(self.results.dict()))
+            LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
 
         print()
         if self.parser.date_str:
@@ -946,6 +946,7 @@ class PostfixLogsumsApp(object):
         if self.args.smtpd_stats:
             if self.nr_days > 1:
                 self.print_per_day_smtpd()
+            self.print_per_hour_smtpd()
 
         if not self.args.problems_first:
             self.print_problems_reports()
@@ -1526,6 +1527,95 @@ class PostfixLogsumsApp(object):
             values['max_time'] = '{:0.0f}'.format(stats.connect_time_max)
             if self.verbose > 4:
                 LOG.debug("Daily SMTP stat:\n" + pp(values))
+
+            line = tpl.format(**values)
+            print(indent + line)
+
+    # -------------------------------------------------------------------------
+    def print_per_hour_smtpd(self):
+        """print 'per-hour' smtpd connection summary"""
+        indent = '  '
+        if self.nr_days == 1:
+            title = 'Per-Hour SMTPD Connection Summary'
+        else:
+            title = 'Per-Hour SMTPD Connection Daily Average'
+        self.print_subsect_title(title)
+
+        conns_total = 0
+        for stat in self.results.smtpd_messages_per_hour:
+            conns_total += stat.count
+
+        if not conns_total:
+            print('{i}{n}'.format(i=indent, n='None.'))
+            return
+
+        labels = {
+            'hour': 'Hour',
+            'conn': 'Connections',
+            'time_total': 'Time total',
+            'time_avg': 'Time avg.',
+            'time_max': 'Time max.',
+        }
+
+        widths = {
+            'hour': 13,
+            'conn': 11,
+            'time_total': 11,
+            'time_avg': 11,
+            'time_max': 11,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{hour:<{w}}}'.format(w=widths['hour'])
+        tpl += '  {{conn:>{w}}}'.format(w=widths['conn'])
+        tpl += '  {{time_total:>{w}}}'.format(w=widths['time_total'])
+        if self.nr_days < 2:
+            tpl += '  {{time_avg:>{w}}}'.format(w=widths['time_avg'])
+            tpl += '  {{time_max:>{w}}}'.format(w=widths['time_max'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        hour = -1
+        for stat in self.results.smtpd_messages_per_hour:
+
+            #stat = self.results.smtpd_messages_per_hour[hour]
+            hour += 1
+            if not stat.count:
+                continue
+
+            next_hour = hour + 1
+            if next_hour >= self.hours_per_day:
+                next_hour = 0
+            hour_show = '{:>02d}:00 - {:>02d}:00'.format(hour, next_hour)
+            values = {
+                'hour': hour_show,
+                'conn': 0,
+                'time_total': 0,
+                'time_avg': 0,
+                'time_max': 0,
+            }
+
+            connections = stat.count
+            time_total = stat.time_total
+
+            if self.nr_days > 1:
+                connections /= self.nr_days
+                time_total /= self.nr_days
+
+            total_time_splitted = get_smh(time_total)
+            avg = stat.time_total / stat.count
+
+            values['conn'] = adj_int_units_localized(connections)
+            values['time_total'] = '{h:d}:{m:02d}:{s:02.0f}'.format(
+                h=total_time_splitted[2], m=total_time_splitted[1], s=total_time_splitted[0])
+            values['time_avg'] = format_string('%0.1f', avg, grouping=True)
+            values['time_max'] = '{:0.0f}'.format(stat.time_max)
 
             line = tpl.format(**values)
             print(indent + line)
