@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 
 # =============================================================================
@@ -243,6 +243,34 @@ class PostfixLogsumsApp(object):
             return 0
 
         for key in sorted(data.keys(), key=cmp_to_key(by_count_then_size)):
+            sorted_keys.append(key)
+
+        return sorted_keys
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def sorted_keys_of_smtpd_stats(cls, data):
+        """Returns all keys of tha data dict sorted."""
+        sorted_keys = []
+
+        # ---------------------------------------------
+        def by_count_then_time(key_one, key_two):
+            stats_one = data[key_one]
+            stats_two = data[key_two]
+
+            if stats_one.connections != stats_two.connections:
+                if stats_one.connections > stats_two.connections:
+                    return -1
+                else:
+                    return 1
+
+            if stats_one.connect_time_total > stats_two.connect_time_total:
+                return -1
+            if stats_one.connect_time_total < stats_two.connect_time_total:
+                return 1
+            return 0
+
+        for key in sorted(data.keys(), key=cmp_to_key(by_count_then_time)):
             sorted_keys.append(key)
 
         return sorted_keys
@@ -947,6 +975,7 @@ class PostfixLogsumsApp(object):
             if self.nr_days > 1:
                 self.print_per_day_smtpd()
             self.print_per_hour_smtpd()
+            self.print_domain_smtpd_summary()
 
         if not self.args.problems_first:
             self.print_problems_reports()
@@ -1619,6 +1648,88 @@ class PostfixLogsumsApp(object):
 
             line = tpl.format(**values)
             print(indent + line)
+
+    # -------------------------------------------------------------------------
+    def print_domain_smtpd_summary(self):
+        """print '"per-domain-smtpd' connection summary"""
+        indent = '  '
+        count = self.detail_host
+        if count == 0:
+            return
+
+        title = 'Host/Domain Summary: SMTPD Connections'
+        if count is not None:
+            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
+        self.print_subsect_title(title)
+
+        if not len(self.results.smtpd_per_domain.keys()):
+            print('{i}{n}'.format(i=indent, n='None.'))
+            return
+
+        labels = {
+            'conn': 'Connections',
+            'time_total': 'Time total',
+            'time_avg': 'Time avg.',
+            'time_max': 'Time max.',
+            'domain': 'Host/Domain',
+        }
+
+        widths = {
+            'conn': 11,
+            'time_total': 11,
+            'time_avg': 11,
+            'time_max': 11,
+            'domain': 20,
+        }
+
+        for field in labels.keys():
+            label = labels[field]
+            if len(label) > widths[field]:
+                widths[field] = len(label)
+
+        tpl = '{{conn:>{w}}}'.format(w=widths['conn'])
+        tpl += '  {{time_total:>{w}}}'.format(w=widths['time_total'])
+        tpl += '  {{time_avg:>{w}}}'.format(w=widths['time_avg'])
+        tpl += '  {{time_max:>{w}}}'.format(w=widths['time_max'])
+        tpl += '  {{domain:<{w}}}'.format(w=widths['domain'])
+
+        header = tpl.format(**labels)
+        print(indent + header)
+        print(indent + ('-' * len(header)))
+
+        i = 0
+        for domain in self.sorted_keys_of_smtpd_stats(self.results.smtpd_per_domain):
+
+            nr = self.results.smtpd_per_domain[domain].connections
+            time_total = self.results.smtpd_per_domain[domain].connect_time_total
+            max_time =  self.results.smtpd_per_domain[domain].connect_time_max
+
+            total_time_splitted = get_smh(time_total)
+            avg = time_total / nr
+
+            if domain is None:
+                domain = '<None>'
+
+            values = {
+                'conn': 0,
+                'time_total': 0,
+                'time_avg': 0,
+                'time_max': 0,
+                'domain': domain,
+            }
+
+            values['conn'] = adj_int_units_localized(nr)
+            values['time_total'] = '{h:d}:{m:02d}:{s:02.0f}'.format(
+                h=total_time_splitted[2], m=total_time_splitted[1], s=total_time_splitted[0])
+            values['time_avg'] = format_string('%0.1f', avg, grouping=True)
+            values['time_max'] = '{:0.0f}'.format(max_time)
+
+            line = tpl.format(**values)
+            print(indent + line)
+
+            i += 1
+            if count is not None and i >= count:
+                break
 
 
 # =============================================================================
