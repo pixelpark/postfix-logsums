@@ -189,6 +189,10 @@ class PostfixLogsumsApp(object):
     pat_ipv4 = r'^' + r'.'.join(pat_ipv4_tuple) + r'$'
     re_ipv4 = re.compile(pat_ipv4)
 
+    re_mailsplit = re.compile(r'@')
+    re_maildomain = re.compile(r'^(.*)\.([^\.]+)\.([^\.]{3}|[^\.]{2,3}\.[^\.]{2})$')
+    re_bang_path = re.compile(r'^.*!')
+
     hours_per_day = HOURS_PER_DAY
 
     # -------------------------------------------------------------------------
@@ -989,6 +993,9 @@ class PostfixLogsumsApp(object):
         if not self.args.problems_first:
             self.print_problems_reports()
 
+        if self.args.extended:
+            self.print_detailed_msg_data()
+
         print()
 
     # -------------------------------------------------------------------------
@@ -1083,12 +1090,26 @@ class PostfixLogsumsApp(object):
         print()
 
     # -------------------------------------------------------------------------
-    def print_subsect_title(self, title):
+    def print_subsect_title(self, title, nr_items=1, count=None, quiet=None):
         """Printing the title of a sub section."""
         msg = str(title)
+        if quiet is None:
+            quiet = self.quiet
         print()
+
+        if not nr_items:
+            if not quiet:
+                msg += ': None'
+                print(msg)
+            return False
+
+        if count:
+            msg += ' ({lbl}: {c})'.format(lbl='top', c=count)
+
         print(msg)
         print('-' * len(msg))
+
+        return True
 
     # -------------------------------------------------------------------------
     def print_smtpd_stats(self):
@@ -1194,14 +1215,9 @@ class PostfixLogsumsApp(object):
             quiet = self.quiet
         indent = '  '
 
-        if count is not None:
-            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-        if not len(data.keys()):
-            if quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        nr_items = len(data.keys())
+        if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
-        self.print_subsect_title(title)
 
         tpl = '{key}  {val}'
         i += 1
@@ -1416,15 +1432,9 @@ class PostfixLogsumsApp(object):
             return
 
         title = 'Host/Domain Summary: Message Delivery'
-        if count is not None:
-            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-
-        if not len(self.results.rcpt_domain.keys()):
-            if self.quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        nr_items = len(self.results.rcpt_domain.keys())
+        if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
-        self.print_subsect_title(title)
 
         labels = {
             'sent': 'Sent count',
@@ -1492,15 +1502,9 @@ class PostfixLogsumsApp(object):
             return
 
         title = 'Host/Domain Summary: Messages Received'
-        if count is not None:
-            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-
-        if not len(self.results.sending_domain_data.keys()):
-            if self.quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        nr_items = len(self.results.sending_domain_data.keys())
+        if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
-        self.print_subsect_title(title)
 
         labels = {
             'received': 'Message count',
@@ -1548,12 +1552,9 @@ class PostfixLogsumsApp(object):
         title = 'Per-Day SMTPD Connection Summary'
         indent = '  '
 
-        if not len(self.results.smtpd_per_day.keys()):
-            if self.quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        nr_items = len(self.results.smtpd_per_day.keys())
+        if not self.print_subsect_title(title, nr_items=nr_items):
             return
-        self.print_subsect_title(title)
 
         labels = {
             'date': 'Date',
@@ -1623,12 +1624,8 @@ class PostfixLogsumsApp(object):
         for stat in self.results.smtpd_messages_per_hour:
             conns_total += stat.count
 
-        if not conns_total:
-            if self.quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        if not self.print_subsect_title(title, nr_items=conns_total):
             return
-        self.print_subsect_title(title)
 
         labels = {
             'hour': 'Hour',
@@ -1713,15 +1710,9 @@ class PostfixLogsumsApp(object):
             return
 
         title = 'Host/Domain Summary: SMTPD Connections'
-        if count is not None:
-            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-
-        if not len(self.results.smtpd_per_domain.keys()):
-            if self.quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        nr_items = len(self.results.smtpd_per_domain.keys())
+        if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
-        self.print_subsect_title(title)
 
         labels = {
             'conn': 'Connections',
@@ -1796,15 +1787,9 @@ class PostfixLogsumsApp(object):
         indent = '  '
         count = self.detail_user
 
-        if count is not None:
-            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-
-        if not len(data.keys()):
-            if self.quiet:
-                return
-            print('\n{t}: {n}'.format(t=title, n='None.'))
+        nr_items = len(data.keys())
+        if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
-        self.print_subsect_title(title)
 
         tmp_list = []
         for addr in data.keys():
@@ -1830,6 +1815,98 @@ class PostfixLogsumsApp(object):
             i += 1
             if count is not None and i >= count:
                 break
+
+    # -------------------------------------------------------------------------
+    def print_detailed_msg_data(self):
+        """Print per-message info in excruciating detail."""
+        indent = '  '
+        title = "Message detail"
+
+        data = self.results.message_details
+        if not self.print_subsect_title(title, nr_items=len(data.keys())):
+            return
+
+        max_len = 1
+        for key in data.keys():
+            if len(key) > max_len:
+                max_len = len(key)
+
+        def by_domain_then_user(qid_one, qid_two):
+            list_one = data[qid_one]
+            list_two = data[qid_two]
+
+            user_one = None
+            domain_one = None
+            user_two = None
+            domain_two = None
+
+            parts = self.re_mailsplit.split(list_one[0])
+            user_one = parts[0]
+            if len(parts) > 1:
+                domain_one = parts[1]
+
+            parts = self.re_mailsplit.split(list_two[0])
+            user_two = parts[0]
+            if len(parts) > 1:
+                domain_two = parts[1]
+
+            if domain_one:
+                domain_one = self.re_maildomain.sub(r'\2.\3.\1', domain_one)
+                domain_one_low = domain_one.lower()
+            else:
+                domain_one = ''
+                domain_one_low = ''
+
+            if domain_two:
+                domain_two = self.re_maildomain.sub(r'\2.\3.\1', domain_two)
+                domain_two_low = domain_two.lower()
+            else:
+                domain_two = ''
+                domain_two_low = ''
+
+            if domain_one_low < domain_two_low:
+                return -1
+            if domain_one_low > domain_two_low:
+                return 1
+            if domain_one < domain_two:
+                return -1
+            if domain_one > domain_two:
+                return 1
+
+            user_one = self.re_bang_path.sub('', user_one)
+            user_two = self.re_bang_path.sub('', user_two)
+
+            if user_one.lower() < user_two.lower():
+                return -1
+            if user_one.lower() > user_two.lower():
+                return -1
+            if user_one < user_two:
+                return -1
+            if user_one > user_two:
+                return -1
+
+            if qid_one.lower() < qid_two.lower():
+                return -1
+            if qid_one.lower() > qid_two.lower():
+                return -1
+            if qid_one < qid_two:
+                return -1
+            if qid_one > qid_two:
+                return -1
+
+            return 0
+
+        tpl = indent + '{{qid:<{max}}}  {{val}}'.format(max=(max_len + 1))
+        for qid in sorted(data.keys(), key=cmp_to_key(by_domain_then_user)):
+            first = True
+            val_list = data[qid]
+            for val in val_list:
+                if first:
+                    line = tpl.format(qid=(qid + ':'), val=val)
+                else:
+                    line = tpl.format(qid='', val=val)
+                print(line)
+                first = False
 
 
 # =============================================================================
