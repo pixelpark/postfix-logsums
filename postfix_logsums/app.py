@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.5'
+__version__ = '0.7.6'
 
 
 # =============================================================================
@@ -1418,11 +1418,13 @@ class PostfixLogsumsApp(object):
         title = 'Host/Domain Summary: Message Delivery'
         if count is not None:
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-        self.print_subsect_title(title)
 
         if not len(self.results.rcpt_domain.keys()):
-            print('{i}{n}'.format(i=indent, n='None.'))
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
             return
+        self.print_subsect_title(title)
 
         labels = {
             'sent': 'Sent count',
@@ -1492,11 +1494,13 @@ class PostfixLogsumsApp(object):
         title = 'Host/Domain Summary: Messages Received'
         if count is not None:
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-        self.print_subsect_title(title)
 
         if not len(self.results.sending_domain_data.keys()):
-            print('{i}{n}'.format(i=indent, n='None.'))
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
             return
+        self.print_subsect_title(title)
 
         labels = {
             'received': 'Message count',
@@ -1542,12 +1546,14 @@ class PostfixLogsumsApp(object):
     def print_per_day_smtpd(self):
         """print "per-day" smtpd connection summary"""
         title = 'Per-Day SMTPD Connection Summary'
-        self.print_subsect_title(title)
         indent = '  '
 
         if not len(self.results.smtpd_per_day.keys()):
-            print('{i}{n}'.format(i=indent, n='None.'))
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
             return
+        self.print_subsect_title(title)
 
         labels = {
             'date': 'Date',
@@ -1612,15 +1618,17 @@ class PostfixLogsumsApp(object):
             title = 'Per-Hour SMTPD Connection Summary'
         else:
             title = 'Per-Hour SMTPD Connection Daily Average'
-        self.print_subsect_title(title)
 
         conns_total = 0
         for stat in self.results.smtpd_messages_per_hour:
             conns_total += stat.count
 
         if not conns_total:
-            print('{i}{n}'.format(i=indent, n='None.'))
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
             return
+        self.print_subsect_title(title)
 
         labels = {
             'hour': 'Hour',
@@ -1707,11 +1715,13 @@ class PostfixLogsumsApp(object):
         title = 'Host/Domain Summary: SMTPD Connections'
         if count is not None:
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-        self.print_subsect_title(title)
 
         if not len(self.results.smtpd_per_domain.keys()):
-            print('{i}{n}'.format(i=indent, n='None.'))
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
             return
+        self.print_subsect_title(title)
 
         labels = {
             'conn': 'Connections',
@@ -1788,11 +1798,13 @@ class PostfixLogsumsApp(object):
 
         if count is not None:
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
-        self.print_subsect_title(title)
 
         if not len(data.keys()):
-            print('{i}{n}'.format(i=indent, n='None.'))
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
             return
+        self.print_subsect_title(title)
 
         tmp_list = []
         for addr in data.keys():
