@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 
 
 # =============================================================================
@@ -1420,7 +1420,7 @@ class PostfixLogsumsApp(object):
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
 
         if not len(self.results.rcpt_domain.keys()):
-            if quiet:
+            if self.quiet:
                 return
             print('\n{t}: {n}'.format(t=title, n='None.'))
             return
@@ -1496,7 +1496,7 @@ class PostfixLogsumsApp(object):
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
 
         if not len(self.results.sending_domain_data.keys()):
-            if quiet:
+            if self.quiet:
                 return
             print('\n{t}: {n}'.format(t=title, n='None.'))
             return
@@ -1549,7 +1549,7 @@ class PostfixLogsumsApp(object):
         indent = '  '
 
         if not len(self.results.smtpd_per_day.keys()):
-            if quiet:
+            if self.quiet:
                 return
             print('\n{t}: {n}'.format(t=title, n='None.'))
             return
@@ -1624,7 +1624,7 @@ class PostfixLogsumsApp(object):
             conns_total += stat.count
 
         if not conns_total:
-            if quiet:
+            if self.quiet:
                 return
             print('\n{t}: {n}'.format(t=title, n='None.'))
             return
@@ -1717,7 +1717,7 @@ class PostfixLogsumsApp(object):
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
 
         if not len(self.results.smtpd_per_domain.keys()):
-            if quiet:
+            if self.quiet:
                 return
             print('\n{t}: {n}'.format(t=title, n='None.'))
             return
@@ -1800,7 +1800,7 @@ class PostfixLogsumsApp(object):
             title += ' ({lbl}: {c})'.format(lbl='top', c=count)
 
         if not len(data.keys()):
-            if quiet:
+            if self.quiet:
                 return
             print('\n{t}: {n}'.format(t=title, n='None.'))
             return
