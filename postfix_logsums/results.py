@@ -154,8 +154,8 @@ class PostfixLogSums(object):
                     for f in self.files:
                         fs = {
                             'file': str(f['file']),
-                            'lines_considered' = f['lines_considered'],
-                            'lines_total' = f['lines_total'],
+                            'lines_considered': f['lines_considered'],
+                            'lines_total': f['lines_total'],
                         }
                     res[key].append(fs)
                 else:

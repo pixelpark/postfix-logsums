@@ -21,6 +21,14 @@ import re
 import textwrap
 import shutil
 import locale
+import json
+
+HAS_YAML = False
+try:
+    import yaml
+    HAS_YAML = True
+except ImportError:
+    pass
 
 # from argparse import RawDescriptionHelpFormatter
 from argparse import RawTextHelpFormatter
@@ -194,6 +202,10 @@ class PostfixLogsumsApp(object):
     re_bang_path = re.compile(r'^.*!')
 
     hours_per_day = HOURS_PER_DAY
+
+    output_formats = ['txt', 'json']
+    if HAS_YAML:
+        output_formats.append('yaml')
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -711,6 +723,14 @@ class PostfixLogsumsApp(object):
         # Output
         output_options = self.arg_parser.add_argument_group('Output options')
 
+        desc = 'Output format. Valid options are: ' + ', '.join(
+            map(lambda x: repr(x), self.output_formats)) + '. '
+        desc += "Default: 'txt'."
+        desc = self.wrap_msg(desc, arg_width)
+        output_options.add_argument(
+            '-O', '--output-format', choices=self.output_formats, metavar='FMT',
+            dest='output_format', help=desc)
+
         # --detail
         desc = self.wrap_msg(
             'Sets all --*-detail, -h and -u to COUNT. Is over-ridden by '
@@ -953,6 +973,10 @@ class PostfixLogsumsApp(object):
 
         if self.verbose > 1:
             LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
+
+        if self.args.output_format == 'json':
+            print(json.dumps(self.results.dict(), indent=4, sort_keys=True))
+            return
 
         print()
         if self.parser.date_str:
