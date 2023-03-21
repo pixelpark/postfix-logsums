@@ -14,7 +14,7 @@ import logging
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -148,6 +148,18 @@ class PostfixLogSums(object):
             # LOG.debug("Typecasting {!r} ...".format(key))
             if key in ('msgs_total', 'messages_per_day', 'smtpd_per_day'):
                 res[key] = getattr(self, key).dict()
+            elif key == 'files':
+                if pure:
+                    res[key] = []
+                    for f in self.files:
+                        fs = {
+                            'file': str(f['file']),
+                            'lines_considered' = f['lines_considered'],
+                            'lines_total' = f['lines_total'],
+                        }
+                    res[key].append(fs)
+                else:
+                    res[key] = self.__dict__[key]
             elif key == 'smtpd_messages_per_hour':
                 # LOG.debug("Typecasting smtpd_messages_per_hour into a list ...")
                 if self.smtpd_messages_per_hour is None:
