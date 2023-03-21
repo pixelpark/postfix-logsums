@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.3'
+__version__ = '0.7.4'
 
 
 # =============================================================================
@@ -152,6 +152,7 @@ def adj_int_units_localized(value, digits=1, dec_digits=0, no_unit=False):
     ret += unit
 
     return ret
+
 
 # =============================================================================
 def adj_time_units(seconds, digits=1, dec_digits=1):
@@ -977,6 +978,11 @@ class PostfixLogsumsApp(object):
             self.print_per_hour_smtpd()
             self.print_domain_smtpd_summary()
 
+        self.print_user_data(self.results.sending_user_data, "Senders by message count", 'count')
+        self.print_user_data(self.results.rcpt_user, "Recipients by message count", 'count')
+        self.print_user_data(self.results.sending_user_data, "Senders by message size", 'size')
+        self.print_user_data(self.results.rcpt_user, "Recipients by message size", 'size')
+
         if not self.args.problems_first:
             self.print_problems_reports()
 
@@ -1663,7 +1669,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_domain_smtpd_summary(self):
-        """print '"per-domain-smtpd' connection summary"""
+        """print 'per-domain-smtpd' connection summary"""
         indent = '  '
         count = self.detail_host
         if count == 0:
@@ -1737,6 +1743,47 @@ class PostfixLogsumsApp(object):
             values['time_max'] = '{:0.0f}'.format(max_time)
 
             line = tpl.format(**values)
+            print(indent + line)
+
+            i += 1
+            if count is not None and i >= count:
+                break
+
+    # -------------------------------------------------------------------------
+    def print_user_data(self, data, title, attribute):
+        """print 'per-user' data sorted in descending order"""
+        if self.detail_user == 0:
+            return
+        indent = '  '
+        count = self.detail_user
+
+        if count is not None:
+            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
+        self.print_subsect_title(title)
+
+        if not len(data.keys()):
+            print('{i}{n}'.format(i=indent, n='None.'))
+            return
+
+        tmp_list = []
+        for addr in data.keys():
+            data_point = data[addr].dict()
+            data_point['addr'] = addr
+            tmp_list.append(data_point)
+
+        tmp_list.sort(key=itemgetter('addr'))
+        tmp_list.sort(key=itemgetter(attribute), reverse=True)
+
+        if self.verbose> 3:
+            LOG.debug("Sorted list:\n" + pp(tmp_list))
+
+        i = 0
+        tpl = '{val:>9}  {addr}'
+        for data_point in tmp_list:
+            addr = data_point['addr']
+            value = data_point[attribute]
+
+            line = tpl.format(val=adj_int_units_localized(value), addr=addr)
             print(indent + line)
 
             i += 1
