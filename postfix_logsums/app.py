@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 
 
 # =============================================================================
@@ -1261,7 +1261,10 @@ class PostfixLogsumsApp(object):
         for day in self.results.messages_per_day.keys():
 
             stats = {}
-            stats['date'] = day.isoformat()
+            if self.args.iso_date:
+                stats['date'] = day.isoformat()
+            else:
+                stats['date'] = day.strftime('%b %d %Y')
             stats['received'] = adj_int_units_localized(
                 self.results.messages_per_day[day].received, no_unit=True).rstrip()
             stats['sent'] = adj_int_units_localized(
@@ -1323,7 +1326,10 @@ class PostfixLogsumsApp(object):
             next_hour = hour + 1
             if next_hour >= self.hours_per_day:
                 next_hour = 0
-            hour_show = '{:>02d}:00 - {:>02d}:00'.format(hour, next_hour)
+            if self.args.iso_date:
+                hour_show = '{:>02d}:00 - {:>02d}:00'.format(hour, next_hour)
+            else:
+                hour_show = '{:>02d}00 - {:>02d}00'.format(hour, next_hour)
             values = {
                 'hour': hour_show,
                 'received': 0,
@@ -1549,7 +1555,10 @@ class PostfixLogsumsApp(object):
                 avg = stats.connect_time_total / stats.connections
 
             values = {}
-            values['date'] = day.isoformat()
+            if self.args.iso_date:
+                values['date'] = day.isoformat()
+            else:
+                values['date'] = day.strftime('%b %d %Y')
             values['connections'] = adj_int_units_localized(stats.connections)
             values['time_conn'] = total_time
             values['avg_time'] = format_string('%0.1f', avg, grouping=True)
@@ -1621,7 +1630,10 @@ class PostfixLogsumsApp(object):
             next_hour = hour + 1
             if next_hour >= self.hours_per_day:
                 next_hour = 0
-            hour_show = '{:>02d}:00 - {:>02d}:00'.format(hour, next_hour)
+            if self.args.iso_date:
+                hour_show = '{:>02d}:00 - {:>02d}:00'.format(hour, next_hour)
+            else:
+                hour_show = '{:>02d}00 - {:>02d}00'.format(hour, next_hour)
             values = {
                 'hour': hour_show,
                 'conn': 0,
