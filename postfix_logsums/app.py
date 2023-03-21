@@ -43,7 +43,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.4'
+__version__ = '0.7.5'
 
 
 # =============================================================================
@@ -983,6 +983,9 @@ class PostfixLogsumsApp(object):
         self.print_user_data(self.results.sending_user_data, "Senders by message size", 'size')
         self.print_user_data(self.results.rcpt_user, "Recipients by message size", 'size')
 
+        self.print_hash_by_key(
+            self.results.no_message_size, 'Messages with no size data', self.detail)
+
         if not self.args.problems_first:
             self.print_problems_reports()
 
@@ -1183,6 +1186,32 @@ class PostfixLogsumsApp(object):
                 i += 1
                 if i >= count:
                     break
+
+    # -------------------------------------------------------------------------
+    def print_hash_by_key(self, data, title, count=None, quiet=None):
+        """Print dict contents sorted by key in ascending order."""
+        if quiet is None:
+            quiet = self.quiet
+        indent = '  '
+
+        if count is not None:
+            title += ' ({lbl}: {c})'.format(lbl='top', c=count)
+        if not len(data.keys()):
+            if quiet:
+                return
+            print('\n{t}: {n}'.format(t=title, n='None.'))
+            return
+        self.print_subsect_title(title)
+
+        tpl = '{key}  {val}'
+        i += 1
+        for key in sorted(data.keys(), key=str.lower):
+            line = tpl.format(key=key, val=data[key])
+            print(indent + line)
+
+            i += 1
+            if count is not None and i >= count:
+                break
 
     # -------------------------------------------------------------------------
     def print_problems_reports(self):
