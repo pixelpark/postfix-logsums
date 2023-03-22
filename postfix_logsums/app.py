@@ -51,7 +51,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.7'
+__version__ = '0.7.8'
 
 
 # =============================================================================
@@ -971,8 +971,10 @@ class PostfixLogsumsApp(object):
         self.results = self.parser.results
         self.nr_days = len(self.results.messages_per_day.keys())
 
-        if self.verbose > 1:
+        if self.verbose > 2:
             LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
+        elif self.verbose > 1:
+            LOG.info('Result of parsing:' + '\n' + pp(self.results.dict()))
 
         if self.args.output_format == 'json':
             print(json.dumps(self.results.dict(), indent=4, sort_keys=True))

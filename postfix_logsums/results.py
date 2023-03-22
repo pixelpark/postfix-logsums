@@ -15,7 +15,7 @@ from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
 from .stats import CommonStatsDict
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -94,7 +94,7 @@ class PostfixLogSums(object):
             'untrusted': 0,
         }
         self.smtpd_per_day = DailyStatsDict(stats_class=SmtpdStats)
-        self.smtpd_per_domain = {}
+        self.smtpd_per_domain = CommonStatsDict()
         self.smtpd_messages_per_hour = None
         if self.smtpd_stats:
             self.smtpd_messages_per_hour = HourlyStatsSmtpd()

@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.7.5'
+__version__ = '0.7.6'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1270,7 +1270,7 @@ class PostfixLogParser(object):
             else:
                 m = self.re_gdom3.match(data)
                 if not m:
-                    return None
+                    return ''
                 domain = m.group(1)
                 ip_address = m.group(2)
 
