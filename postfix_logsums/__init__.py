@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.7.7'
+__version__ = '0.7.8'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -948,11 +948,11 @@ class PostfixLogParser(object):
 
         m = self.re_pf_command.match(message)
         if m:
-            return(m['cmd'], m['qid'])
+            return (m['cmd'], m['qid'])
 
         m = self.re_pf_script.match(message)
         if m:
-            return(m['cmd'], m['qid'])
+            return (m['cmd'], m['qid'])
 
         return None
 
