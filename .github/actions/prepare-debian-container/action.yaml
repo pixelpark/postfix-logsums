@@ -1,0 +1,39 @@
+---
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update all packages
+      id: apt-update
+      shell: bash
+      run: |
+        apt update --yes
+        apt list --upgradeable
+        apt dist-upgrade --yes
+    - name: Install locales and gettext
+      id: install-gettext
+      shell: bash
+      run: apt install --yes sudo locales gettext
+    - name: Update Locales
+      id: update-locales
+      shell: bash
+      run: |
+        locale -a
+        if test -f /etc/locale.gen; then
+          echo "/etc/locale.gen:"
+          grep -P -v '^\s*(#.*)?$' /etc/locale.gen || true; echo "<-- EOF"
+        fi
+        if grep 'en_US.UTF-8' /etc/locale.gen; then
+          sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+        else
+          echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+        fi
+        if grep 'de_DE.UTF-8' /etc/locale.gen
+          then sed -i -e 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        else
+          echo 'de_DE.UTF-8 UTF-8' >> /etc/locale.gen
+        fi
+        locale-gen
+        locale -a
+
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list

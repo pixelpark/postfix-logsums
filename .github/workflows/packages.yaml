@@ -1,0 +1,57 @@
+---
+
+name: "Building OS packages."
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - '**'
+      - '!dev-**'
+      - '!dev/**'
+      - '!hf**'
+      - '!old**'
+      - '!feature**'
+    tags:
+      - '**'
+
+env:
+  DEBFULLNAME: 'Frank Brehm'
+  DEBEMAIL: 'frank@brehm-online.com'
+  FB_REPO_IN_DIR: '/var/www/incoming'
+  GITREF: ${{ github.ref }}
+  GPG_KEY_ID: '87A8DBD6B796E12A'
+  GPG_PASSWORD_FILE: '.private/uhu.txt'
+  NOTIFY_ADDRESS: 'frank@brehm-online.com,frank.brehm@pixelpark.com'
+  PKG_NAME: 'fb-tools'
+  SENDER_ADDRESS: 'Frank Brehm <frank@brehm-online.com>'
+  SMTP_SERVER_ADDRESS: 'mail.uhu-banane.net'
+  SMTP_SERVER_PORT: 587
+  USED_TIMEZONE: 'Europe/Berlin'
+
+jobs:
+
+  ###########################
+  test:
+    runs-on: ubuntu-latest
+    name: Executing Python tests
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: [ '3.6', '3.7', '3.8', '3.9', '3.10', '3.11' ]
+    container: python:${{ matrix.python_version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Show Environment
+        run: python --version
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/install-pip-modules
+      - name: Install PyTest with pip
+        run: |
+          pip install --upgrade --upgrade-strategy eager pytest
+          pip list --format columns
+      - name: Executing PyTest
+        run: pytest --verbose
+
+
+
