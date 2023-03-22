@@ -259,6 +259,7 @@ class TestStatsCollections(PostfixLogsumsTestcase):
         LOG.debug("Testing wrong index 25 ...")
         with self.assertRaises(IndexError) as cm:
             uhu = msg_stats[25]
+            LOG.debug("Uhu: {!r}.".format(uhu))
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
 

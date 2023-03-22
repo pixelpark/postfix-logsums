@@ -24,7 +24,7 @@ from .errors import StatsError, WrongDateKeyError, WrongMsgStatsKeyError, WrongD
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -391,7 +391,7 @@ class DailyStatsDict(MutableMapping):
                 self._update_from_other(first_param)
             elif isinstance(first_param, Mapping):
                 self._update_from_mapping(first_param)
-            elif first_param.__class__.__name__ == 'zip': 
+            elif first_param.__class__.__name__ == 'zip':
                 self._update_from_mapping(dict(first_param))
             else:
                 msg = "Object is not a {m} object, but a {w} object instead.".format(
@@ -580,7 +580,7 @@ class DailyStatsDict(MutableMapping):
         used_key = self.key_to_date(key)
 
         if len(args) > 1:
-            msg = _("The method {met}() expected at most {max} arguments, got {got}.").format(
+            msg = "The method {met}() expected at most {max} arguments, got {got}.".format(
                 met='pop', max=2, got=(len(args) + 1))
             raise TypeError(msg)
 
@@ -615,10 +615,10 @@ class DailyStatsDict(MutableMapping):
         """Set the item of the given key to a default value."""
         used_key = self.key_to_date(key)
 
-        if key in self:
-            return self[key]
+        if used_key in self:
+            return self[used_key]
 
-        self[key] = default
+        self[used_key] = default
         return default
 
     # -------------------------------------------------------------------------
@@ -632,7 +632,7 @@ class DailyStatsDict(MutableMapping):
             self._update_from_mapping(dict(other))
         else:
             msg = "Object is not a {m} object, but a {w} object instead.".format(
-                m='Mapping', w=first_param.__class__.__qualname__)
+                m='Mapping', w=other.__class__.__qualname__)
             raise StatsError(msg)
 
     # -------------------------------------------------------------------------

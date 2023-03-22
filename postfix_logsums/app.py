@@ -39,7 +39,7 @@ from functools import cmp_to_key
 
 from locale import strcoll, format_string
 
-from operator import itemgetter, attrgetter
+from operator import itemgetter
 
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.9'
+__version__ = '0.7.10'
 
 
 # =============================================================================
@@ -134,6 +134,20 @@ def adj_int_units(value):
         val = 0
 
     return {'value': val, 'unit': unit}
+
+
+# =============================================================================
+def ci_cmp(one, two):
+    """Comparing two strings case insensitive."""
+    if one.lower() < two.lower():
+        return -1
+    if one.lower() > two.lower():
+        return 1
+    if one < two:
+        return -1
+    if one > two:
+        return 1
+    return 0
 
 # =============================================================================
 def adj_int_units_localized(value, digits=1, dec_digits=0, no_unit=False):
@@ -1251,7 +1265,7 @@ class PostfixLogsumsApp(object):
             return
 
         tpl = '{key}  {val}'
-        i += 1
+        i = 0
         for key in sorted(data.keys(), key=str.lower):
             line = tpl.format(key=key, val=data[key])
             print(indent + line)
@@ -1693,7 +1707,7 @@ class PostfixLogsumsApp(object):
         hour = -1
         for stat in self.results.smtpd_messages_per_hour:
 
-            #stat = self.results.smtpd_messages_per_hour[hour]
+            # stat = self.results.smtpd_messages_per_hour[hour]
             hour += 1
             if not stat.count:
                 continue
@@ -1781,7 +1795,7 @@ class PostfixLogsumsApp(object):
 
             nr = self.results.smtpd_per_domain[domain].connections
             time_total = self.results.smtpd_per_domain[domain].connect_time_total
-            max_time =  self.results.smtpd_per_domain[domain].connect_time_max
+            max_time = self.results.smtpd_per_domain[domain].connect_time_max
 
             total_time_splitted = get_smh(time_total)
             avg = time_total / nr
@@ -1831,7 +1845,7 @@ class PostfixLogsumsApp(object):
         tmp_list.sort(key=itemgetter('addr'))
         tmp_list.sort(key=itemgetter(attribute), reverse=True)
 
-        if self.verbose> 3:
+        if self.verbose > 3:
             LOG.debug("Sorted list:\n" + pp(tmp_list))
 
         i = 0
@@ -1883,49 +1897,26 @@ class PostfixLogsumsApp(object):
 
             if domain_one:
                 domain_one = self.re_maildomain.sub(r'\2.\3.\1', domain_one)
-                domain_one_low = domain_one.lower()
             else:
                 domain_one = ''
-                domain_one_low = ''
 
             if domain_two:
                 domain_two = self.re_maildomain.sub(r'\2.\3.\1', domain_two)
-                domain_two_low = domain_two.lower()
             else:
                 domain_two = ''
-                domain_two_low = ''
 
-            if domain_one_low < domain_two_low:
-                return -1
-            if domain_one_low > domain_two_low:
-                return 1
-            if domain_one < domain_two:
-                return -1
-            if domain_one > domain_two:
-                return 1
+            ret = ci_cmp(domain_one, domain_two)
+            if ret:
+                return ret
 
             user_one = self.re_bang_path.sub('', user_one)
             user_two = self.re_bang_path.sub('', user_two)
 
-            if user_one.lower() < user_two.lower():
-                return -1
-            if user_one.lower() > user_two.lower():
-                return -1
-            if user_one < user_two:
-                return -1
-            if user_one > user_two:
-                return -1
+            ret = ci_cmp(user_one, user_two)
+            if ret:
+                return ret
 
-            if qid_one.lower() < qid_two.lower():
-                return -1
-            if qid_one.lower() > qid_two.lower():
-                return -1
-            if qid_one < qid_two:
-                return -1
-            if qid_one > qid_two:
-                return -1
-
-            return 0
+            return ci_cmp(qid_one, qid_two)
 
         tpl = indent + '{{qid:<{max}}}  {{val}}'.format(max=(max_len + 1))
         for qid in sorted(data.keys(), key=cmp_to_key(by_domain_then_user)):

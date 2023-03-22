@@ -29,7 +29,7 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -1098,7 +1098,6 @@ class PostfixLogParser(object):
             return
 
         hour = self._cur_ts.hour
-        dt_fmt = self.cur_date_fmt()
 
         if self.re_smtpd_connect.search(self._cur_msg):
             m = self.re_smtpd_pid.search(self._cur_msg)
@@ -1461,9 +1460,8 @@ class PostfixLogParser(object):
         self._add_ext_msg_detail(qid, addr)
 
         if self.verbose > 2:
-            LOG.debug(
-                    "Eval message size: qid: {q!r}, addr: {a!r}, size: {s!r}.".format(
-                    q=qid, a=addr, s=size))
+            LOG.debug("Eval message size: qid: {q!r}, addr: {a!r}, size: {s!r}.".format(
+                q=qid, a=addr, s=size))
 
         if qid in self._rcvd_msgs_qid:
 

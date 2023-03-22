@@ -15,7 +15,7 @@ from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
 from .stats import CommonStatsDict
 
-__version__ = '0.5.3'
+__version__ = '0.5.4'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -138,9 +138,6 @@ class PostfixLogSums(object):
         @return: structure as dict
         @rtype:  dict
         """
-
-        if pure:
-            sort = True
 
         res = {}
         for key in self.__dict__:
