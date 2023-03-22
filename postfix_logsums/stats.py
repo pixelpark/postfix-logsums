@@ -24,7 +24,7 @@ from .errors import StatsError, WrongDateKeyError, WrongMsgStatsKeyError, WrongD
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.6.2'
+__version__ = '0.7.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -304,6 +304,40 @@ class MessageStatsTotals(BaseMessageStats):
         'discarded', 'bounced', 'reject_warning', 'held', 'bytes_received',
         'bytes_delivered', 'sending_users', 'sending_domains', 'rcpt_users',
         'rcpt_domains', 'connections', 'master')
+
+
+# =============================================================================
+class CommonStatsDict(dict):
+    """Extending the base dict class by some methods."""
+
+    # -------------------------------------------------------------------------
+    def as_dict(self, pure=False):
+        """
+        Transform the elements of the object into a dict.
+
+        @param pure: Only include keys and values of the internal map
+        @type pure: bool
+
+        @return: structure as dict
+        @rtype:  dict
+        """
+        res = {}
+        if not pure:
+            res['__class_name__'] = self.__class__.__name__
+
+        for key in self.keys():
+            val = self[key]
+            if isinstance(val, BaseMessageStats):
+                res[key] = val.as_dict(pure=pure)
+            else:
+                res[key] = copy.copy(val)
+
+        return res
+
+    # -------------------------------------------------------------------------
+    def dict(self):
+        """Typecast into a regular dict."""
+        return self.as_dict(pure=True)
 
 
 # =============================================================================

@@ -13,8 +13,9 @@ import logging
 
 from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
+from .stats import CommonStatsDict
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -73,13 +74,13 @@ class PostfixLogSums(object):
         self.panics = {}
         self.postfix_messages = {}
         self.postfix_script = {}
-        self.rcpt_domain = {}
-        self.rcpt_user = {}
+        self.rcpt_domain = CommonStatsDict()
+        self.rcpt_user = CommonStatsDict()
         self.received_messages_per_hour = HourlyStats()
         self.rejected_messages_per_hour = HourlyStats()
         self.rejects = {}
-        self.sending_domain_data = {}
-        self.sending_user_data = {}
+        self.sending_domain_data = CommonStatsDict()
+        self.sending_user_data = CommonStatsDict()
         self.smtp_messages = {}
         self.smtp_connection_details = {
             'other': {},
@@ -148,6 +149,8 @@ class PostfixLogSums(object):
             # LOG.debug("Typecasting {!r} ...".format(key))
             if key in ('msgs_total', 'messages_per_day', 'smtpd_per_day'):
                 res[key] = getattr(self, key).dict()
+            elif isinstance(getattr(self, key), CommonStatsDict):
+                res[key] = getattr(self, key).as_dict(pure=pure)
             elif key == 'files':
                 if pure:
                     res[key] = []
