@@ -53,5 +53,91 @@ jobs:
       - name: Executing PyTest
         run: pytest --verbose
 
+  ###########################
+  linter:
+    runs-on: ubuntu-latest
+    name: Executing Linters
+    container: python:3.11
+    env:
+      FLAKE8_MAX_LINE_LENGTH: 99
+      FLAKE8_MAX_COMPLEXITY: 20
+      FLAKE8_IGNORE_ERRORS: 'E226,E302,E41,E402'
+    needs:
+      - test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/install-pip-modules
+      - name: Install shellcheck and yamllint
+        shell: bash
+        run: apt install --yes shellcheck yamllint
+      - name: Install flake8 and pylint
+        shell: bash
+        run: |
+          pip install --upgrade --upgrade-strategy eager flake8 pylint
+          pip list --format columns
+      - name: "Checking module version against tag."
+        shell: bash
+        run: |
+          MODULE_VERSION=$( cat postfix_logsums/__init__.py | grep -P '^__version__(\s|=)' | sed -e "s/^[^'\"]*['\"]//"  -e "s/['\"][ 	]*\$//" )
+          echo "Module version: '${MODULE_VERSION}'"
+          if echo "${GITREF}" | grep -q -P '^refs/tags/' ; then
+              TAG_VERSION=$( echo "${GITREF}" | sed -e 's|^refs/tags/||' )
+              if [[ "${MODULE_VERSION}" == "${TAG_VERSION}" ]] ; then
+                  echo "Tag and module version '${TAG_VERSION}' are okay."
+              else
+                  echo "Tag '${TAG_VERSION}' does not match module version '${MODULE_VERSION}'" >&2
+                  exit 5
+              fi
+          fi
+      - name: "Comparing package version in debian/changlog and in lib/fb_tools/__init__.py."
+        shell: bash
+        run: |
+          MODULE_VERSION=$( cat lib/fb_tools/__init__.py | grep -P '^__version__(\s|=)' | sed -e "s/^[^'\"]*['\"]//"  -e "s/['\"][ 	]*\$//" )
+          echo "Module version: '${MODULE_VERSION}'"
+          if [[ -f debian/changelog ]] ; then
+              DEBIAN_PKG_VERSION=$( head -n 1 debian/changelog | sed -e 's/^[^(]*(//' -e 's/).*//' )
+              echo "Debian package version: '${DEBIAN_PKG_VERSION}'"
+              if [[ "${MODULE_VERSION}" == "${DEBIAN_PKG_VERSION}" ]] ; then
+                  echo "Debian package version and module version '${DEBIAN_PKG_VERSION}' are matching."
+              else
+                  echo "Debian package version '${DEBIAN_PKG_VERSION}' does not match module version '${MODULE_VERSION}'" >&2
+                  exit 5
+              fi
+          else
+              echo "File 'debian/changelog' does not exists."
+          fi
+      - name: Execute Flake 8
+        shell: bash
+        run: |
+          echo
+          python_stuff="postfix*logsums test"
+          if [[ -f setup.py ]] ; then
+              python_stuff+=" setup.py"
+          fi
+          echo -e "flake8 ${python_stuff}"
+          flake8 ${python_stuff}
+      - name: Execute Shellcheck
+        shell: bash
+        run: |
+          echo
+          shellscripts="update-env.sh"
+          for s in compile-xlate-msgs.sh xtract-xlate-msgs.sh ; do
+              if [[ -f "${s}" ]] ; then
+                  shellscripts+=" ${s}"
+              fi
+          done
+          echo -e "shellcheck -x ${shellscripts}"
+          shellcheck -x ${shellscripts}
+      - name: Execute Yamllint
+        shell: bash
+        run: |
+          yaml_stuff=".github"
+          if [[ -f .gitlab-ci.yml ]] ; then
+              yaml_stuff+=" .gitlab-ci.yml"
+          fi
+          echo -e "yamllint ${yaml_stuff}"
+          yamllint ${yaml_stuff}
 
 
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
