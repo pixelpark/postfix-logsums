@@ -51,7 +51,7 @@ from . import PostfixLogParser
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.8'
+__version__ = '0.7.9'
 
 
 # =============================================================================
@@ -687,7 +687,7 @@ class PostfixLogsumsApp(object):
 
         # --gzip
         desc = self.wrap_msg(
-            'Assume, that stdin stream or the given files are bgzip compressed.', arg_width) + '\n'
+            'Assume, that stdin stream or the given files are gzip compressed.', arg_width) + '\n'
         desc += self.wrap_msg(
             'If not given, filenames with the extension ".gz" are assumed to be compressed with '
             'the gzip compression.', arg_width)
@@ -978,6 +978,11 @@ class PostfixLogsumsApp(object):
 
         if self.args.output_format == 'json':
             print(json.dumps(self.results.dict(), indent=4, sort_keys=True))
+            return
+        elif self.args.output_format == 'yaml':
+            print(yaml.safe_dump(
+                self.results.dict(), allow_unicode=True, explicit_start=True, canonical=False,
+                sort_keys=True, indent=4, width=self.max_width, default_style=None))
             return
 
         print()
