@@ -11,7 +11,6 @@
 import os
 import sys
 import logging
-import datetime
 
 try:
     import unittest2 as unittest
