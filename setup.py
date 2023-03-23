@@ -15,8 +15,6 @@ import os
 import sys
 import re
 import pprint
-import datetime
-import textwrap
 
 from pathlib import Path
 
@@ -43,6 +41,7 @@ def pp(obj):
     return pprinter.pformat(obj)
 
 # print("Paths:\n{}".format(pp(PATHS)))
+
 
 if os.path.exists(__module_dir__) and os.path.isfile(__init_py__):
     sys.path.insert(0, os.path.abspath(__base_dir__))
@@ -160,7 +159,6 @@ read_requirements()
 
 # -----------------------------------
 __scripts__ = ['postfix-logsums']
-
 
 
 # -----------------------------------
