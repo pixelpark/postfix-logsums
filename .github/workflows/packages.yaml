@@ -139,5 +139,35 @@ jobs:
           echo -e "yamllint ${yaml_stuff}"
           yamllint ${yaml_stuff}
 
+  ###########################
+  deploy_to_pypi:
+    runs-on: ubuntu-latest
+    name: "Deployment of the Python package to PyPi"
+    container: python:3.11
+    needs:
+      - linter
+    steps:
+      - uses: actions/checkout@v3
+      - name: Show Environment
+        run: python --version
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/install-pip-modules
+      - uses: casperdcl/deploy-pypi@v2
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          pip: wheel -w dist/ --no-deps .
+          build: clean sdist -d dist/ bdist_wheel -d dist/
+          # only upload if a tag is pushed (otherwise just build & check)
+          upload: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
+      - name: Show results
+        shell: bash
+        run: ls -l --color=always dist/
+      - name: 'Upload Python Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: python_pkgs
+          path: dist/*
+          retention-days: 8
+
 
 # vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
