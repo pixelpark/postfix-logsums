@@ -93,7 +93,7 @@ jobs:
       - name: "Comparing package version in debian/changlog and in lib/fb_tools/__init__.py."
         shell: bash
         run: |
-          MODULE_VERSION=$( cat lib/fb_tools/__init__.py | grep -P '^__version__(\s|=)' | sed -e "s/^[^'\"]*['\"]//"  -e "s/['\"][ 	]*\$//" )
+          MODULE_VERSION=$( cat postfix_logsums/__init__.py | grep -P '^__version__(\s|=)' | sed -e "s/^[^'\"]*['\"]//"  -e "s/['\"][ 	]*\$//" )
           echo "Module version: '${MODULE_VERSION}'"
           if [[ -f debian/changelog ]] ; then
               DEBIAN_PKG_VERSION=$( head -n 1 debian/changelog | sed -e 's/^[^(]*(//' -e 's/).*//' )
