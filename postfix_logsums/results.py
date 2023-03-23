@@ -15,7 +15,7 @@ from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
 from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
 from .stats import CommonStatsDict
 
-__version__ = '0.5.4'
+__version__ = '0.5.5'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -157,7 +157,7 @@ class PostfixLogSums(object):
                             'lines_considered': f['lines_considered'],
                             'lines_total': f['lines_total'],
                         }
-                    res[key].append(fs)
+                        res[key].append(fs)
                 else:
                     res[key] = self.__dict__[key]
             elif key == 'smtpd_messages_per_hour':
