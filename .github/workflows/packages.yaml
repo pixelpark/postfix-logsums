@@ -475,6 +475,7 @@ jobs:
                                   ${PYTHON}-six \
                                   ${PYTHON}-setuptools \
                                   ${PYTHON}-pip \
+                                  ${PYTHON}-babel \
                                   ${PYTHON}-devel \
                                   ${PYTHON}-fb-logging
           echo
@@ -547,6 +548,9 @@ jobs:
                                   -e "s/@@@py_version_nodot@@@/${PY_VERSION_NODOT}/gi" \
                                   -e "s/@@@py_version_dot@@@/${PY_VERSION_DOT}/gi" \
                                   > "${SPECFILE}"
+          if [[ "${EL_VERSION}" == "7" ]] ; then
+              sed -i -e 's/-pyyaml$/-PyYAML/i' "${SPECFILE}"
+          fi
           dch2speclog debian/changelog >> "${SPECFILE}"
           echo
           echo "Generated Spec file:"

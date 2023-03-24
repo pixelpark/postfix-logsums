@@ -20,9 +20,8 @@ BuildRequires:  python@@@py_version_nodot@@@-babel
 BuildRequires:  python@@@py_version_nodot@@@-fb-logging >= 0.5.0
 Requires:       python@@@py_version_nodot@@@
 Requires:       python@@@py_version_nodot@@@-libs
-Requires:       python@@@py_version_nodot@@@-libs
 Requires:       python@@@py_version_nodot@@@-babel
-Requires:	python@@@py_version_nodot@@@-pyyaml
+Requires:       python@@@py_version_nodot@@@-pyyaml
 BuildArch:      noarch
 
 %description
