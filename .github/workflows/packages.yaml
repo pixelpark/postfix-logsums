@@ -140,46 +140,112 @@ jobs:
           yamllint ${yaml_stuff}
 
   ###########################
+  build_debian_sources:
+    runs-on: ubuntu-latest
+    name: Building Debian Source Packages
+    # if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    container: debian:bullseye
+    needs:
+      - linter
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/add-fb-debian-repo
+        with:
+          vendor: Debian
+          distro: bullseye
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/debian-install-buildenv
+      - uses: ./.github/actions/setup-gpg
+        with:
+          public_key: ${{ secrets.GPG_PUBLIC_KEY }}
+          private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          key_password: ${{ secrets.GPG_KEY_PASSWORD }}
+          password_file: ${{ env.GPG_PASSWORD_FILE }}
+          key_id: ${{ env.GPG_KEY_ID }}
+      - name: Debian build
+        run: |
+          PASSWORD_FILE_ABS=$( readlink --canonicalize-missing "${GPG_PASSWORD_FILE}" )
+          export PKG_VERSION=$( ./get-debian-version )
+          DSC_FILE="fb-logging_${PKG_VERSION}.dsc"
+          BUILDINFO_FILE="fb-logging_${PKG_VERSION}_source.buildinfo"
+          CHANGES_FILE="fb-logging_${PKG_VERSION}_source.changes"
+          echo '#!/usr/bin/env bash' > "${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "This is the signing script."' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'printf "Command line: "; echo $0 $*' >>"${HOME}/signing-hook-script.sh"
+          echo 'printf "Pwd: "; pwd' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "Current sources:"' >>"${HOME}/signing-hook-script.sh"
+          echo "ls -la '${DSC_FILE}' '${BUILDINFO_FILE}' '${CHANGES_FILE}'" >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo "cmd=\"echo 'y' | debsign -k${GPG_KEY_ID} '${DSC_FILE}' '${BUILDINFO_FILE}' '${CHANGES_FILE}'\"" >>"${HOME}/signing-hook-script.sh"
+          echo "echo \"Executing: \${cmd}\"" >>"${HOME}/signing-hook-script.sh"
+          echo "eval \${cmd}" >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "Signed sources:"' >>"${HOME}/signing-hook-script.sh"
+          echo "ls -la '${DSC_FILE}' '${BUILDINFO_FILE}' '${CHANGES_FILE}'" >>"${HOME}/signing-hook-script.sh"
+          echo "echo" >>"${HOME}/signing-hook-script.sh"
+          chmod +x --verbose "${HOME}/signing-hook-script.sh"
+          echo
+          echo "Generated '${HOME}/signing-hook-script.sh':"
+          cat "${HOME}/signing-hook-script.sh"
+          echo
+          gpg --list-secret-keys
+          echo
+          echo "y" | debuild --signing-hook="${HOME}/signing-hook-script.sh" -S -i -us -uc
+          ls -lA --color=always ..
+          mkdir -pv debian/pkgs/src
+          mv -vi ../*.dsc ../*.tar.* ../*.build* ../*.changes debian/pkgs/src
+          ls -lA --color=always debian/pkgs/*/*
+      - name: 'Upload Source Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian_sources
+          path: debian/pkgs/*/*
+          retention-days: 15
+
+  ###########################
   build_debian_bin:
     runs-on: ubuntu-latest
     name: Building Debian Binary Packages
-      # if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    # if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
     needs:
       - linter
     strategy:
       fail-fast: false
       matrix:
         include:
-#          - distributor: 'Debian'
-#            os_codename: 'buster'
-#            os_release: '10'
-#            container: 'debian:buster'
-#            version_prefix: 'deb10'
-#            compat: '11'
+          - distributor: 'Debian'
+            os_codename: 'buster'
+            os_release: '10'
+            container: 'debian:buster'
+            version_prefix: 'deb10'
+            compat: '11'
           - distributor: 'Debian'
             os_codename: 'bullseye'
             os_release: '11'
             container: 'debian:bullseye'
             version_prefix: 'deb11'
             compat: '12'
-#          - distributor: 'Ubuntu'
-#            os_codename: 'bionic'
-#            os_release: '18.04'
-#            container: 'ubuntu:bionic'
-#            version_prefix: 'ubuntu18.04'
-#            compat: '11'
-#          - distributor: 'Ubuntu'
-#            os_codename: 'focal'
-#            os_release: '20.04'
-#            container: 'ubuntu:focal'
-#            version_prefix: 'ubuntu20.04'
-#            compat: '12'
-#          - distributor: 'Ubuntu'
-#            os_codename: 'jammy'
-#            os_release: '22.04'
-#            container: 'ubuntu:jammy'
-#            version_prefix: 'ubuntu22.04'
-#            compat: '12'
+          - distributor: 'Ubuntu'
+            os_codename: 'bionic'
+            os_release: '18.04'
+            container: 'ubuntu:bionic'
+            version_prefix: 'ubuntu18.04'
+            compat: '11'
+          - distributor: 'Ubuntu'
+            os_codename: 'focal'
+            os_release: '20.04'
+            container: 'ubuntu:focal'
+            version_prefix: 'ubuntu20.04'
+            compat: '12'
+          - distributor: 'Ubuntu'
+            os_codename: 'jammy'
+            os_release: '22.04'
+            container: 'ubuntu:jammy'
+            version_prefix: 'ubuntu22.04'
+            compat: '12'
     env:
       COMPAT: ${{ matrix.compat }}
       DISTRIBUTOR: ${{ matrix.distributor }}
