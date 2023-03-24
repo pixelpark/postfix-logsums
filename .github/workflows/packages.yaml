@@ -475,7 +475,8 @@ jobs:
                                   ${PYTHON}-six \
                                   ${PYTHON}-setuptools \
                                   ${PYTHON}-pip \
-                                  ${PYTHON}-devel
+                                  ${PYTHON}-devel \
+                                  ${PYTHON}-fb-logging
           echo
           echo "Python binaries:"
           ls -l --color=always /bin/python* /bin/pip* || true
