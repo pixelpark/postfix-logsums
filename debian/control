@@ -10,9 +10,7 @@ Build-Depends: debhelper (>= 11),
                python3-packaging,
                python3-babel,
                python3-pip,
-               python3-setuptools,
-               python3-six,
-               python3-tz
+               python3-setuptools
 Standards-Version: 4.6.2
 Homepage: https://github.com/pixelpark/postfix-logsums
 Vcs-Browser: https://github.com/pixelpark/postfix-logsums
@@ -21,11 +19,8 @@ X-Python3-Version: >= 3.6
 
 Package: postfix-logsums
 Architecture: all
-Depends: python3-six,
-         python3-packaging,
+Depends: python3-packaging,
          python3-babel,
-         python3-requests,
-         python3-tz,
          ${misc:Depends},
          ${python3:Depends}
 Recommends: python3-yaml, postfix

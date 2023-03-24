@@ -99,9 +99,7 @@ __changelog_file__ = __debian_dir__ / 'changelog'
 __readme_file__ = __base_dir__ / 'README.md'
 
 # -----------------------------------
-__requirements__ = [
-    'six'
-]
+__requirements__ = []
 
 
 # -----------------------------------
