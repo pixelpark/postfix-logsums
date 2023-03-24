@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+export PYBUILD_NAME=postfix-logsums
+export PYBUILD_DESTDIR_python3=debian/postfix-logsums/
+export PYBUILD_DISABLE=test
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+# vim: ts=8 list

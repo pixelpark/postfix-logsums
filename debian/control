@@ -1,0 +1,35 @@
+Source: postfix-logsums
+Section: admin
+Priority: optional
+Maintainer: Frank Brehm <frank@brehm-online.com>
+Build-Depends: debhelper (>= 12),
+               gettext,
+               dh-python,
+               help2man,
+               python3-all,
+               python3-packaging,
+               python3-babel,
+               python3-pip,
+               python3-setuptools,
+               python3-six,
+               python3-tz
+Standards-Version: 4.6.2
+Homepage: https://github.com/pixelpark/postfix-logsums
+Vcs-Browser: https://github.com/pixelpark/postfix-logsums
+Vcs-Git: https://github.com/pixelpark/postfix-logsums.git
+X-Python3-Version: >= 3.6
+
+Package: postfix-logsums
+Architecture: all
+Depends: python3-six,
+         python3-packaging,
+         python3-babel,
+         python3-requests,
+         python3-tz,
+         ${misc:Depends},
+         ${python3:Depends}
+Recommends: python3-yaml, postfix
+Description: A log analyzer/summarizer for the Postfix MTA.
+ It provides both a Python module postfix_logsums as well
+ as the executable script postfix-logsums based on the
+ latter module. The Python module may be used as an API.
