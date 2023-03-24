@@ -2,7 +2,7 @@ Source: postfix-logsums
 Section: admin
 Priority: optional
 Maintainer: Frank Brehm <frank@brehm-online.com>
-Build-Depends: debhelper (>= 12),
+Build-Depends: debhelper (>= 11),
                gettext,
                dh-python,
                help2man,
