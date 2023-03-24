@@ -11,7 +11,7 @@ runs:
         PKGLIST+=" devscripts fakeroot debhelper automake autotools-dev pkg-config help2man"
         PKGLIST+=" lsb-release ca-certificates libdistro-info-perl python3-all"
         PKGLIST+=" python3-packaging python3-babel python3-pip python3-requests python3-setuptools"
-        PKGLIST+=" python3-six python3-tz python3-wheel dh-python python3-fb-logging"
+        PKGLIST+=" python3-six python3-tz python3-wheel dh-python"
         apt install --yes --no-install-recommends ${PKGLIST}
 
 
