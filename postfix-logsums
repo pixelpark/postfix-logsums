@@ -24,7 +24,7 @@ if sys.version_info[1] < 5:
         *sys.version_info), file=sys.stderr)
     sys.exit(1)
 
-from postfix_logsums import pp
+# from postfix_logsums import pp
 from postfix_logsums.app import PostfixLogsumsApp
 
 __author__ = 'Frank Brehm <frank@brehm-online.com>'

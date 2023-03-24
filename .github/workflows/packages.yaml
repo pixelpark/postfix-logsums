@@ -1,0 +1,173 @@
+---
+
+name: "Building OS packages."
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - '**'
+      - '!dev-**'
+      - '!dev/**'
+      - '!hf**'
+      - '!old**'
+      - '!feature**'
+    tags:
+      - '**'
+
+env:
+  DEBFULLNAME: 'Frank Brehm'
+  DEBEMAIL: 'frank@brehm-online.com'
+  FB_REPO_IN_DIR: '/var/www/incoming'
+  GITREF: ${{ github.ref }}
+  GPG_KEY_ID: '87A8DBD6B796E12A'
+  GPG_PASSWORD_FILE: '.private/uhu.txt'
+  NOTIFY_ADDRESS: 'frank@brehm-online.com,frank.brehm@pixelpark.com'
+  PKG_NAME: 'fb-tools'
+  SENDER_ADDRESS: 'Frank Brehm <frank@brehm-online.com>'
+  SMTP_SERVER_ADDRESS: 'mail.uhu-banane.net'
+  SMTP_SERVER_PORT: 587
+  USED_TIMEZONE: 'Europe/Berlin'
+
+jobs:
+
+  ###########################
+  test:
+    runs-on: ubuntu-latest
+    name: Executing Python tests
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: [ '3.6', '3.7', '3.8', '3.9', '3.10', '3.11' ]
+    container: python:${{ matrix.python_version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Show Environment
+        run: python --version
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/install-pip-modules
+      - name: Install PyTest with pip
+        run: |
+          pip install --upgrade --upgrade-strategy eager pytest
+          pip list --format columns
+      - name: Executing PyTest
+        run: pytest --verbose
+
+  ###########################
+  linter:
+    runs-on: ubuntu-latest
+    name: Executing Linters
+    container: python:3.11
+    env:
+      FLAKE8_MAX_LINE_LENGTH: 99
+      FLAKE8_MAX_COMPLEXITY: 20
+      FLAKE8_IGNORE_ERRORS: 'E226,E302,E41,E402'
+    needs:
+      - test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/install-pip-modules
+      - name: Install shellcheck and yamllint
+        shell: bash
+        run: apt install --yes shellcheck yamllint
+      - name: Install flake8 and pylint
+        shell: bash
+        run: |
+          pip install --upgrade --upgrade-strategy eager flake8 pylint
+          pip list --format columns
+      - name: "Checking module version against tag."
+        shell: bash
+        run: |
+          MODULE_VERSION=$( cat postfix_logsums/__init__.py | grep -P '^__version__(\s|=)' | sed -e "s/^[^'\"]*['\"]//"  -e "s/['\"][ 	]*\$//" )
+          echo "Module version: '${MODULE_VERSION}'"
+          if echo "${GITREF}" | grep -q -P '^refs/tags/' ; then
+              TAG_VERSION=$( echo "${GITREF}" | sed -e 's|^refs/tags/||' )
+              if [[ "${MODULE_VERSION}" == "${TAG_VERSION}" ]] ; then
+                  echo "Tag and module version '${TAG_VERSION}' are okay."
+              else
+                  echo "Tag '${TAG_VERSION}' does not match module version '${MODULE_VERSION}'" >&2
+                  exit 5
+              fi
+          fi
+      - name: "Comparing package version in debian/changlog and in lib/fb_tools/__init__.py."
+        shell: bash
+        run: |
+          MODULE_VERSION=$( cat postfix_logsums/__init__.py | grep -P '^__version__(\s|=)' | sed -e "s/^[^'\"]*['\"]//"  -e "s/['\"][ 	]*\$//" )
+          echo "Module version: '${MODULE_VERSION}'"
+          if [[ -f debian/changelog ]] ; then
+              DEBIAN_PKG_VERSION=$( head -n 1 debian/changelog | sed -e 's/^[^(]*(//' -e 's/).*//' )
+              echo "Debian package version: '${DEBIAN_PKG_VERSION}'"
+              if [[ "${MODULE_VERSION}" == "${DEBIAN_PKG_VERSION}" ]] ; then
+                  echo "Debian package version and module version '${DEBIAN_PKG_VERSION}' are matching."
+              else
+                  echo "Debian package version '${DEBIAN_PKG_VERSION}' does not match module version '${MODULE_VERSION}'" >&2
+                  exit 5
+              fi
+          else
+              echo "File 'debian/changelog' does not exists."
+          fi
+      - name: Execute Flake 8
+        shell: bash
+        run: |
+          echo
+          python_stuff="postfix*logsums test"
+          if [[ -f setup.py ]] ; then
+              python_stuff+=" setup.py"
+          fi
+          echo -e "flake8 ${python_stuff}"
+          flake8 ${python_stuff}
+      - name: Execute Shellcheck
+        shell: bash
+        run: |
+          echo
+          shellscripts="update-env.sh"
+          for s in compile-xlate-msgs.sh xtract-xlate-msgs.sh ; do
+              if [[ -f "${s}" ]] ; then
+                  shellscripts+=" ${s}"
+              fi
+          done
+          echo -e "shellcheck -x ${shellscripts}"
+          shellcheck -x ${shellscripts}
+      - name: Execute Yamllint
+        shell: bash
+        run: |
+          yaml_stuff=".github"
+          if [[ -f .gitlab-ci.yml ]] ; then
+              yaml_stuff+=" .gitlab-ci.yml"
+          fi
+          echo -e "yamllint ${yaml_stuff}"
+          yamllint ${yaml_stuff}
+
+  ###########################
+  deploy_to_pypi:
+    runs-on: ubuntu-latest
+    name: "Deployment of the Python package to PyPi"
+    container: python:3.11
+    needs:
+      - linter
+    steps:
+      - uses: actions/checkout@v3
+      - name: Show Environment
+        run: python --version
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/install-pip-modules
+      - uses: casperdcl/deploy-pypi@v2
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          pip: wheel -w dist/ --no-deps .
+          build: clean sdist -d dist/ bdist_wheel -d dist/
+          # only upload if a tag is pushed (otherwise just build & check)
+          upload: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
+      - name: Show results
+        shell: bash
+        run: ls -l --color=always dist/
+      - name: 'Upload Python Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: python_pkgs
+          path: dist/*
+          retention-days: 8
+
+
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
