@@ -488,7 +488,7 @@ jobs:
           LC_ALL: "en_US.utf8"
         run: |
           echo "Installing build tools"
-          yum --assumeyes install gnupg2 rpm-build rpm-sign
+          yum --assumeyes install gnupg2 rpm-build rpm-sign help2man
       - name: Create build environment
         shell: bash
         env:
@@ -523,7 +523,7 @@ jobs:
             cmd="help2man --no-info --no-discard-stderr"
             cmd+=" --version-string \"${PKG_VERSION}\""
             cmd+=" --section ${man_section}"
-            cmd+=" \"${script}\" | gzip -v9"
+            cmd+=" \"./${script}\" | gzip -v9"
             echo "      Executing: ${cmd} > \"${man_file}.gz\""
             eval ${cmd} > "${man_file}.gz"
           done
