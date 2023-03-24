@@ -1,0 +1,18 @@
+---
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Debian Build Environment
+      id: install-debian-build-pkgs
+      shell: bash
+      run: |
+        PKGLIST="sudo locales gettext build-essential gpg debsigs"
+        PKGLIST+=" devscripts fakeroot debhelper automake autotools-dev pkg-config help2man"
+        PKGLIST+=" lsb-release ca-certificates libdistro-info-perl python3-all"
+        PKGLIST+=" python3-packaging python3-babel python3-pip python3-requests python3-setuptools"
+        PKGLIST+=" python3-six python3-tz python3-wheel dh-python python3-fb-logging"
+        apt install --yes --no-install-recommends ${PKGLIST}
+
+
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
