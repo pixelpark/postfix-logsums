@@ -1,4 +1,4 @@
-postfix-logsums (0.8.0) UNRELEASED; urgency=medium
+postfix-logsums (0.8.0) all; urgency=medium
 
   * Creating all files for building Debian packages
   * Creating all files for building RPM packages
