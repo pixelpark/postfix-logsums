@@ -584,5 +584,83 @@ jobs:
             rpmdir/SRPMS/*.rpm
           retention-days: 15
 
+  ###########################
+  deploy_to_fbrepo:
+    runs-on: ubuntu-latest
+    name: "Deployment of all Packages to Frank Brehms repo server"
+    # if: ${{ startsWith( github.ref, 'refs/tags/' ) }}
+    needs:
+      - 'build_debian_sources'
+      - 'build_debian_bin'
+      - 'build_rpm'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Downloading all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: Sorting all artifacts
+        run: |
+          mv -vi artifacts/debian_bin_pkgs_*/* artifacts/
+          mv -vi artifacts/debian_sources/src artifacts/
+          rmdir -v artifacts/debian_bin_pkgs_* artifacts/debian_sources
+          mkdir -pv artifacts/el-7 artifacts/el-8 artifacts/el-9
+          mv -vi artifacts/rpm_pkgs_el7/*/*/*.rpm artifacts/rpm_pkgs_el7/*/*.rpm artifacts/el-7/
+          mv -vi artifacts/rpm_pkgs_el8/*/*/*.rpm artifacts/rpm_pkgs_el8/*/*.rpm artifacts/el-8/
+          mv -vi artifacts/rpm_pkgs_el9/*/*/*.rpm artifacts/rpm_pkgs_el9/*/*.rpm artifacts/el-9/
+          rm -rv artifacts/rpm_pkgs_el*
+      - name: Show all artifacts
+        run: |
+          find artifacts -print0 | xargs --null --no-run-if-empty ls -l -d --color=always
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.FB_REPOIN_SSH_PRIVATE_KEY }}
+          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+      - name: Adding Known Hosts
+        run: ssh-keyscan -H ${{ secrets.FB_REPO_SERVER }} >> ~/.ssh/known_hosts
+      - name: Show .ssh dir
+        run: |
+          ls -l --color=always ~/.ssh/
+          echo "Content of ~/.ssh/known_hosts:"
+          cat ~/.ssh/known_hosts
+      - name: Deploy Debian packages with rsync
+        run: >
+          rsync -aHvz artifacts/deb* artifacts/ubuntu* artifacts/src
+          ${{ secrets.FB_REPO_USER }}@${{ secrets.FB_REPO_SERVER }}:${FB_REPO_IN_DIR}/debian/
+      - name: Deploy RPM packages with rsync
+        run: >
+          rsync -aHvz artifacts/el-*
+          ${{ secrets.FB_REPO_USER }}@${{ secrets.FB_REPO_SERVER }}:${FB_REPO_IN_DIR}/el/
+
+  ###########################
+  notify_success:
+    runs-on: ubuntu-latest
+    name: Sending Success message
+    needs:
+      - 'deploy_to_pypi'
+      - 'deploy_to_fbrepo'
+    steps:
+      - name: Sending message
+        uses: dawidd6/action-send-mail@v3
+        with:
+          # mail server settings
+          server_address: ${{ env.SMTP_SERVER_ADDRESS }}
+          server_port: ${{ env.SMTP_SERVER_PORT }}
+          # user credentials
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          # email subject
+          subject: Github Workflow ${{ github.workflow }} of ${{ github.repository }} for ${{ github.ref }} was successful.
+          # email body as text
+          body: |
+            Github Actions Workflow ${{ github.workflow }} of ${{ github.repository }} for ${{ github.ref }} was successful.
+            Commiter: ${{ github.actor }}
+
+            Cheers Frank
+          # comma-separated string, send email to
+          to: ${{ env.NOTIFY_ADDRESS }}
+          # from email name
+          from: ${{ env.SENDER_ADDRESS }}
 
 # vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
