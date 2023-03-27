@@ -29,7 +29,9 @@ from .results import PostfixLogSums
 
 from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
 
-__version__ = '0.8.0'
+from .xlate import XLATOR
+
+__version__ = '0.8.1'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -43,6 +45,8 @@ DEFAULT_SYSLOG_NAME = 'postfix'
 DEFAULT_MAX_TRIM_LENGTH = 66
 
 LOG = logging.getLogger(__name__)
+
+_ = XLATOR.gettext
 
 
 # =============================================================================
@@ -142,6 +146,8 @@ class PostfixLogParser(object):
     default_encoding = DEFAULT_ENCODING
     default_max_trim_length = DEFAULT_MAX_TRIM_LENGTH
 
+    min_max_len = 4
+
     # -------------------------------------------------------------------------
     def __init__(
             self, appname=None, verbose=0, day=None, syslog_name=DEFAULT_SYSLOG_NAME,
@@ -194,7 +200,7 @@ class PostfixLogParser(object):
             if day == 'yesterday':
                 used_date = self.today - t_diff
             elif day != 'today':
-                msg = "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.".format(
+                msg = _("Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.").format(
                     d=day, n='None', y='yesterday', t='today')
                 raise PostfixLogsumsError(msg)
             self.date_str = used_date.isoformat()
@@ -353,8 +359,9 @@ class PostfixLogParser(object):
         if do_not_trim:
             return trimmed
 
-        if max_len < 4:
-            msg = "Invalid max. length {} of a string, must be >= 4.".format(max_len)
+        if max_len < self.min_max_len:
+            msg = _("Invalid max. length {max} of a string, must be >= {min}.").format(
+                max=max_len, min=self.min_max_len)
             raise ValueError(msg)
 
         ml = int(max_len) - 3
@@ -410,7 +417,7 @@ class PostfixLogParser(object):
         if v >= 0:
             self._verbose = v
         else:
-            LOG.warning("Wrong verbose level {!r}, must be >= 0".format(value))
+            LOG.warning(_("Wrong verbose level {!r}, must be >= 0").format(value))
 
     # -----------------------------------------------------------
     @property
@@ -427,11 +434,11 @@ class PostfixLogParser(object):
     @syslog_name.setter
     def syslog_name(self, value):
         if value is None:
-            msg = "The syslog name must not be None."
+            msg = _("The syslog name must not be {}.").format('None')
             raise TypeError(msg)
         v = str(value).strip()
         if v == '':
-            msg = "The syslog name must not be empty."
+            msg = _("The syslog name must not be empty.")
             raise ValueError(msg)
         self._syslog_name = v
 
@@ -448,7 +455,7 @@ class PostfixLogParser(object):
             return
         v = str(value).strip().lower()
         if v not in self.valid_compressions:
-            msg = "Invalid compression {!r} given.".format(value)
+            msg = _("Invalid compression {!r} given.").format(value)
             raise PostfixLogsumsError(msg)
         if v == 'xz':
             self._compression = 'lzma'
@@ -581,7 +588,8 @@ class PostfixLogParser(object):
     @encoding.setter
     def encoding(self, value):
         if not isinstance(value, str):
-            msg = "Encoding {v!r} must be a {s!r} object, but is a {c!r} object instead.".format(
+            msg = _(
+                "Encoding {v!r} must be a {s!r} object, but is a {c!r} object instead.").format(
                 v=value, s='str', c=value.__class__.__name__)
             raise TypeError(msg)
 
@@ -688,12 +696,12 @@ class PostfixLogParser(object):
         self.results.reset()
 
         if not files:
-            LOG.debug("Parsing from STDIN ...")
+            LOG.debug(_("Parsing from {} ...").format('STDIN'))
             self.results.start_logfile('STDIN')
             return self.parse_fh(sys.stdin, 'STDIN', self.compression)
 
         for logfile in files:
-            LOG.debug("Parsing logfile {!r} ...".format(str(logfile)))
+            LOG.debug(_("Parsing logfile {!r} ...").format(str(logfile)))
             self.results.start_logfile(logfile)
             if not self.parse_file(logfile):
                 return False
@@ -734,7 +742,7 @@ class PostfixLogParser(object):
         line = None
 
         if not compression:
-            LOG.debug("Reading uncompressed file {!r} ...".format(filename))
+            LOG.debug(_("Reading uncompressed file {!r} ...").format(filename))
             line = fh.readline()
             while line:
                 self.eval_line(line)
@@ -744,19 +752,19 @@ class PostfixLogParser(object):
         cdata = fh.read()
 
         if compression == 'gzip':
-            LOG.debug("Reading {w} compressed file {f!r} ...".format(
+            LOG.debug(_("Reading {w} compressed file {f!r} ...").format(
                 w='GZIP', f=filename))
             self.read_gzip(cdata)
             return True
 
         if compression == 'bzip2':
-            LOG.debug("Reading {w} compressed file {f!r} ...".format(
+            LOG.debug(_("Reading {w} compressed file {f!r} ...").format(
                 w='BZIP2', f=filename))
             self.read_bzip2(cdata)
             return True
 
         if compression == 'lzma':
-            LOG.debug("Reading {w} compressed file {f!r} ...".format(
+            LOG.debug(_("Reading {w} compressed file {f!r} ...").format(
                 w='LZMA', f=filename))
             self.read_lzma(cdata)
             return True
@@ -822,7 +830,8 @@ class PostfixLogParser(object):
             self._cur_qid = result[1]
         else:
             if self.verbose > 1:
-                LOG.debug("Did not found Postfix command and QID from: {}".format(self._cur_msg))
+                LOG.debug(_("Did not found Postfix command and QID from: {}").format(
+                    self._cur_msg))
             return
         if self.verbose > 3:
             LOG.debug("Postfix command {cmd!r}, qid {qid!r}, message: {msg}".format(
@@ -1207,7 +1216,7 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def _eval_cleanup_cmd(self, subtype, part, cmd_msg):
         if self.verbose > 2:
-            LOG.debug("Evaluating 'cleanup' command message.")
+            LOG.debug(_("Evaluating {!r} command message.").format('cleanup'))
 
         if not self.detail_verbose_msg:
             cmd_msg = self.re_clean_from.sub('', cmd_msg)
@@ -1630,7 +1639,7 @@ class PostfixLogParser(object):
             self.results.rcpt_user[addr].size += 0
             if not self.no_no_message_size:
                 self.results.no_message_size[qid] = addr
-            self._add_ext_msg_detail(qid, '(sender not in log)')
+            self._add_ext_msg_detail(qid, '({})'.format('sender not in log'))
 
         self._add_ext_msg_detail(qid, addr)
 
@@ -1707,7 +1716,7 @@ class PostfixLogParser(object):
 
         if not smtp_target:
             if self.verbose > 1:
-                msg = "Unhandled SMTP message: {msg!r}".format(msg=self._cur_msg)
+                msg = _("Unhandled SMTP message: {msg!r}").format(msg=self._cur_msg)
                 LOG.debug(msg)
             return
 
