@@ -1,4 +1,13 @@
-postfix-logsums (0.7.8) UNRELEASED; urgency=medium
+postfix-logsums (0.8.0) UNRELEASED; urgency=medium
+
+  * Creating all files for building Debian packages
+  * Creating all files for building RPM packages
+  * Extending Github workflow by jobs for building and deploying Debian
+    and RPM packages
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Mon, 27 Mar 2023 12:38:18 +0200
+
+postfix-logsums (0.7.8) all; urgency=medium
 
   * Initial release.
 
