@@ -143,7 +143,7 @@ jobs:
   build_debian_sources:
     runs-on: ubuntu-latest
     name: Building Debian Source Packages
-    # if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
     container: debian:bullseye
     needs:
       - linter
@@ -205,7 +205,7 @@ jobs:
   build_debian_bin:
     runs-on: ubuntu-latest
     name: Building Debian Binary Packages
-    # if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
     needs:
       - linter
     strategy:
@@ -370,7 +370,7 @@ jobs:
   build_rpm:
     runs-on: ubuntu-latest
     name: Building RPM packages for Enterprise Linux
-    # if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
     needs:
       - linter
     strategy:
@@ -588,7 +588,7 @@ jobs:
   deploy_to_fbrepo:
     runs-on: ubuntu-latest
     name: "Deployment of all Packages to Frank Brehms repo server"
-    # if: ${{ startsWith( github.ref, 'refs/tags/' ) }}
+    if: ${{ startsWith( github.ref, 'refs/tags/' ) }}
     needs:
       - 'build_debian_sources'
       - 'build_debian_bin'
