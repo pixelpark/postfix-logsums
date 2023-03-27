@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd "$( dirname "$0" )" || exit 6
+
+VERSION=$( head -n 1 debian/changelog | sed -e "s/^[^(]*(//" -e "s/).*//" )
+
+echo "${VERSION}"
+
+# vim: ts=4 et

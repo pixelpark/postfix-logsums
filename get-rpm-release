@@ -1,0 +1,46 @@
+#!/bin/bash
+
+cd "$( dirname "$0" )" || exit 6
+
+VERSION=$( head -n 1 debian/changelog | sed -e "s/^[^(]*(//" -e "s/).*//" )
+REVISION=1
+
+VERSION_FILE=".rpm-version"
+if [[ -n "$1" ]] ; then
+    VERSION_FILE="${VERSION_FILE}-$1"
+fi
+
+OLD_VERSION_FULL=
+OLD_VERSION=
+OLD_REVISION=
+if [[ -f "${VERSION_FILE}" ]] ; then
+    OLD_VERSION_FULL=$( grep -P -v '^\s*(#.*|$)' "${VERSION_FILE}" | head -n 1 | sed -e 's/[ 	].*//' )
+fi
+
+if [[ -n "${OLD_VERSION_FULL}" ]] ; then
+
+    # shellcheck disable=SC2001
+    {
+        OLD_VERSION=$( echo "${OLD_VERSION_FULL}" | sed -e 's/-.*//' )
+        OLD_REVISION=$( echo "${OLD_VERSION_FULL}" | sed -e 's/^[^-]*-//' )
+    }
+
+    if [[ -z "${OLD_VERSION}" ]] ; then
+        OLD_VERSION="${DEBIAN_VERSION}"
+    fi
+
+    if [[ -z "${OLD_REVISION}" ]] ; then
+        OLD_REVISION="0"
+    fi
+
+    if [[ "${OLD_VERSION}" != "${VERSION}" ]] ; then
+        REVISION=1
+    else
+        REVISION=$(( OLD_REVISION + 1 ))
+    fi
+
+fi
+
+echo "${REVISION}"
+
+# vim: ts=4 et

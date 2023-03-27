@@ -23,7 +23,7 @@ env:
   GPG_KEY_ID: '87A8DBD6B796E12A'
   GPG_PASSWORD_FILE: '.private/uhu.txt'
   NOTIFY_ADDRESS: 'frank@brehm-online.com,frank.brehm@pixelpark.com'
-  PKG_NAME: 'fb-tools'
+  PKG_NAME: 'postfix-logsums'
   SENDER_ADDRESS: 'Frank Brehm <frank@brehm-online.com>'
   SMTP_SERVER_ADDRESS: 'mail.uhu-banane.net'
   SMTP_SERVER_PORT: 587
@@ -140,6 +140,203 @@ jobs:
           yamllint ${yaml_stuff}
 
   ###########################
+  build_debian_sources:
+    runs-on: ubuntu-latest
+    name: Building Debian Source Packages
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    container: debian:bullseye
+    needs:
+      - linter
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/debian-install-buildenv
+      - uses: ./.github/actions/setup-gpg
+        with:
+          public_key: ${{ secrets.GPG_PUBLIC_KEY }}
+          private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          key_password: ${{ secrets.GPG_KEY_PASSWORD }}
+          password_file: ${{ env.GPG_PASSWORD_FILE }}
+          key_id: ${{ env.GPG_KEY_ID }}
+      - name: Debian build
+        run: |
+          PASSWORD_FILE_ABS=$( readlink --canonicalize-missing "${GPG_PASSWORD_FILE}" )
+          export PKG_VERSION=$( ./get-debian-version )
+          DSC_FILE="fb-logging_${PKG_VERSION}.dsc"
+          BUILDINFO_FILE="fb-logging_${PKG_VERSION}_source.buildinfo"
+          CHANGES_FILE="fb-logging_${PKG_VERSION}_source.changes"
+          echo '#!/usr/bin/env bash' > "${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "This is the signing script."' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'printf "Command line: "; echo $0 $*' >>"${HOME}/signing-hook-script.sh"
+          echo 'printf "Pwd: "; pwd' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "Current sources:"' >>"${HOME}/signing-hook-script.sh"
+          echo "ls -la '${DSC_FILE}' '${BUILDINFO_FILE}' '${CHANGES_FILE}'" >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo "cmd=\"echo 'y' | debsign -k${GPG_KEY_ID} '${DSC_FILE}' '${BUILDINFO_FILE}' '${CHANGES_FILE}'\"" >>"${HOME}/signing-hook-script.sh"
+          echo "echo \"Executing: \${cmd}\"" >>"${HOME}/signing-hook-script.sh"
+          echo "eval \${cmd}" >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "Signed sources:"' >>"${HOME}/signing-hook-script.sh"
+          echo "ls -la '${DSC_FILE}' '${BUILDINFO_FILE}' '${CHANGES_FILE}'" >>"${HOME}/signing-hook-script.sh"
+          echo "echo" >>"${HOME}/signing-hook-script.sh"
+          chmod +x --verbose "${HOME}/signing-hook-script.sh"
+          echo
+          echo "Generated '${HOME}/signing-hook-script.sh':"
+          cat "${HOME}/signing-hook-script.sh"
+          echo
+          gpg --list-secret-keys
+          echo
+          echo "y" | debuild --signing-hook="${HOME}/signing-hook-script.sh" -S -i -us -uc
+          ls -lA --color=always ..
+          mkdir -pv debian/pkgs/src
+          mv -vi ../*.dsc ../*.tar.* ../*.build* ../*.changes debian/pkgs/src
+          ls -lA --color=always debian/pkgs/*/*
+      - name: 'Upload Source Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian_sources
+          path: debian/pkgs/*/*
+          retention-days: 15
+
+  ###########################
+  build_debian_bin:
+    runs-on: ubuntu-latest
+    name: Building Debian Binary Packages
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - linter
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distributor: 'Debian'
+            os_codename: 'buster'
+            os_release: '10'
+            container: 'debian:buster'
+            version_prefix: 'deb10'
+            compat: '11'
+          - distributor: 'Debian'
+            os_codename: 'bullseye'
+            os_release: '11'
+            container: 'debian:bullseye'
+            version_prefix: 'deb11'
+            compat: '12'
+          - distributor: 'Ubuntu'
+            os_codename: 'bionic'
+            os_release: '18.04'
+            container: 'ubuntu:bionic'
+            version_prefix: 'ubuntu18.04'
+            compat: '11'
+          - distributor: 'Ubuntu'
+            os_codename: 'focal'
+            os_release: '20.04'
+            container: 'ubuntu:focal'
+            version_prefix: 'ubuntu20.04'
+            compat: '12'
+          - distributor: 'Ubuntu'
+            os_codename: 'jammy'
+            os_release: '22.04'
+            container: 'ubuntu:jammy'
+            version_prefix: 'ubuntu22.04'
+            compat: '12'
+    env:
+      COMPAT: ${{ matrix.compat }}
+      DISTRIBUTOR: ${{ matrix.distributor }}
+      OS_CODENAME: ${{ matrix.os_codename }}
+      OS_RELEASE: ${{ matrix.os_release }}
+      VERSION_PREFIX: ${{ matrix.version_prefix }}
+      MAN_SECTION: 1
+    container: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setting timezone
+        if: ${{ matrix.distributor == 'Ubuntu' }}
+        run: |
+          echo "Setting system timezone to ${USED_TIMEZONE} ..."
+          ln -fvs /usr/share/zoneinfo/${USED_TIMEZONE} /etc/localtime
+          export DEBIAN_FRONTEND=noninteractive
+      - uses: ./.github/actions/prepare-debian-container
+      - uses: ./.github/actions/debian-install-buildenv
+      - uses: ./.github/actions/setup-gpg
+        with:
+          public_key: ${{ secrets.GPG_PUBLIC_KEY }}
+          private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          key_password: ${{ secrets.GPG_KEY_PASSWORD }}
+          password_file: ${{ env.GPG_PASSWORD_FILE }}
+          key_id: ${{ env.GPG_KEY_ID }}
+      - name: Creating man pages
+        shell: bash
+        run: |
+          echo
+          export PKG_VERSION=$( ./get-debian-version )
+          man_dir="usr/share/man/man${MAN_SECTION}"
+          echo "Generating man pages ..."
+          mkdir -p -v "${man_dir}"
+          for script in postfix-logsums ; do
+              if [[ ! -x "${script}" ]] ; then
+                  continue
+              fi
+              script_base=$( basename "${script}" )
+              man_file="${man_dir}/${script_base}.${MAN_SECTION}.gz"
+              echo "  * ${script_base}.${MAN_SECTION}.gz"
+              cmd="help2man --no-info --no-discard-stderr"
+              cmd+=" --version-string \"${PKG_VERSION}\""
+              cmd+=" --section ${MAN_SECTION}"
+              cmd+=" \"./${script}\" | gzip -v9"
+              echo "      Executing: ${cmd} > \"${man_file}\""
+              eval ${cmd} > "${man_file}"
+          done
+      - name: Updating Changelog
+        run: |
+          echo
+          export PKG_VERSION=$( ./get-debian-version )
+          export BUILD_VERSION="${PKG_VERSION}+${VERSION_PREFIX}"
+          BUILDER="${DEBFULLNAME} <${DEBEMAIL}>"
+          echo "Version to build: ${BUILD_VERSION} - Builder: ${BUILDER}"
+          debchange --newversion "${BUILD_VERSION}" --force-bad-version --distribution "${OS_CODENAME}" --urgency medium "Build for ${DISTRIBUTOR} ${OS_RELEASE} - ${OS_CODENAME}"
+          head -n 5 debian/changelog
+      - name: Debian build
+        run: |
+          echo '#!/usr/bin/env bash' > "${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "This is the signing script."' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'printf "Command line: "; echo $0 $*' >>"${HOME}/signing-hook-script.sh"
+          echo 'printf "Pwd: "; pwd' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "Current packages:"' >>"${HOME}/signing-hook-script.sh"
+          echo "ls -la *.deb" >>"${HOME}/signing-hook-script.sh"
+          echo "cmd=\"debsigs --sign=origin --default-key=${GPG_KEY_ID} *.deb\"" >>"${HOME}/signing-hook-script.sh"
+          echo "echo \"Executing: \${cmd}\"" >>"${HOME}/signing-hook-script.sh"
+          echo "eval \${cmd}" >>"${HOME}/signing-hook-script.sh"
+          echo 'echo' >>"${HOME}/signing-hook-script.sh"
+          echo 'echo "Signed packages:"' >>"${HOME}/signing-hook-script.sh"
+          echo "ls -la *.deb" >>"${HOME}/signing-hook-script.sh"
+          chmod +x --verbose "${HOME}/signing-hook-script.sh"
+          echo
+          echo "Generated '${HOME}/signing-hook-script.sh':"
+          cat "${HOME}/signing-hook-script.sh"
+          echo
+          gpg --list-secret-keys
+          echo
+          echo "Setting debian/compat to ${COMPAT}"
+          echo "${COMPAT}" > debian/compat
+          echo "y" | debuild --signing-hook="${HOME}/signing-hook-script.sh" -b -i -us -uc
+          ls -lA --color=always ..
+          mkdir -pv debian/pkgs/${VERSION_PREFIX}
+          mv -vi ../*.deb ../*.build* debian/pkgs/${VERSION_PREFIX}
+          ls -lA --color=always debian/pkgs/*/*
+      - name: 'Upload Binary Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian_bin_pkgs_${{ matrix.version_prefix }}
+          path: debian/pkgs/*/*
+          retention-days: 15
+
+  ###########################
   deploy_to_pypi:
     runs-on: ubuntu-latest
     name: "Deployment of the Python package to PyPi"
@@ -169,5 +366,301 @@ jobs:
           path: dist/*
           retention-days: 8
 
+  ###########################
+  build_rpm:
+    runs-on: ubuntu-latest
+    name: Building RPM packages for Enterprise Linux
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/test') || startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - linter
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - el_version: '7'
+            yum: 'yum'
+            py_minor_version: '6'
+            py_version_dot: '3.6'
+            py_version_nodot: '36'
+            image: centos:7
+            epel_package: epel-release
+          - el_version: '8'
+            yum: 'dnf'
+            py_minor_version: '8'
+            py_version_dot: '3.8'
+            py_version_nodot: '38'
+            image: dokken/centos-stream-8
+            epel_package: epel-release
+          - el_version: '9'
+            yum: 'dnf'
+            py_minor_version: '9'
+            py_version_dot: '3'
+            py_version_nodot: '3'
+            image: dokken/centos-stream-9
+            epel_package: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    container: ${{ matrix.image }}
+    env:
+      EL_VERSION: ${{ matrix.el_version }}
+      EPEL_PACKAGE: ${{ matrix.epel_package }}
+      PY_VERSION_DOT: ${{ matrix.py_version_dot}}
+      PY_VERSION_NODOT: ${{ matrix.py_version_nodot}}
+      PYTHON: "python${{ matrix.py_version_nodot}}"
+      SPECFILE: "${PKG_NAME}.spec"
+      USED_CHARSET: 'utf8'
+      USED_LOCALE: 'en_US'
+      USED_LC: 'en_US.utf8'
+      YUM: ${{ matrix.yum }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checking locales
+        shell: bash
+        run: |
+          echo "All locales"
+          locale -a
+          echo
+          echo "Installing locales ..."
+          if [[ "${EL_VERSION}" == "7" ]] ; then
+            echo "${USED_LOCALE}.${USED_CHARSET}"
+            localedef --charmap UTF-8 --inputfile "${USED_LOCALE}" "${USED_LC}"
+          else
+            yum --assumeyes install langpacks-en glibc-all-langpacks
+          fi
+          echo
+          echo "All locales"
+          locale -a
+          echo
+          echo "locales:"
+          locale
+          echo
+          export LC_ALL="${USED_LC}"
+          locale
+      - uses: ./.github/actions/add-fb-yum-repo
+        with:
+          el_major_version: ${{ matrix.el_version }}
+      - name: Enabling PowerTools YUM repo
+        shell: bash
+        run: |
+          if [[ -f /etc/yum.repos.d/CentOS-Stream-PowerTools.repo ]] ; then
+            echo "Enabling powertools YUM repo ..."
+            echo
+            sed -i -e 's/^enabled=.*/enabled=1/' /etc/yum.repos.d/CentOS-Stream-PowerTools.repo
+            echo
+            echo "Content of /etc/yum.repos.d/CentOS-Stream-PowerTools.repo:"
+            cat /etc/yum.repos.d/CentOS-Stream-PowerTools.repo
+            echo
+          fi
+      - name: Install EPEL repo
+        shell: bash
+        run: yum --assumeyes install "${EPEL_PACKAGE}"
+      - name: Upgrade all packages
+        shell: bash
+        env:
+          LC_ALL: "en_US.utf8"
+        run: |
+          echo "Cleaning ${YUM} ..."
+          ${YUM} clean all
+          echo
+          echo "${YUM} makecache ..."
+          ${YUM} makecache
+          echo
+          echo "Upgrading all packages"
+          ${YUM} --assumeyes upgrade
+      - name: Install Python 3
+        shell: bash
+        env:
+          LC_ALL: "en_US.utf8"
+        run: |
+          echo "Installing Python ${PY_VERSION_NODOT} ..."
+          yum --assumeyes install ${PYTHON} \
+                                  ${PYTHON}-six \
+                                  ${PYTHON}-setuptools \
+                                  ${PYTHON}-pip \
+                                  ${PYTHON}-babel \
+                                  ${PYTHON}-devel \
+                                  ${PYTHON}-fb-logging
+          echo
+          echo "Python binaries:"
+          ls -l --color=always /bin/python* /bin/pip* || true
+          echo
+          echo "Pip3 list:"
+          pip3 list --format columns
+      - name: Installing build tools
+        shell: bash
+        env:
+          LC_ALL: "en_US.utf8"
+        run: |
+          echo "Installing build tools"
+          yum --assumeyes install gnupg2 rpm-build rpm-sign help2man
+      - name: Create build environment
+        shell: bash
+        env:
+          LC_ALL: "en_US.utf8"
+        run: |
+          echo "Creating directories ..."
+          mkdir -pv rpmdir
+          mkdir -pv rpmdir/SOURCES
+          ODIR=$(pwd)
+          ROOT_OBJECTS=$( ls -A1 | egrep -vw ".git|rpmdir" )
+          echo
+          echo "Root objects:"; for o in ${ROOT_OBJECTS}; do echo " * ${o}"; done
+          PKG_VERSION=$( ./get-rpm-version )
+          PKG_RELEASE=$( ./get-rpm-release )
+          echo
+          echo "Version to build: ${PKG_VERSION}-${PKG_RELEASE}"
+          echo
+          RPM_SRC_DIR="${PKG_NAME}-${PKG_VERSION}"
+          mkdir -pv "rpmdir/SOURCES/${RPM_SRC_DIR}"
+          echo
+          man_section=1
+          man_dir="rpmdir/SOURCES/${RPM_SRC_DIR}/usr/share/man/man${man_section}"
+          echo "Generating man pages ..."
+          mkdir -pv "${man_dir}"
+          for script in postfix-logsums ; do
+            if [[ ! -x "${script}" ]] ; then
+                continue
+            fi
+            script_base=$( basename "${script}" )
+            man_file="${man_dir}/${script_base}.${man_section}"
+            echo "  * ${script_base}.${man_section}"
+            cmd="help2man --no-info --no-discard-stderr"
+            cmd+=" --version-string \"${PKG_VERSION}\""
+            cmd+=" --section ${man_section}"
+            cmd+=" \"./${script}\" | gzip -v9"
+            echo "      Executing: ${cmd} > \"${man_file}.gz\""
+            eval ${cmd} > "${man_file}.gz"
+          done
+          echo
+          echo "Copying sources recursive into rpmdir/SOURCES/${RPM_SRC_DIR} ..."
+          tar cf - ${ROOT_OBJECTS} | (cd "rpmdir/SOURCES/${RPM_SRC_DIR}" ; tar xf -)
+          echo
+          TARBALL="${PKG_NAME}.${PKG_VERSION}.tar.gz"
+          echo "Creating rpmdir/SOURCES/${TARBALL} ..."
+          cd rpmdir/SOURCES
+          tar cfz "${TARBALL}" "${RPM_SRC_DIR}"
+          echo
+          echo "Source file:"
+          ls -lA --color=always *.tar.gz
+          cd "${ODIR}"
+          echo
+          echo "Generating spec file '${SPECFILE}' ..."
+          cat template.spec | sed -e "s/@@@Version@@@/${PKG_VERSION}/gi" \
+                                  -e "s/@@@Release@@@/${PKG_RELEASE}/gi" \
+                                  -e "s/@@@py_version_nodot@@@/${PY_VERSION_NODOT}/gi" \
+                                  -e "s/@@@py_version_dot@@@/${PY_VERSION_DOT}/gi" \
+                                  > "${SPECFILE}"
+          if [[ "${EL_VERSION}" == "7" ]] ; then
+              sed -i -e 's/-pyyaml$/-PyYAML/i' "${SPECFILE}"
+          fi
+          dch2speclog debian/changelog >> "${SPECFILE}"
+          echo
+          echo "Generated Spec file:"
+          cat "${SPECFILE}"
+          echo
+          RPM_MACROS="${HOME}/.rpmmacros"
+          echo "Creating '${RPM_MACROS}' ..."
+          echo "%__python3 /bin/python${PY_VERSION_DOT}" >  "${RPM_MACROS}"
+          echo "%_signature gpg"                         >> "${RPM_MACROS}"
+          echo "%_gpg_name ${GPG_KEY_ID}"                >> "${RPM_MACROS}"
+          echo
+          echo "Generated '${RPM_MACROS}':"
+          cat "${RPM_MACROS}"
+      - name: Creating RPMs
+        shell: bash
+        env:
+          LC_ALL: "en_US.utf8"
+        run: |
+          rpmbuild -ba --nocheck --verbose \
+              --define "_topdir $(pwd)/rpmdir" \
+              "${SPECFILE}"
+          echo
+          echo "Results:"
+          find rpmdir/*RPMS -type f -print0 | xargs --null --no-run-if-empty ls -l -d --color=always
+      - name: 'Upload RPM Packages'
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpm_pkgs_el${{ matrix.el_version }}
+          path: |
+            rpmdir/RPMS/*/*.rpm
+            rpmdir/SRPMS/*.rpm
+          retention-days: 15
+
+  ###########################
+  deploy_to_fbrepo:
+    runs-on: ubuntu-latest
+    name: "Deployment of all Packages to Frank Brehms repo server"
+    if: ${{ startsWith( github.ref, 'refs/tags/' ) }}
+    needs:
+      - 'build_debian_sources'
+      - 'build_debian_bin'
+      - 'build_rpm'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Downloading all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: Sorting all artifacts
+        run: |
+          mv -vi artifacts/debian_bin_pkgs_*/* artifacts/
+          mv -vi artifacts/debian_sources/src artifacts/
+          rmdir -v artifacts/debian_bin_pkgs_* artifacts/debian_sources
+          mkdir -pv artifacts/el-7 artifacts/el-8 artifacts/el-9
+          mv -vi artifacts/rpm_pkgs_el7/*/*/*.rpm artifacts/rpm_pkgs_el7/*/*.rpm artifacts/el-7/
+          mv -vi artifacts/rpm_pkgs_el8/*/*/*.rpm artifacts/rpm_pkgs_el8/*/*.rpm artifacts/el-8/
+          mv -vi artifacts/rpm_pkgs_el9/*/*/*.rpm artifacts/rpm_pkgs_el9/*/*.rpm artifacts/el-9/
+          rm -rv artifacts/rpm_pkgs_el*
+      - name: Show all artifacts
+        run: |
+          find artifacts -print0 | xargs --null --no-run-if-empty ls -l -d --color=always
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.FB_REPOIN_SSH_PRIVATE_KEY }}
+          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+      - name: Adding Known Hosts
+        run: ssh-keyscan -H ${{ secrets.FB_REPO_SERVER }} >> ~/.ssh/known_hosts
+      - name: Show .ssh dir
+        run: |
+          ls -l --color=always ~/.ssh/
+          echo "Content of ~/.ssh/known_hosts:"
+          cat ~/.ssh/known_hosts
+      - name: Deploy Debian packages with rsync
+        run: >
+          rsync -aHvz artifacts/deb* artifacts/ubuntu* artifacts/src
+          ${{ secrets.FB_REPO_USER }}@${{ secrets.FB_REPO_SERVER }}:${FB_REPO_IN_DIR}/debian/
+      - name: Deploy RPM packages with rsync
+        run: >
+          rsync -aHvz artifacts/el-*
+          ${{ secrets.FB_REPO_USER }}@${{ secrets.FB_REPO_SERVER }}:${FB_REPO_IN_DIR}/el/
+
+  ###########################
+  notify_success:
+    runs-on: ubuntu-latest
+    name: Sending Success message
+    needs:
+      - 'deploy_to_pypi'
+      - 'deploy_to_fbrepo'
+    steps:
+      - name: Sending message
+        uses: dawidd6/action-send-mail@v3
+        with:
+          # mail server settings
+          server_address: ${{ env.SMTP_SERVER_ADDRESS }}
+          server_port: ${{ env.SMTP_SERVER_PORT }}
+          # user credentials
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          # email subject
+          subject: Github Workflow ${{ github.workflow }} of ${{ github.repository }} for ${{ github.ref }} was successful.
+          # email body as text
+          body: |
+            Github Actions Workflow ${{ github.workflow }} of ${{ github.repository }} for ${{ github.ref }} was successful.
+            Commiter: ${{ github.actor }}
+
+            Cheers Frank
+          # comma-separated string, send email to
+          to: ${{ env.NOTIFY_ADDRESS }}
+          # from email name
+          from: ${{ env.SENDER_ADDRESS }}
 
 # vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list

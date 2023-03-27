@@ -1,0 +1,68 @@
+---
+
+name: Adding Yum repo definitions of Frank Brehm
+author: Frank Brehm
+description: Adding Yum repository definitions for the Repo server of Frank Brehm
+inputs:
+  use_https:
+    description: Use HTTPS instead of HTTP as the URL schema.
+    required: false
+    default: false
+  repo_server:
+    description: The FQDN of the repository server.
+    required: false
+    default: repo.uhu-banane.de
+  repo_name:
+    description: The name of the Yum repository
+    required: false
+    default: frank-brehm
+  repo_description:
+    description: The verbose description of the Yum repository
+    required: false
+    default: 'Frank Brehms Yum repository for Enterprise Linux %s'
+  root_path:
+    description: The root path on the repository server.
+    required: false
+    default: '/Yum'
+  el_major_version:
+    description: The major version of the Enterprise Linux, for which this repo is destinated.
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Creating repo file
+      shell: bash
+      env:
+        USE_HTTPS: ${{ inputs.use_https }}
+        REPO_SERVER: ${{ inputs.repo_server }}
+        REPO_NAME: ${{ inputs.repo_name }}
+        REPO_DESC: ${{ inputs.repo_description }}
+        ROOT_PATH: ${{ inputs.root_path }}
+        EL_MAJOR_VERSION: ${{ inputs.el_major_version }}
+      run: |
+        if [[ ! -d /etc/yum.repos.d/ ]] ; then
+            echo "Directory '/etc/yum.repos.d' not found or is not a directory." >&2
+            exit 5
+        fi
+        URL="https://"
+        if [[ "${USE_HTTPS}" == false ]] ; then
+            URL="http://"
+        fi
+        URL+="${REPO_SERVER}${ROOT_PATH}/el-${EL_MAJOR_VERSION}"
+        REPO_FILE="/etc/yum.repos.d/${REPO_NAME}.repo"
+        DESC=$( printf "${REPO_DESC}" "${EL_MAJOR_VERSION}" )
+        echo
+        echo "Creating '${REPO_FILE}' ..."
+        echo "[${REPO_NAME}]"  >  "${REPO_FILE}"
+        echo "name=${DESC}"    >> "${REPO_FILE}"
+        echo "baseurl=${URL}"  >> "${REPO_FILE}"
+        echo "enabled=1"       >> "${REPO_FILE}"
+        echo "gpgcheck=0"      >> "${REPO_FILE}"
+        echo "repo_gpgcheck=0" >> "${REPO_FILE}"
+        echo
+        echo "Content of '${REPO_FILE}':"
+        cat "${REPO_FILE}"
+        echo
+
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
