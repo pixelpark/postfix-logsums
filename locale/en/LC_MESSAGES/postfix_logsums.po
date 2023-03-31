@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: postfix_logsums 0.8.0\n"
+"Project-Id-Version: postfix_logsums 0.8.1\n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-03-31 11:04+0200\n"
+"POT-Creation-Date: 2023-03-31 12:10+0200\n"
 "PO-Revision-Date: 2023-03-27 14:46+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: en\n"
@@ -108,6 +108,50 @@ msgstr ""
 
 #: postfix_logsums/errors.py:190
 msgid "Invalid method {m}() for a {w} object."
+msgstr ""
+
+#: postfix_logsums/stats.py:71 postfix_logsums/stats.py:401 postfix_logsums/stats.py:638
+msgid "Object is not a {m} object, but a {w} object instead."
+msgstr ""
+
+#: postfix_logsums/stats.py:102
+msgid "Wrong value {v!r} for a {w} value: {e}"
+msgstr ""
+
+#: postfix_logsums/stats.py:107
+msgid "Wrong value {v!r} for a {w} value: must be >= 0"
+msgstr ""
+
+#: postfix_logsums/stats.py:116
+msgid "Deleting attribute {a!r} of a {w} is not allowed."
+msgstr ""
+
+#: postfix_logsums/stats.py:386
+msgid "Wrong class {c} for using as an item class, must be a subclas of {sc}."
+msgstr ""
+
+#: postfix_logsums/stats.py:587
+msgid "The method {met}() expected at most {max} arguments, got {got}."
+msgstr ""
+
+#: postfix_logsums/stats.py:670 postfix_logsums/stats.py:827
+msgid "Invalid number {} of statistics per hour given."
+msgstr ""
+
+#: postfix_logsums/stats.py:755
+msgid "Wrong value {v!r} for a per hour stat: {e}"
+msgstr ""
+
+#: postfix_logsums/stats.py:758
+msgid "Wrong value {v!r} for a per hour stat: must be >= 0"
+msgstr ""
+
+#: postfix_logsums/stats.py:844
+msgid "Wrong value {v!r} for a per hour stat of smtp - must have three numbers."
+msgstr ""
+
+#: postfix_logsums/stats.py:860
+msgid "Wrong value {v!r} for a per hour stat."
 msgstr ""
 
 #: postfix_logsums/xlate.py:106

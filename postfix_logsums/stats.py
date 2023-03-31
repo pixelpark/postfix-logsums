@@ -24,12 +24,15 @@ from .errors import StatsError, WrongDateKeyError, WrongMsgStatsKeyError, WrongD
 from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
 from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
 
-__version__ = '0.7.1'
+from .xlate import XLATOR
+
+__version__ = '0.8.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
 HOURS_PER_DAY = 24
 LOG = logging.getLogger(__name__)
+_ = XLATOR.gettext
 
 # =============================================================================
 def is_sequence(arg):
@@ -65,7 +68,7 @@ class BaseMessageStats(MutableMapping):
             elif first_param.__class__.__name__ == 'zip':
                 self._update_from_mapping(dict(first_param))
             else:
-                msg = "Object is not a {m} object, but a {w} object instead.".format(
+                msg = _("Object is not a {m} object, but a {w} object instead.").format(
                     m='Mapping', w=first_param.__class__.__qualname__)
                 raise StatsError(msg)
 
@@ -96,12 +99,12 @@ class BaseMessageStats(MutableMapping):
         try:
             v = int(value)
         except ValueError as e:
-            msg = "Wrong value {v!r} for a {w} value: {e}".format(
+            msg = _("Wrong value {v!r} for a {w} value: {e}").format(
                 v=value, w=self.__class__.__name__, e=e)
             raise WrongMsgStatsValueError(msg)
 
         if v < 0:
-            msg = "Wrong value {v!r} for a {w} value: must be >= 0".format(
+            msg = _("Wrong value {v!r} for a {w} value: must be >= 0").format(
                 v=value, w=self.__class__.__name__)
             raise WrongMsgStatsValueError(msg)
 
@@ -110,7 +113,7 @@ class BaseMessageStats(MutableMapping):
     # -------------------------------------------------------------------------
     def __delattr__(self, name):
         """Called, if an attribute should be deleted."""
-        msg = "Deleting attribute {a!r} of a {w} is not allowed.".format(
+        msg = _("Deleting attribute {a!r} of a {w} is not allowed.").format(
             a=name, w=self.__class__.__name__)
         raise StatsError(msg)
 
@@ -380,7 +383,8 @@ class DailyStatsDict(MutableMapping):
 
         self._stats = {}
         if not issubclass(stats_class, BaseMessageStats):
-            msg = "Wrong class {c} for using as an item class, must be a subclas of {sc}.".format(
+            msg = _(
+                "Wrong class {c} for using as an item class, must be a subclas of {sc}.").format(
                 c=stats_class.__name__, sc='BaseMessageStats')
             raise TypeError(msg)
         self._stats_class = stats_class
@@ -394,7 +398,7 @@ class DailyStatsDict(MutableMapping):
             elif first_param.__class__.__name__ == 'zip':
                 self._update_from_mapping(dict(first_param))
             else:
-                msg = "Object is not a {m} object, but a {w} object instead.".format(
+                msg = _("Object is not a {m} object, but a {w} object instead.").format(
                     m='Mapping', w=first_param.__class__.__qualname__)
                 raise StatsError(msg)
 
@@ -580,7 +584,7 @@ class DailyStatsDict(MutableMapping):
         used_key = self.key_to_date(key)
 
         if len(args) > 1:
-            msg = "The method {met}() expected at most {max} arguments, got {got}.".format(
+            msg = _("The method {met}() expected at most {max} arguments, got {got}.").format(
                 met='pop', max=2, got=(len(args) + 1))
             raise TypeError(msg)
 
@@ -631,7 +635,7 @@ class DailyStatsDict(MutableMapping):
         elif other.__class__.__name__ == 'zip':
             self._update_from_mapping(dict(other))
         else:
-            msg = "Object is not a {m} object, but a {w} object instead.".format(
+            msg = _("Object is not a {m} object, but a {w} object instead.").format(
                 m='Mapping', w=other.__class__.__qualname__)
             raise StatsError(msg)
 
@@ -663,7 +667,7 @@ class HourlyStats(MutableSequence):
 
         if args:
             if len(args) > self.hours_per_day:
-                msg = "Invalid number {} of statistics per hour give.".format(len(args))
+                msg = _("Invalid number {} of statistics per hour given.").format(len(args))
                 raise StatsError(msg)
             index = 0
             for value in args:
@@ -748,10 +752,10 @@ class HourlyStats(MutableSequence):
         try:
             v = int(value)
         except ValueError as e:
-            msg = "Wrong value {v!r} for a per hour stat: {e}".format(v=value, e=e)
+            msg = _("Wrong value {v!r} for a per hour stat: {e}").format(v=value, e=e)
             raise WrongMsgStatsValueError(msg)
         if v < 0:
-            msg = "Wrong value {v!r} for a per hour stat: must be >= 0".format(v=value)
+            msg = _("Wrong value {v!r} for a per hour stat: must be >= 0").format(v=value)
             raise WrongMsgStatsValueError(msg)
         self._list[hour] = int(value)
 
@@ -769,7 +773,7 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def append(self, value):
-        """iAppending the given value to the current list - invalid action."""
+        """Appending the given value to the current list - invalid action."""
 
         raise MsgStatsHourInvalidMethodError('append')
 
@@ -820,7 +824,7 @@ class HourlyStatsSmtpd(HourlyStats):
 
         if args:
             if len(args) > self.hours_per_day:
-                msg = "Invalid number {} of statistics per hour give.".format(len(args))
+                msg = _("Invalid number {} of statistics per hour given.").format(len(args))
                 raise StatsError(msg)
             index = 0
             for value in args:
@@ -837,7 +841,7 @@ class HourlyStatsSmtpd(HourlyStats):
 
         if isinstance(value, (list, tuple)):
             if len(value) != 3:
-                msg = (
+                msg = _(
                     "Wrong value {v!r} for a per hour stat of smtp - "
                     "must have three numbers.").format(v=value)
                 raise WrongMsgStatsValueError(msg)
@@ -853,7 +857,7 @@ class HourlyStatsSmtpd(HourlyStats):
             self._list[hour] = v
             return
 
-        msg = "Wrong value {v!r} for a per hour stat.".format(v=value)
+        msg = _("Wrong value {v!r} for a per hour stat.").format(v=value)
         raise WrongMsgStatsValueError(msg)
 
     # -------------------------------------------------------------------------

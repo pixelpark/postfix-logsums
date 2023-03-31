@@ -1,3 +1,12 @@
+postfix-logsums (0.8.1) UNRELEASED; urgency=medium
+
+  * Adding postfix_logsums/xlate.py and helper scripts for localistaion
+  * Adding translation files (*.pot and *.po) below locale/
+  * Translating massages in postfix_logsums/__init__.py,
+    postfix_logsums/errors.py and postfix_logsums/stats.py
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Fri, 31 Mar 2023 12:07:52 +0200
+
 postfix-logsums (0.8.0) all; urgency=medium
 
   * Creating all files for building Debian packages

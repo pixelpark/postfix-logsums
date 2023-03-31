@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: postfix_logsums 0.8.0\n"
+"Project-Id-Version: postfix_logsums 0.8.1\n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-03-31 11:04+0200\n"
-"PO-Revision-Date: 2023-03-31 11:05+0200\n"
+"POT-Creation-Date: 2023-03-31 12:10+0200\n"
+"PO-Revision-Date: 2023-03-31 12:15+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: de\n"
 "Language-Team: de <frank.brehm@pixelpark.com>\n"
@@ -109,6 +109,50 @@ msgstr "Der Wert {v!r} wurde nicht im {w}-Objekt gefunden."
 #: postfix_logsums/errors.py:190
 msgid "Invalid method {m}() for a {w} object."
 msgstr "Ungültige methode {m}() für ein {w}-Objekt."
+
+#: postfix_logsums/stats.py:71 postfix_logsums/stats.py:401 postfix_logsums/stats.py:638
+msgid "Object is not a {m} object, but a {w} object instead."
+msgstr "Das Objekt ist kein {m}-Objekt, sondern statt dessen ein {w}-Objekt."
+
+#: postfix_logsums/stats.py:102
+msgid "Wrong value {v!r} for a {w} value: {e}"
+msgstr "Falscher Wert {v!r} für ein {w}-Wert: {e}"
+
+#: postfix_logsums/stats.py:107
+msgid "Wrong value {v!r} for a {w} value: must be >= 0"
+msgstr "Falscher Wert {v!r} für ein {w}-Wert: er muss größer oder gleich als Null sein."
+
+#: postfix_logsums/stats.py:116
+msgid "Deleting attribute {a!r} of a {w} is not allowed."
+msgstr "Löschen des Attributes {a!r} eines {w} ist nicht erlaubt."
+
+#: postfix_logsums/stats.py:386
+msgid "Wrong class {c} for using as an item class, must be a subclas of {sc}."
+msgstr "Ungültige Klasse {c} als Item-Klasse verwendet, es muss eine Unterklasse von {sc} sein."
+
+#: postfix_logsums/stats.py:587
+msgid "The method {met}() expected at most {max} arguments, got {got}."
+msgstr "Die Method {met}() erwartet höchstens {max} Argumente, es wurden aber {got} angegeben."
+
+#: postfix_logsums/stats.py:670 postfix_logsums/stats.py:827
+msgid "Invalid number {} of statistics per hour given."
+msgstr "Ungültige Zahl {} für Stundenstatistiken angegeben."
+
+#: postfix_logsums/stats.py:755
+msgid "Wrong value {v!r} for a per hour stat: {e}"
+msgstr "Ungültiger Wert {v!r} für eine Stundenstatistik: {e}"
+
+#: postfix_logsums/stats.py:758
+msgid "Wrong value {v!r} for a per hour stat: must be >= 0"
+msgstr "Ungültiger Wert {v!r} für eine Stundenstatistik: er muss größer oder gleich als Null sein."
+
+#: postfix_logsums/stats.py:844
+msgid "Wrong value {v!r} for a per hour stat of smtp - must have three numbers."
+msgstr "Ungültiger Wert {v!r} für eine SMTP-Stundenstatistik - es müssen drei Zahlen sein."
+
+#: postfix_logsums/stats.py:860
+msgid "Wrong value {v!r} for a per hour stat."
+msgstr "Ungültiger Wert {v!r} für eine Stundenstatistik."
 
 #: postfix_logsums/xlate.py:106
 msgid "Module directory: {!r}"
