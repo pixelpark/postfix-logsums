@@ -359,9 +359,9 @@ class PostfixLogParser(object):
         if do_not_trim:
             return trimmed
 
-        if max_len < self.min_max_len:
+        if max_len < cls.min_max_len:
             msg = _("Invalid max. length {max} of a string, must be >= {min}.").format(
-                max=max_len, min=self.min_max_len)
+                max=max_len, min=cls.min_max_len)
             raise ValueError(msg)
 
         ml = int(max_len) - 3
