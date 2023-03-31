@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: postfix_logsums 0.8.0\n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-03-27 14:46+0200\n"
+"POT-Creation-Date: 2023-03-31 11:04+0200\n"
 "PO-Revision-Date: 2023-03-27 14:46+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: en\n"
@@ -72,6 +72,42 @@ msgstr ""
 
 #: postfix_logsums/__init__.py:1719
 msgid "Unhandled SMTP message: {msg!r}"
+msgstr ""
+
+#: postfix_logsums/errors.py:49
+msgid "Invalid key {k!r} for a {what}, must be valid date: {e}"
+msgstr ""
+
+#: postfix_logsums/errors.py:51
+msgid "Invalid key {k!r} for a {what}, must be valid date."
+msgstr ""
+
+#: postfix_logsums/errors.py:69
+msgid "Key error for key {k!r} for a {what}: {e}"
+msgstr ""
+
+#: postfix_logsums/errors.py:71
+msgid "Key error for {k!r} for a {what}."
+msgstr ""
+
+#: postfix_logsums/errors.py:88
+msgid "Invalid attribute {attr!r} for a {w} object."
+msgstr ""
+
+#: postfix_logsums/errors.py:114 postfix_logsums/errors.py:133
+msgid "Invalid key {k!r} for a {w} object."
+msgstr ""
+
+#: postfix_logsums/errors.py:152
+msgid "Invalid hour {h!r} for a {w} object."
+msgstr ""
+
+#: postfix_logsums/errors.py:171
+msgid "Value {v!r} not found in the {w} object."
+msgstr ""
+
+#: postfix_logsums/errors.py:190
+msgid "Invalid method {m}() for a {w} object."
 msgstr ""
 
 #: postfix_logsums/xlate.py:106
