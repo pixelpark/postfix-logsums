@@ -49,9 +49,13 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
+from .xlate import XLATOR
+
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.10'
+__version__ = '0.8.0'
+_ = XLATOR.gettext
+ngettext = XLATOR.ngettext
 
 
 # =============================================================================
@@ -63,12 +67,12 @@ class NonNegativeItegerOptionAction(argparse.Action):
         try:
             val = int(value)
         except Exception as e:
-            msg = "Got a {c} for converting {v!r} into an integer value: {e}".format(
+            msg = _("Got a {c} for converting {v!r} into an integer value: {e}").format(
                 c=e.__class__.__name__, v=value, e=e)
             raise argparse.ArgumentError(self, msg)
 
         if val < 0:
-            msg = "The option must not be negative (given: {}).".format(value)
+            msg = _("The option must not be negative (given: {}).").format(value)
             raise argparse.ArgumentError(self, msg)
 
         setattr(namespace, self.dest, val)
@@ -101,15 +105,15 @@ class LogFilesOptionAction(argparse.Action):
 
             path = Path(logfile)
             if not path.exists():
-                msg = "Logfile {!r} does not exists.".format(logfile)
+                msg = _("Logfile {!r} does not exists.").format(logfile)
                 raise argparse.ArgumentError(self, msg)
 
             if not path.is_file():
-                msg = "File {!r} is not a regular file.".format(logfile)
+                msg = _("File {!r} is not a regular file.").format(logfile)
                 raise argparse.ArgumentError(self, msg)
 
             if not os.access(str(path), os.R_OK):
-                msg = "File {!r} is not readable.".format(logfile)
+                msg = _("File {!r} is not readable.").format(logfile)
                 raise argparse.ArgumentError(self, msg)
 
             logfiles.append(path.resolve())
@@ -316,7 +320,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def __init__(self):
-
+        """The constructor method."""
         self._appname = get_generic_appname()
         self._version = __version__
         self._verbose = 0
@@ -392,7 +396,7 @@ class PostfixLogsumsApp(object):
         if v >= 0:
             self._verbose = v
         else:
-            LOG.warning("Wrong verbose level {!r}, must be >= 0".format(value))
+            LOG.warning(_("Wrong verbose level {!r}, must be >= 0").format(value))
 
     # -----------------------------------------------------------
     @property
@@ -590,11 +594,11 @@ class PostfixLogsumsApp(object):
         arg_width = self.max_width - 24
 
         desc = []
-        desc.append('{} is a log analyzer/summarizer for the Postfix MTA.'.format(appname))
-        desc.append(
+        desc.append(_('{} is a log analyzer/summarizer for the Postfix MTA.').format(appname))
+        desc.append(_(
             'It is designed to provide an over-view of Postfix activity, with just enough '
-            'detail to give the administrator a "heads up" for potential trouble spots.')
-        desc.append((
+            'detail to give the administrator a "heads up" for potential trouble spots.'))
+        desc.append(_(
             '{} generates summaries and, in some cases, detailed reports of mail server traffic '
             'volumes, rejected and bounced email, and server warnings, '
             'errors and panics.').format(appname))
@@ -615,33 +619,34 @@ class PostfixLogsumsApp(object):
             add_help=False,
         )
 
-        logfile_group = self.arg_parser.add_argument_group('Options for scanning Postfix logfiles')
+        logfile_group = self.arg_parser.add_argument_group(_(
+            'Options for scanning Postfix logfiles'))
 
         # --day
-        desc = 'Generate report for just today or yesterday.'
+        desc = _('Generate report for just today or yesterday.')
         desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
             '-d', '--day', metavar='|'.join(day_values), dest='day', choices=day_values,
             help=desc)
 
         # --extended
-        desc = 'Extended (extreme? excessive?) detail.\n'
-        desc += self.wrap_msg(
+        desc = _('Extended (extreme? excessive?) detail.') + '\n'
+        desc += self.wrap_msg(_(
             'At present, this includes only a per-message report, sorted by sender domain, '
-            'then user-in-domain, then by queue i.d.', arg_width) + '\n'
-        desc += self.wrap_msg(
+            'then user-in-domain, then by queue i.d.'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
             'WARNING: the data built to generate this report can quickly consume very large '
-            'amounts of memory if a ot of log entries are processed!', arg_width)
+            'amounts of memory if a lot of log entries are processed!'), arg_width)
         logfile_group.add_argument(
             '-e', '--extended', dest='extended', action="store_true", help=desc)
 
         # --ignore-case
-        desc = self.wrap_msg(
-            'Handle complete email address in a case-insensitive manner.', arg_width)
+        desc = self.wrap_msg(_(
+            'Handle complete email address in a case-insensitive manner.'), arg_width)
         desc += '\n'
-        desc += self.wrap_msg(
+        desc += self.wrap_msg(_(
             'Normally {} lower-cases only the host and domain parts, leaving the user part alone. '
-            'This option causes the entire email address to be lower-cased.'.format(appname),
+            'This option causes the entire email address to be lower-cased.').format(appname),
             arg_width)
         logfile_group.add_argument(
             '-i', '--ignore-case', dest='ignore_case', action="store_true", help=desc)

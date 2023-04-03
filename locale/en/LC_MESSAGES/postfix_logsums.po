@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: postfix_logsums 0.8.1\n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-03-31 12:10+0200\n"
+"POT-Creation-Date: 2023-04-03 17:26+0200\n"
 "PO-Revision-Date: 2023-03-27 14:46+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: en\n"
@@ -26,7 +26,7 @@ msgstr ""
 msgid "Invalid max. length {max} of a string, must be >= {min}."
 msgstr ""
 
-#: postfix_logsums/__init__.py:420
+#: postfix_logsums/__init__.py:420 postfix_logsums/app.py:399
 msgid "Wrong verbose level {!r}, must be >= 0"
 msgstr ""
 
@@ -72,6 +72,76 @@ msgstr ""
 
 #: postfix_logsums/__init__.py:1719
 msgid "Unhandled SMTP message: {msg!r}"
+msgstr ""
+
+#: postfix_logsums/app.py:70
+msgid "Got a {c} for converting {v!r} into an integer value: {e}"
+msgstr ""
+
+#: postfix_logsums/app.py:75
+msgid "The option must not be negative (given: {})."
+msgstr ""
+
+#: postfix_logsums/app.py:108
+msgid "Logfile {!r} does not exists."
+msgstr ""
+
+#: postfix_logsums/app.py:112
+msgid "File {!r} is not a regular file."
+msgstr ""
+
+#: postfix_logsums/app.py:116
+msgid "File {!r} is not readable."
+msgstr ""
+
+#: postfix_logsums/app.py:597
+msgid "{} is a log analyzer/summarizer for the Postfix MTA."
+msgstr ""
+
+#: postfix_logsums/app.py:598
+msgid ""
+"It is designed to provide an over-view of Postfix activity, with just enough detail to give the "
+"administrator a \"heads up\" for potential trouble spots."
+msgstr ""
+
+#: postfix_logsums/app.py:601
+msgid ""
+"{} generates summaries and, in some cases, detailed reports of mail server traffic volumes, "
+"rejected and bounced email, and server warnings, errors and panics."
+msgstr ""
+
+#: postfix_logsums/app.py:622
+msgid "Options for scanning Postfix logfiles"
+msgstr ""
+
+#: postfix_logsums/app.py:626
+msgid "Generate report for just today or yesterday."
+msgstr ""
+
+#: postfix_logsums/app.py:633
+msgid "Extended (extreme? excessive?) detail."
+msgstr ""
+
+#: postfix_logsums/app.py:634
+msgid ""
+"At present, this includes only a per-message report, sorted by sender domain, then user-in-"
+"domain, then by queue i.d."
+msgstr ""
+
+#: postfix_logsums/app.py:637
+msgid ""
+"WARNING: the data built to generate this report can quickly consume very large amounts of memory"
+" if a lot of log entries are processed!"
+msgstr ""
+
+#: postfix_logsums/app.py:644
+msgid "Handle complete email address in a case-insensitive manner."
+msgstr ""
+
+#: postfix_logsums/app.py:647
+msgid ""
+"Normally {} lower-cases only the host and domain parts, leaving the user part alone. This option"
+" causes the entire email address to be lower-cased."
 msgstr ""
 
 #: postfix_logsums/errors.py:49
