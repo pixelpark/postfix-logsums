@@ -79,6 +79,42 @@ class NonNegativeItegerOptionAction(argparse.Action):
 
 
 # =============================================================================
+class FilterDayOptionAction(argparse.Action):
+
+    # -------------------------------------------------------------------------
+    def __init__(self, option_strings, *args, **kwargs):
+        """Initialise a FilterDayOptionAction object."""
+        super(FilterDayOptionAction, self).__init__(
+            option_strings=option_strings, *args, **kwargs)
+
+    # -------------------------------------------------------------------------
+    def __call__(self, parser, namespace, value, option_string=None):
+
+        val = str(value)
+        used_day = None
+        if val.lower() == 'today':
+            used_day = datetime.date.today()
+        elif val.lower() == 'yesterday':
+            t_diff = datetime.timedelta(days=1)
+            used_day = datetime.date.today() - t_diff
+        else:
+            pattern = r'^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})$'
+            m = re.match(pattern, val)
+            if m:
+                try:
+                    used_day = datetime.date(int(m['year']), int(m['month']), int(m['day']))
+                except Exception as e:
+                    msg = _("Invalid date as day {!r} given").format(value)
+                    msg += ': ' + str(e)
+                    raise argparse.ArgumentError(self, msg)
+            else:
+                msg = _("Invalid date as day {!r} given").format(value) + '.'
+                raise argparse.ArgumentError(self, msg)
+
+        setattr(namespace, self.dest, used_day)
+
+
+# =============================================================================
 class LogFilesOptionAction(argparse.Action):
     """An argparse action for logfiles."""
 
@@ -623,11 +659,12 @@ class PostfixLogsumsApp(object):
             'Options for scanning Postfix logfiles'))
 
         # --day
-        desc = _('Generate report for just today or yesterday.')
+        desc = self.wrap_msg(_(
+            'Generate report for just today, yesterday or a date in ISO format (YYY-mm-dd).'))
         desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
-            '-d', '--day', metavar='|'.join(day_values), dest='day', choices=day_values,
-            help=desc)
+            '-d', '--day', metavar=_('DAY'), dest='day',
+            action=FilterDayOptionAction, help=desc)
 
         # --extended
         desc = _('Extended (extreme? excessive?) detail.') + '\n'
@@ -1098,8 +1135,8 @@ class PostfixLogsumsApp(object):
         msgs_discarded = self.results.msgs_total.discarded
         msgs_total = msgs_delivered + msgs_rejected + msgs_discarded
 
-        msgs_rejected_pct = 0
-        msgs_discarded_pct = 0
+        msgs_rejected_pct = 0.0
+        msgs_discarded_pct = 0.0
         if msgs_total:
             msgs_rejected_pct = msgs_rejected / msgs_total * 100
             msgs_discarded_pct = msgs_discarded / msgs_total * 100
@@ -1121,7 +1158,7 @@ class PostfixLogsumsApp(object):
         print(tpl_loc.format(val=nr, lbl=_('bounced')))
         nr = adj_int_units_localized(self.results.msgs_total.rejected)
         print(tpl_loc.format(val=nr, lbl=_('rejected')), end='')
-        print(' ({:0.1n}%)'.format(msgs_rejected_pct))
+        print(' ({:0.1f}%)'.format(msgs_rejected_pct))
         nr = adj_int_units_localized(self.results.msgs_total.reject_warning)
         print(tpl_loc.format(val=nr, lbl=_('reject warnings')))
         nr = adj_int_units_localized(self.results.msgs_total.held)

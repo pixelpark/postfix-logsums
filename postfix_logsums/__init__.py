@@ -31,7 +31,7 @@ from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
 
 from .xlate import XLATOR
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -195,13 +195,22 @@ class PostfixLogParser(object):
         self.date_str = None
 
         if day:
-            t_diff = datetime.timedelta(days=1)
-            used_date = copy.copy(self.today)
-            if day == 'yesterday':
+
+            if isinstance(day, datetime.datetime):
+                used_date = day.date()
+            elif isinstance(day, datetime.date):
+                used_date = day
+            elif day.lower() == 'yesterday':
+                t_diff = datetime.timedelta(days=1)
                 used_date = self.today - t_diff
-            elif day != 'today':
-                msg = _("Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r}.").format(
-                    d=day, n='None', y='yesterday', t='today')
+            elif day.lower() == 'today':
+                used_date = copy.copy(self.today)
+            else:
+                msg = _(
+                    "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r} or a valid "
+                    "{dt} or {dd} object.").format(
+                        d=day, n='None', y='yesterday', t='today',
+                        dt='datetime.datetime', dd='datetime.date')
                 raise PostfixLogsumsError(msg)
             self.date_str = used_date.isoformat()
             filter_pattern = r"^{m} {d:02d}\s".format(
@@ -705,6 +714,9 @@ class PostfixLogParser(object):
             self.results.start_logfile(logfile)
             if not self.parse_file(logfile):
                 return False
+
+        if self.date_str:
+            LOG.debug(_("Filtering log messages for date {} ...").format(self.date_str))
 
         return True
 
