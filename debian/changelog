@@ -1,6 +1,14 @@
-postfix-logsums (0.8.1) UNRELEASED; urgency=medium
+postfix-logsums (0.9.0) UNRELEASED; urgency=medium
 
-  * Adding postfix_logsums/xlate.py and helper scripts for localistaion
+  * Making cmd line option 'day' able to get a prticular date in ISO
+    format.
+  * Finishing translation
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Wed, 19 Apr 2023 18:05:13 +0200
+
+postfix-logsums (0.8.1) all; urgency=medium
+
+  * Adding postfix_logsums/xlate.py and helper scripts for localisation
   * Adding translation files (*.pot and *.po) below locale/
   * Translating massages in postfix_logsums/__init__.py,
     postfix_logsums/errors.py and postfix_logsums/stats.py
