@@ -490,7 +490,7 @@ jobs:
           LC_ALL: "en_US.utf8"
         run: |
           echo "Installing build tools"
-          yum --assumeyes install gnupg2 rpm-build rpm-sign help2man
+          yum --assumeyes install gnupg2 rpm-build gettext rpm-sign help2man
       - name: Create build environment
         shell: bash
         env:
