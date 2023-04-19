@@ -1,4 +1,4 @@
-postfix-logsums (0.9.0) UNRELEASED; urgency=medium
+postfix-logsums (0.9.0) all; urgency=medium
 
   * Making cmd line option 'day' able to get a prticular date in ISO
     format.
