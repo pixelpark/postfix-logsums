@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: postfix_logsums 0.8.1\n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-04-05 17:07+0200\n"
+"POT-Creation-Date: 2023-04-19 13:07+0200\n"
 "PO-Revision-Date: 2023-03-27 14:46+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: en\n"
@@ -175,7 +175,7 @@ msgstr ""
 #: postfix_logsums/app.py:684
 msgid ""
 "Do \"VERP\" generated address (?) munging. Convert sender addresses of the form \"list-return-"
-"NN-someuser=some.dom@host.sender.dom\" to\"list-return-ID-someuser=some.dom@host.sender.dom\"."
+"NN-someuser=some.dom@host.sender.dom\" to \"list-return-ID-someuser=some.dom@host.sender.dom\"."
 msgstr ""
 
 #: postfix_logsums/app.py:688
@@ -272,8 +272,8 @@ msgstr ""
 msgid "Limit detailed bounce reports to the top {}."
 msgstr ""
 
-#: postfix_logsums/app.py:766 postfix_logsums/app.py:783 postfix_logsums/app.py:792
-#: postfix_logsums/app.py:801
+#: postfix_logsums/app.py:766 postfix_logsums/app.py:774 postfix_logsums/app.py:783
+#: postfix_logsums/app.py:792 postfix_logsums/app.py:801
 msgid "0 to suppress entirely."
 msgstr ""
 
@@ -290,7 +290,7 @@ msgid "Limit detailed smtp delivery reports to the top {}."
 msgstr ""
 
 #: postfix_logsums/app.py:798
-msgid "Limit detailed smtpd warnings reports to the top cw{}COUNT."
+msgid "Limit detailed smtpd warnings reports to the top {}."
 msgstr ""
 
 #: postfix_logsums/app.py:807
@@ -336,59 +336,59 @@ msgid ""
 msgstr ""
 
 #: postfix_logsums/app.py:857
-msgid "General_options"
+msgid "General options"
 msgstr ""
 
 #: postfix_logsums/app.py:861
-msgid "Increase the verbosity level."
+msgid "Enabling debug messages and increase their verbosity level if used multiple times."
 msgstr ""
 
-#: postfix_logsums/app.py:866
+#: postfix_logsums/app.py:867
 msgid "quiet - don't print headings for empty reports."
 msgstr ""
 
-#: postfix_logsums/app.py:868
-msgid "NOTE: headings for warning, fatal, and \"master\"  messages will always be printed."
+#: postfix_logsums/app.py:869
+msgid "NOTE: headings for warning, fatal, and \"master\" messages will always be printed."
 msgstr ""
 
-#: postfix_logsums/app.py:876
+#: postfix_logsums/app.py:877
 msgid "Show this help message and exit."
 msgstr ""
 
-#: postfix_logsums/app.py:881
+#: postfix_logsums/app.py:882
 msgid "Display brief usage message and exit."
 msgstr ""
 
-#: postfix_logsums/app.py:884
+#: postfix_logsums/app.py:885
 #, python-format
 msgid "Version of %(prog)s: {}"
 msgstr ""
 
-#: postfix_logsums/app.py:887
+#: postfix_logsums/app.py:888
 msgid "Show program's version number and exit."
 msgstr ""
 
-#: postfix_logsums/app.py:1399
+#: postfix_logsums/app.py:1400
 msgid "Hour"
 msgstr ""
 
-#: postfix_logsums/app.py:1400
+#: postfix_logsums/app.py:1401
 msgid "Received"
 msgstr ""
 
-#: postfix_logsums/app.py:1401
+#: postfix_logsums/app.py:1402
 msgid "Delivered"
 msgstr ""
 
-#: postfix_logsums/app.py:1402
+#: postfix_logsums/app.py:1403
 msgid "Deferred"
 msgstr ""
 
-#: postfix_logsums/app.py:1403
+#: postfix_logsums/app.py:1404
 msgid "Bounced"
 msgstr ""
 
-#: postfix_logsums/app.py:1404
+#: postfix_logsums/app.py:1405
 msgid "Rejected"
 msgstr ""
 

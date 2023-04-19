@@ -49,11 +49,11 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
-from .xlate import XLATOR
+from .xlate import XLATOR, format_list
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -683,7 +683,7 @@ class PostfixLogsumsApp(object):
         # --verp-mung
         desc = self.wrap_msg(_(
             'Do "VERP" generated address (?) munging. Convert sender addresses of the form '
-            '"list-return-NN-someuser=some.dom@host.sender.dom" to'
+            '"list-return-NN-someuser=some.dom@host.sender.dom" to '
             '"list-return-ID-someuser=some.dom@host.sender.dom".'), arg_width) + '\n'
         desc += self.wrap_msg(_(
             'In other words: replace the numeric value with "ID".'), arg_width) + '\n'
@@ -743,8 +743,8 @@ class PostfixLogsumsApp(object):
         # Output
         output_options = self.arg_parser.add_argument_group(_('Output options'))
 
-        desc = _('Output format. Valid options are:') + ' ' + ', '.join(
-            map(lambda x: repr(x), self.output_formats)) + '. '
+        desc = _('Output format. Valid options are:') + ' ' + format_list(
+                self.output_formats, True) + '. '
         desc += _("Default: '{}'.").format('txt')
         desc = self.wrap_msg(desc, arg_width)
         output_options.add_argument(
@@ -771,7 +771,7 @@ class PostfixLogsumsApp(object):
         # --deferral-detail
         desc = self.wrap_msg(_(
             'Limit detailed deferral reports to the top {}.').format(_('COUNT')), arg_width) + '\n'
-        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--deferral-detail', type=int, metavar=_('COUNT'), dest='detail_deferral',
             action=NonNegativeItegerOptionAction, help=desc)
@@ -797,7 +797,7 @@ class PostfixLogsumsApp(object):
         # --smtpd-warning-detail
         desc = self.wrap_msg(_(
             'Limit detailed smtpd warnings reports to the '
-            'top cw{}COUNT.').format(_('COUNT')), arg_width) + '\n'
+            'top {}.').format(_('COUNT')), arg_width) + '\n'
         desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--smtpd-warning-detail', type=int, metavar=_('COUNT'), dest='detail_smtpd_warning',
@@ -854,11 +854,12 @@ class PostfixLogsumsApp(object):
 
         #######
         # General stuff
-        general_group = self.arg_parser.add_argument_group(_('General_options'))
+        general_group = self.arg_parser.add_argument_group(_('General options'))
 
         verbose_group = general_group.add_mutually_exclusive_group()
 
-        desc = _('Increase the verbosity level.')
+        desc = self.wrap_msg(_(
+            'Enabling debug messages and increase their verbosity level if used multiple times.'))
         verbose_group.add_argument(
             "-v", "--verbose", action="count", dest='verbose', help=desc)
 
@@ -866,7 +867,7 @@ class PostfixLogsumsApp(object):
         desc = self.wrap_msg(_("quiet - don't print headings for empty reports."), arg_width)
         desc += '\n'
         desc += self.wrap_msg(_(
-            'NOTE: headings for warning, fatal, and "master"  messages will always be '
+            'NOTE: headings for warning, fatal, and "master" messages will always be '
             'printed.'), arg_width)
         verbose_group.add_argument(
             '-q', '--quiet', dest='quiet', action="store_true", help=desc)
