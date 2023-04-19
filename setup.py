@@ -182,7 +182,7 @@ def create_mo_files():
             subprocess.call(['msgfmt', '-o', str(mo), po_path])
         mo_files.append(mo)
 
-    print("Found mo files: {}\n".format(pp(mo_files)))
+    # print("Found mo files: {}\n".format(pp(mo_files)))
     return mo_files
 
 
@@ -192,7 +192,7 @@ for mo_file in __pkg_mo_paths__:
     __pkg_mo_files__.append(str(mo_file))
 
 __package_data__[''] = __pkg_mo_files__
-print("Package_data:\n" + pp(__package_data__) + "\n")
+# print("Package_data:\n" + pp(__package_data__) + "\n")
 
 
 for mo_file in __pkg_mo_paths__:
@@ -202,7 +202,7 @@ for mo_file in __pkg_mo_paths__:
     mo_file_rel = str(mo_file).lstrip('/')
     __data_files__.append((str(ldir), [mo_file_rel]))
 
-print("Found data files:\n" + pp(__data_files__) + "\n")
+# print("Found data files:\n" + pp(__data_files__) + "\n")
 
 
 # -----------------------------------
