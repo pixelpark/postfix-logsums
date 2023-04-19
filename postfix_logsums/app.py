@@ -53,7 +53,7 @@ from .xlate import XLATOR, format_list
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.8.3'
+__version__ = '0.8.4'
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -744,7 +744,7 @@ class PostfixLogsumsApp(object):
         output_options = self.arg_parser.add_argument_group(_('Output options'))
 
         desc = _('Output format. Valid options are:') + ' ' + format_list(
-                self.output_formats, True) + '. '
+            self.output_formats, True) + '. '
         desc += _("Default: '{}'.").format('txt')
         desc = self.wrap_msg(desc, arg_width)
         output_options.add_argument(
