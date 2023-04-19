@@ -1,4 +1,4 @@
-postfix-logsums (0.9.1) UNRELEASED; urgency=medium
+postfix-logsums (0.9.1) all; urgency=medium
 
   * Generating .mo-files on building Python package.
 
