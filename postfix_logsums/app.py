@@ -49,9 +49,13 @@ from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
 from . import get_generic_appname, get_smh
 from . import PostfixLogParser
 
+from .xlate import XLATOR, format_list
+
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.7.10'
+__version__ = '0.8.4'
+_ = XLATOR.gettext
+ngettext = XLATOR.ngettext
 
 
 # =============================================================================
@@ -63,15 +67,51 @@ class NonNegativeItegerOptionAction(argparse.Action):
         try:
             val = int(value)
         except Exception as e:
-            msg = "Got a {c} for converting {v!r} into an integer value: {e}".format(
+            msg = _("Got a {c} for converting {v!r} into an integer value: {e}").format(
                 c=e.__class__.__name__, v=value, e=e)
             raise argparse.ArgumentError(self, msg)
 
         if val < 0:
-            msg = "The option must not be negative (given: {}).".format(value)
+            msg = _("The option must not be negative (given: {}).").format(value)
             raise argparse.ArgumentError(self, msg)
 
         setattr(namespace, self.dest, val)
+
+
+# =============================================================================
+class FilterDayOptionAction(argparse.Action):
+
+    # -------------------------------------------------------------------------
+    def __init__(self, option_strings, *args, **kwargs):
+        """Initialise a FilterDayOptionAction object."""
+        super(FilterDayOptionAction, self).__init__(
+            option_strings=option_strings, *args, **kwargs)
+
+    # -------------------------------------------------------------------------
+    def __call__(self, parser, namespace, value, option_string=None):
+
+        val = str(value)
+        used_day = None
+        if val.lower() == 'today':
+            used_day = datetime.date.today()
+        elif val.lower() == 'yesterday':
+            t_diff = datetime.timedelta(days=1)
+            used_day = datetime.date.today() - t_diff
+        else:
+            pattern = r'^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})$'
+            m = re.match(pattern, val)
+            if m:
+                try:
+                    used_day = datetime.date(int(m['year']), int(m['month']), int(m['day']))
+                except Exception as e:
+                    msg = _("Invalid date as day {!r} given").format(value)
+                    msg += ': ' + str(e)
+                    raise argparse.ArgumentError(self, msg)
+            else:
+                msg = _("Invalid date as day {!r} given").format(value) + '.'
+                raise argparse.ArgumentError(self, msg)
+
+        setattr(namespace, self.dest, used_day)
 
 
 # =============================================================================
@@ -101,15 +141,15 @@ class LogFilesOptionAction(argparse.Action):
 
             path = Path(logfile)
             if not path.exists():
-                msg = "Logfile {!r} does not exists.".format(logfile)
+                msg = _("Logfile {!r} does not exists.").format(logfile)
                 raise argparse.ArgumentError(self, msg)
 
             if not path.is_file():
-                msg = "File {!r} is not a regular file.".format(logfile)
+                msg = _("File {!r} is not a regular file.").format(logfile)
                 raise argparse.ArgumentError(self, msg)
 
             if not os.access(str(path), os.R_OK):
-                msg = "File {!r} is not readable.".format(logfile)
+                msg = _("File {!r} is not readable.").format(logfile)
                 raise argparse.ArgumentError(self, msg)
 
             logfiles.append(path.resolve())
@@ -316,7 +356,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def __init__(self):
-
+        """The constructor method."""
         self._appname = get_generic_appname()
         self._version = __version__
         self._verbose = 0
@@ -392,7 +432,7 @@ class PostfixLogsumsApp(object):
         if v >= 0:
             self._verbose = v
         else:
-            LOG.warning("Wrong verbose level {!r}, must be >= 0".format(value))
+            LOG.warning(_("Wrong verbose level {!r}, must be >= 0").format(value))
 
     # -----------------------------------------------------------
     @property
@@ -590,11 +630,11 @@ class PostfixLogsumsApp(object):
         arg_width = self.max_width - 24
 
         desc = []
-        desc.append('{} is a log analyzer/summarizer for the Postfix MTA.'.format(appname))
-        desc.append(
+        desc.append(_('{} is a log analyzer/summarizer for the Postfix MTA.').format(appname))
+        desc.append(_(
             'It is designed to provide an over-view of Postfix activity, with just enough '
-            'detail to give the administrator a "heads up" for potential trouble spots.')
-        desc.append((
+            'detail to give the administrator a "heads up" for potential trouble spots.'))
+        desc.append(_(
             '{} generates summaries and, in some cases, detailed reports of mail server traffic '
             'volumes, rejected and bounced email, and server warnings, '
             'errors and panics.').format(appname))
@@ -606,8 +646,6 @@ class PostfixLogsumsApp(object):
                 description += '\n\n'
             description += des
 
-        day_values = ('today', 'yesterday')
-
         self.arg_parser = argparse.ArgumentParser(
             prog=self.appname,
             description=description,
@@ -615,266 +653,274 @@ class PostfixLogsumsApp(object):
             add_help=False,
         )
 
-        logfile_group = self.arg_parser.add_argument_group('Options for scanning Postfix logfiles')
+        logfile_group = self.arg_parser.add_argument_group(_(
+            'Options for scanning Postfix logfiles'))
 
         # --day
-        desc = 'Generate report for just today or yesterday.'
+        desc = self.wrap_msg(_(
+            'Generate report for just today, yesterday or a date in ISO format (YYY-mm-dd).'))
         desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
-            '-d', '--day', metavar='|'.join(day_values), dest='day', choices=day_values,
-            help=desc)
+            '-d', '--day', metavar=_('DAY'), dest='day',
+            action=FilterDayOptionAction, help=desc)
 
         # --extended
-        desc = 'Extended (extreme? excessive?) detail.\n'
-        desc += self.wrap_msg(
+        desc = _('Extended (extreme? excessive?) detail.') + '\n'
+        desc += self.wrap_msg(_(
             'At present, this includes only a per-message report, sorted by sender domain, '
-            'then user-in-domain, then by queue i.d.', arg_width) + '\n'
-        desc += self.wrap_msg(
+            'then user-in-domain, then by queue i.d.'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
             'WARNING: the data built to generate this report can quickly consume very large '
-            'amounts of memory if a ot of log entries are processed!', arg_width)
+            'amounts of memory if a lot of log entries are processed!'), arg_width)
         logfile_group.add_argument(
             '-e', '--extended', dest='extended', action="store_true", help=desc)
 
         # --ignore-case
-        desc = self.wrap_msg(
-            'Handle complete email address in a case-insensitive manner.', arg_width)
+        desc = self.wrap_msg(_(
+            'Handle complete email address in a case-insensitive manner.'), arg_width)
         desc += '\n'
-        desc += self.wrap_msg(
+        desc += self.wrap_msg(_(
             'Normally {} lower-cases only the host and domain parts, leaving the user part alone. '
-            'This option causes the entire email address to be lower-cased.'.format(appname),
+            'This option causes the entire email address to be lower-cased.').format(appname),
             arg_width)
         logfile_group.add_argument(
             '-i', '--ignore-case', dest='ignore_case', action="store_true", help=desc)
 
         # --no-no-msg-size
-        desc = self.wrap_msg('Do not emit report on "Messages with no size data".', arg_width)
+        desc = self.wrap_msg(_('Do not emit report on "Messages with no size data".'), arg_width)
         desc += '\n'
-        desc += self.wrap_msg((
+        desc += self.wrap_msg(_(
             'Message size is reported only by the queue manager. The message may be delivered '
             'long-enough after the (last) qmgr log entry that the information is not in '
             'the log(s) processed by a particular run of {a}. This throws off "Recipients by '
             'message size" and the total for "bytes delivered." These are normally reported by '
-            '{a} as "Messages with nosize data.').format(a=appname), arg_width)
+            '{a} as "Messages with nosize data".').format(a=appname), arg_width)
         logfile_group.add_argument(
             '--no-no-msg-size', dest='nono_msgsize', action="store_true", help=desc)
 
         # --rej-add-from
-        desc = self.wrap_msg(
+        desc = self.wrap_msg(_(
             'For those reject reports that list IP addresses or host/domain names: append the '
             'email from address to each listing. (Does not apply to "Improper use of '
-            'SMTP command pipelining" report.)', arg_width)
+            'SMTP command pipelining" report.)'), arg_width)
         logfile_group.add_argument(
             '--rej-add-from', dest='rej_add_from', action="store_true", help=desc)
 
         # --smtpd-stats
-        desc = self.wrap_msg('Generate smtpd connection statistics.', arg_width) + '\n'
-        desc += self.wrap_msg(
+        desc = self.wrap_msg(_('Generate smtpd connection statistics.'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
             'The "per-day" report is not generated for single-day reports. For multiple-day '
             'reports: "per-hour" numbers are daily averages (reflected in the report '
-            'heading).', arg_width)
+            'heading).'), arg_width)
         logfile_group.add_argument(
             '--smtpd-stats', dest='smtpd_stats', action="store_true", help=desc)
 
         # --verp-mung
-        desc = self.wrap_msg(
+        desc = self.wrap_msg(_(
             'Do "VERP" generated address (?) munging. Convert sender addresses of the form '
-            '"list-return-NN-someuser=some.dom@host.sender.dom" to'
-            '"list-return-ID-someuser=some.dom@host.sender.dom".', arg_width) + '\n'
-        desc += self.wrap_msg(
-            'In other words: replace the numeric value with "ID".', arg_width) + '\n'
-        desc += self.wrap_msg(
+            '"list-return-NN-someuser=some.dom@host.sender.dom" to '
+            '"list-return-ID-someuser=some.dom@host.sender.dom".'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
+            'In other words: replace the numeric value with "ID".'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
             'By specifying the optional "=2" (second form), the munging is more "aggressive", '
-            'converting the address to something like: "list-return@host.sender.dom".',
+            'converting the address to something like: "list-return@host.sender.dom".'),
             arg_width) + '\n'
-        desc += self.wrap_msg(
+        desc += self.wrap_msg(_(
             'Actually: specifying anything less than 2 does the "simple" munging and anything '
-            'greater than 1 results in the more "aggressive" hack being applied.', arg_width)
+            'greater than 1 results in the more "aggressive" hack being applied.'), arg_width)
         logfile_group.add_argument(
             '--verp-mung', type=int, metavar='1|2', const=0, dest='verp_mung', nargs='?',
             action=NonNegativeItegerOptionAction, help=desc)
 
         #######
         # Select compression
-        compression_section = self.arg_parser.add_argument_group('Logfile compression options')
+        compression_section = self.arg_parser.add_argument_group(_('Logfile compression options'))
 
         compression_group = compression_section.add_mutually_exclusive_group()
 
         # --gzip
-        desc = self.wrap_msg(
-            'Assume, that stdin stream or the given files are gzip compressed.', arg_width) + '\n'
-        desc += self.wrap_msg(
+        desc = self.wrap_msg(_(
+            'Assume, that stdin stream or the given files are gzip compressed.'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
             'If not given, filenames with the extension ".gz" are assumed to be compressed with '
-            'the gzip compression.', arg_width)
+            'the gzip compression.'), arg_width)
         compression_group.add_argument(
             '-z', '--gzip', dest='gzip', action="store_true", help=desc)
 
         # --bzip2
-        desc = self.wrap_msg(
-            'Assume, that stdin stream or the given files are bzip2 compressed.', arg_width) + '\n'
-        desc += self.wrap_msg(
+        desc = self.wrap_msg(_(
+            'Assume, that stdin stream or the given files are bzip2 '
+            'compressed.'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
             'If not given, filenames with the extensions ".bz2" or ".bzip2" are assumed to be '
-            'compressed with the bzip2 compression.', arg_width)
+            'compressed with the bzip2 compression.'), arg_width)
         compression_group.add_argument(
             '-j', '--bzip2', dest='bzip2', action="store_true", help=desc)
 
         # --xz
-        desc = self.wrap_msg(
-            'Assume, that stdin stream or the given files are xz or lzma compressed.',
+        desc = self.wrap_msg(_(
+            'Assume, that stdin stream or the given files are xz or lzma compressed.'),
             arg_width) + '\n'
-        desc += self.wrap_msg(
+        desc += self.wrap_msg(_(
             'If not given, filenames with the extensions ".xz" or ".lzma" are assumed to be '
-            'compressed with the xz or lzma compression.', arg_width)
+            'compressed with the xz or lzma compression.'), arg_width)
         compression_group.add_argument(
             '-J', '--xz', '--lzma', dest='xz', action="store_true", help=desc)
 
         # last parse option
-        desc = 'The logfile(s) to analyze. If no file(s) specified, reads from stdin.'
+        desc = _('The logfile(s) to analyze. If no file(s) specified, reads from stdin.')
         desc = self.wrap_msg(desc, arg_width)
         logfile_group.add_argument(
-            'logfiles', metavar='FILE', nargs='*', action=LogFilesOptionAction, help=desc)
+            'logfiles', metavar=_('FILE'), nargs='*', action=LogFilesOptionAction, help=desc)
 
         #######
         # Output
-        output_options = self.arg_parser.add_argument_group('Output options')
+        output_options = self.arg_parser.add_argument_group(_('Output options'))
 
-        desc = 'Output format. Valid options are: ' + ', '.join(
-            map(lambda x: repr(x), self.output_formats)) + '. '
-        desc += "Default: 'txt'."
+        desc = _('Output format. Valid options are:') + ' ' + format_list(
+            self.output_formats, True) + '. '
+        desc += _("Default: '{}'.").format('txt')
         desc = self.wrap_msg(desc, arg_width)
         output_options.add_argument(
-            '-O', '--output-format', choices=self.output_formats, metavar='FMT',
+            '-O', '--output-format', choices=self.output_formats, metavar=_('FORMAT'),
             dest='output_format', help=desc)
 
         # --detail
-        desc = self.wrap_msg(
+        desc = self.wrap_msg(_(
             'Sets all --*-detail, -h and -u to COUNT. Is over-ridden by '
-            'individual settings.', arg_width) + '\n'
-        desc += self.wrap_msg('--detail 0 suppresses *all* detail.', arg_width)
+            'individual settings.'), arg_width) + '\n'
+        desc += self.wrap_msg(_('--detail 0 suppresses *all* detail.'), arg_width)
         output_options.add_argument(
-            '-D', '--detail', type=int, metavar='COUNT', dest='detail',
+            '-D', '--detail', type=int, metavar=_('COUNT'), dest='detail',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --bounce-detail
-        desc = self.wrap_msg(
-            'Limit detailed bounce reports to the top COUNT.', arg_width) + '\n'
-        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        desc = self.wrap_msg(_(
+            'Limit detailed bounce reports to the top {}.').format(_('COUNT')), arg_width) + '\n'
+        desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
-            '--bounce-detail', type=int, metavar='COUNT', dest='detail_bounce',
+            '--bounce-detail', type=int, metavar=_('COUNT'), dest='detail_bounce',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --deferral-detail
-        desc = self.wrap_msg(
-            'Limit detailed deferral reports to the top COUNT.', arg_width) + '\n'
-        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        desc = self.wrap_msg(_(
+            'Limit detailed deferral reports to the top {}.').format(_('COUNT')), arg_width) + '\n'
+        desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
-            '--deferral-detail', type=int, metavar='COUNT', dest='detail_deferral',
+            '--deferral-detail', type=int, metavar=_('COUNT'), dest='detail_deferral',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --reject-detail
-        desc = self.wrap_msg(
-            'Limit detailed smtpd reject, warn, hold and discard reports to the top '
-            'COUNT.', arg_width) + '\n'
-        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        desc = self.wrap_msg(_(
+            'Limit detailed smtpd reject, warn, hold and discard reports to the '
+            'top {}.').format(_('COUNT')), arg_width) + '\n'
+        desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
-            '--reject-detail', type=int, metavar='COUNT', dest='detail_reject',
+            '--reject-detail', type=int, metavar=_('COUNT'), dest='detail_reject',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --smtp-detail
-        desc = self.wrap_msg(
-            'Limit detailed smtp delivery reports to the top COUNT.', arg_width) + '\n'
-        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        desc = self.wrap_msg(_(
+            'Limit detailed smtp delivery reports to the '
+            'top {}.').format(_('COUNT')), arg_width) + '\n'
+        desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
-            '--smtp-detail', type=int, metavar='COUNT', dest='detail_smtp',
+            '--smtp-detail', type=int, metavar=_('COUNT'), dest='detail_smtp',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --smtpd-warning-detail
-        desc = self.wrap_msg(
-            'Limit detailed smtpd warnings reports to the top COUNT.', arg_width) + '\n'
-        desc += self.wrap_msg('0 to suppress entirely.', arg_width)
+        desc = self.wrap_msg(_(
+            'Limit detailed smtpd warnings reports to the '
+            'top {}.').format(_('COUNT')), arg_width) + '\n'
+        desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
-            '--smtpd-warning-detail', type=int, metavar='COUNT', dest='detail_smtpd_warning',
+            '--smtpd-warning-detail', type=int, metavar=_('COUNT'), dest='detail_smtpd_warning',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --host
-        desc = self.wrap_msg('Top COUNT to display in host/domain reports.', arg_width)
-        desc += '\n0 = none.\n'
-        desc += self.wrap_msg(
-            'See also: "-u" and "--*-detail" options for further report-limiting options.',
+        desc = self.wrap_msg(_(
+            'Top {} to display in host/domain reports.').format(_('COUNT')), arg_width)
+        desc += '\n0 = {}.\n'.format(_('none'))
+        desc += self.wrap_msg(_(
+            'See also: "-u" and "--*-detail" options for further report-limiting options.'),
             arg_width)
         output_options.add_argument(
-            '-h', '--host', type=int, metavar='COUNT', dest='detail_host',
+            '-h', '--host', type=int, metavar=_('COUNT'), dest='detail_host',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --user
-        desc = self.wrap_msg('Top COUNT to display in user reports.', arg_width) + '\n'
-        desc += '0 = none.'
+        desc = self.wrap_msg(_(
+            'Top {} to display in user reports.').format(_('COUNT')), arg_width) + '\n'
+        desc += '0 = {}.'.format(_('none'))
         output_options.add_argument(
-            '-u', '--user', type=int, metavar='COUNT', dest='detail_user',
+            '-u', '--user', type=int, metavar=_('COUNT'), dest='detail_user',
             action=NonNegativeItegerOptionAction, help=desc)
 
         # --problems-first
-        desc = self.wrap_msg(
-            'Emit "problems" reports (bounces, defers, warnings, etc.) before "normal" stats.',
+        desc = self.wrap_msg(_(
+            'Emit "problems" reports (bounces, defers, warnings, etc.) before "normal" stats.'),
             arg_width)
         output_options.add_argument(
             '--pf', '--problems-first', dest='problems_first', action="store_true", help=desc)
 
         # --iso-date-time
-        desc = self.wrap_msg(
+        desc = self.wrap_msg(_(
             'For summaries that contain date or time information, use ISO 8601 standard formats '
-            '(CCYY-MM-DD and HH:MM), rather than "Mon DD CCYY" and "HHMM".', arg_width)
+            '(CCYY-MM-DD and HH:MM), rather than "Mon DD CCYY" and "HHMM".'), arg_width)
         output_options.add_argument(
             '--iso-date-time', dest='iso_date', action="store_true", help=desc)
 
         # --verbose-msg-detail
-        desc = self.wrap_msg(
+        desc = self.wrap_msg(_(
             'For the message deferral, bounce and reject summaries: display the full "reason", '
-            'rather than a truncated one.', arg_width) + '\n'
-        desc += self.wrap_msg(
-            'NOTE: this can result in quite long lines in the report.', arg_width)
+            'rather than a truncated one.'), arg_width) + '\n'
+        desc += self.wrap_msg(_(
+            'NOTE: this can result in quite long lines in the report.'), arg_width)
         output_options.add_argument(
             '--verbose-msg-detail', dest='detail_verbose_msg', action="store_true", help=desc)
 
         # --zero-fill
-        desc = self.wrap_msg(
+        desc = self.wrap_msg(_(
             '"Zero-fill" certain arrays so reports come out with data in columns that might '
-            'otherwise be blank.', arg_width)
+            'otherwise be blank.'), arg_width)
         output_options.add_argument(
             '--zero-fill', dest='zero_fill', action="store_true", help=desc)
 
         #######
         # General stuff
-        general_group = self.arg_parser.add_argument_group('General_options')
+        general_group = self.arg_parser.add_argument_group(_('General options'))
 
         verbose_group = general_group.add_mutually_exclusive_group()
 
-        desc = 'Increase the verbosity level.'
+        desc = self.wrap_msg(_(
+            'Enabling debug messages and increase their verbosity level if used multiple times.'))
         verbose_group.add_argument(
             "-v", "--verbose", action="count", dest='verbose', help=desc)
 
         # --quiet
-        desc = self.wrap_msg("quiet - don't print headings for empty reports.", arg_width)
+        desc = self.wrap_msg(_("quiet - don't print headings for empty reports."), arg_width)
         desc += '\n'
-        desc += self.wrap_msg(
-            'NOTE: headings for warning, fatal, and "master"  messages will always be '
-            'printed.', arg_width)
+        desc += self.wrap_msg(_(
+            'NOTE: headings for warning, fatal, and "master" messages will always be '
+            'printed.'), arg_width)
         verbose_group.add_argument(
             '-q', '--quiet', dest='quiet', action="store_true", help=desc)
 
         general_group.add_argument(
             "--help", action='help', dest='help',
-            help='Show this help message and exit.'
+            help=_('Show this help message and exit.')
         )
 
         general_group.add_argument(
             "--usage", action='store_true', dest='usage',
-            help="Display brief usage message and exit."
+            help=_("Display brief usage message and exit.")
         )
 
-        v_msg = "Version of %(prog)s: {}".format(GLOBAL_VERSION)
+        v_msg = _("Version of %(prog)s: {}").format(GLOBAL_VERSION)
         general_group.add_argument(
             "-V", '--version', action='version', version=v_msg,
-            help="Show program's version number and exit."
+            help=_("Show program's version number and exit.")
         )
 
     # -------------------------------------------------------------------------
@@ -936,7 +982,7 @@ class PostfixLogsumsApp(object):
 
         msg = str(error_message).strip()
         if not msg:
-            msg = 'undefined error.'
+            msg = _('undefined error.')
         title = None
 
         if isinstance(error_message, Exception):
@@ -945,7 +991,7 @@ class PostfixLogsumsApp(object):
             if exception_name is not None:
                 title = exception_name.strip()
             else:
-                title = 'Exception happened'
+                title = _('Exception happened')
         msg = title + ': ' + msg
 
         root_log = logging.getLogger()
@@ -977,7 +1023,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def run(self):
 
-        LOG.debug("And here wo go ...")
+        LOG.debug(_("And here wo go ..."))
 
         locale.setlocale(locale.LC_ALL, '')
 
@@ -986,9 +1032,9 @@ class PostfixLogsumsApp(object):
         self.nr_days = len(self.results.messages_per_day.keys())
 
         if self.verbose > 2:
-            LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
+            LOG.info(_('Result of parsing:') + '\n' + pp(self.results.as_dict()))
         elif self.verbose > 1:
-            LOG.info('Result of parsing:' + '\n' + pp(self.results.dict()))
+            LOG.info(_('Result of parsing:') + '\n' + pp(self.results.dict()))
 
         if self.args.output_format == 'json':
             print(json.dumps(self.results.dict(), indent=4, sort_keys=True))
@@ -1001,9 +1047,9 @@ class PostfixLogsumsApp(object):
 
         print()
         if self.parser.date_str:
-            msg = "Postfix log summaries for {}".format(self.parser.date_str)
+            msg = _("Postfix log summaries for {}").format(self.parser.date_str)
         else:
-            msg = "Postfix log summaries"
+            msg = _("Postfix log summaries")
         print(msg)
         print('=' * len(msg))
 
@@ -1027,13 +1073,14 @@ class PostfixLogsumsApp(object):
             self.print_per_hour_smtpd()
             self.print_domain_smtpd_summary()
 
-        self.print_user_data(self.results.sending_user_data, "Senders by message count", 'count')
-        self.print_user_data(self.results.rcpt_user, "Recipients by message count", 'count')
-        self.print_user_data(self.results.sending_user_data, "Senders by message size", 'size')
-        self.print_user_data(self.results.rcpt_user, "Recipients by message size", 'size')
+        self.print_user_data(
+            self.results.sending_user_data, _("Senders by message count"), 'count')
+        self.print_user_data(self.results.rcpt_user, _("Recipients by message count"), 'count')
+        self.print_user_data(self.results.sending_user_data, _("Senders by message size"), 'size')
+        self.print_user_data(self.results.rcpt_user, _("Recipients by message size"), 'size')
 
         self.print_hash_by_key(
-            self.results.no_message_size, 'Messages with no size data', self.detail)
+            self.results.no_message_size, _('Messages with no size data'), self.detail)
 
         if not self.args.problems_first:
             self.print_problems_reports()
@@ -1046,11 +1093,11 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def print_grand_totals(self):
         """Printing the grand total numbers and data."""
-        self.print_subsect_title('Grand Totals')
+        self.print_subsect_title(_('Grand Totals'))
 
         if self.results.logdate_oldest or self.results.logdate_latest:
-            lbl_oldest = 'Date of oldest log entry:'
-            lbl_latest = 'Date of latest log entry:'
+            lbl_oldest = _('Date of oldest log entry:')
+            lbl_latest = _('Date of latest log entry:')
             max_len = len(lbl_oldest)
             if len(lbl_latest) > max_len:
                 max_len = len(lbl_latest)
@@ -1063,7 +1110,7 @@ class PostfixLogsumsApp(object):
                 print("{m:<{lng}}  {dt}".format(m=lbl_latest, lng=max_len, dt=dt))
 
         print()
-        print('Messages:')
+        print(_('Messages:'))
         print()
 
         # Variable renamings:
@@ -1086,51 +1133,51 @@ class PostfixLogsumsApp(object):
         msgs_discarded = self.results.msgs_total.discarded
         msgs_total = msgs_delivered + msgs_rejected + msgs_discarded
 
-        msgs_rejected_pct = 0
-        msgs_discarded_pct = 0
+        msgs_rejected_pct = 0.0
+        msgs_discarded_pct = 0.0
         if msgs_total:
             msgs_rejected_pct = msgs_rejected / msgs_total * 100
             msgs_discarded_pct = msgs_discarded / msgs_total * 100
 
         nr = adj_int_units_localized(msgs_received)
-        print(tpl_loc.format(val=nr, lbl='received'))
+        print(tpl_loc.format(val=nr, lbl=_('received')))
         nr = adj_int_units_localized(msgs_delivered)
-        print(tpl_loc.format(val=nr, lbl='delivered'))
+        print(tpl_loc.format(val=nr, lbl=_('delivered')))
         nr = adj_int_units_localized(self.results.msgs_total.forwarded)
-        print(tpl_loc.format(val=nr, lbl='forwarded'))
+        print(tpl_loc.format(val=nr, lbl=_('forwarded')))
         nr = adj_int_units_localized(self.results.msgs_total.deferred)
-        print(tpl_loc.format(val=nr, lbl='deferred'), end='')
+        print(tpl_loc.format(val=nr, lbl=_('deferred')), end='')
         if self.results.msgs_total.deferrals:
             nr = adj_int_units_localized(self.results.msgs_total.deferrals)
-            val = '  ({val} {lbl})'.format(lbl='deferrals', val=nr)
+            val = '  ({val} {lbl})'.format(lbl=_('deferrals'), val=nr)
             print(val, end='')
         print()
         nr = adj_int_units_localized(self.results.msgs_total.bounced)
-        print(tpl_loc.format(val=nr, lbl='bounced'))
+        print(tpl_loc.format(val=nr, lbl=_('bounced')))
         nr = adj_int_units_localized(self.results.msgs_total.rejected)
-        print(tpl_loc.format(val=nr, lbl='rejected'), end='')
-        print(' ({:0.1n}%)'.format(msgs_rejected_pct))
+        print(tpl_loc.format(val=nr, lbl=_('rejected')), end='')
+        print(' ({:0.1f}%)'.format(msgs_rejected_pct))
         nr = adj_int_units_localized(self.results.msgs_total.reject_warning)
-        print(tpl_loc.format(val=nr, lbl='reject warnings'))
+        print(tpl_loc.format(val=nr, lbl=_('reject warnings')))
         nr = adj_int_units_localized(self.results.msgs_total.held)
-        print(tpl_loc.format(val=nr, lbl='held'))
+        print(tpl_loc.format(val=nr, lbl=_('held')))
         nr = adj_int_units_localized(self.results.msgs_total.discarded)
-        print(tpl_loc.format(val=nr, lbl='discarded'), end='')
+        print(tpl_loc.format(val=nr, lbl=_('discarded')), end='')
         print(' ({:0.1f}%)'.format(msgs_discarded_pct))
         print()
 
         nr = adj_int_units_localized(self.results.msgs_total.bytes_received)
-        print(tpl_loc.format(val=nr, lbl='bytes received'))
+        print(tpl_loc.format(val=nr, lbl=_('bytes received')))
         nr = adj_int_units_localized(self.results.msgs_total.bytes_delivered)
-        print(tpl_loc.format(val=nr, lbl='bytes delivered'))
+        print(tpl_loc.format(val=nr, lbl=_('bytes delivered')))
         nr = adj_int_units_localized(self.results.msgs_total.sending_users)
-        print(tpl_loc.format(val=nr, lbl='senders'))
+        print(tpl_loc.format(val=nr, lbl=_('senders')))
         nr = adj_int_units_localized(self.results.msgs_total.sending_domains)
-        print(tpl_loc.format(val=nr, lbl='sending hosts/domains'))
+        print(tpl_loc.format(val=nr, lbl=_('sending hosts/domains')))
         nr = adj_int_units_localized(self.results.msgs_total.rcpt_users)
-        print(tpl_loc.format(val=nr, lbl='recipients'))
+        print(tpl_loc.format(val=nr, lbl=_('recipients')))
         nr = adj_int_units_localized(self.results.msgs_total.rcpt_domains)
-        print(tpl_loc.format(val=nr, lbl='recipients hosts/domains'))
+        print(tpl_loc.format(val=nr, lbl=_('recipients hosts/domains')))
 
         print()
 
@@ -1144,12 +1191,12 @@ class PostfixLogsumsApp(object):
 
         if not nr_items:
             if not quiet:
-                msg += ': None'
+                msg += ': ' + _('None')
                 print(msg)
             return False
 
         if count:
-            msg += ' ({lbl}: {c})'.format(lbl='top', c=count)
+            msg += ' ({lbl}: {c})'.format(lbl=_('top'), c=count)
 
         print(msg)
         print('-' * len(msg))
@@ -1172,13 +1219,13 @@ class PostfixLogsumsApp(object):
         print('Smtpd:')
         print()
 
-        print(tpl_loc.format(val=adj_int_units_localized(total_conn), lbl='connections'))
-        print(tpl_loc.format(val=adj_int_units_localized(count_domains), lbl='hosts/domains'))
+        print(tpl_loc.format(val=adj_int_units_localized(total_conn), lbl=_('connections')))
+        print(tpl_loc.format(val=adj_int_units_localized(count_domains), lbl=_('hosts/domains')))
         print(tpl_loc.format(
-            val=adj_int_units_localized(avg_time, no_unit=True), lbl='connections'))
+            val=adj_int_units_localized(avg_time, no_unit=True), lbl=_('connections')))
         print('  {h:d}:{m:02d}:{s:02.0f}  {lbl}'.format(
             h=total_time_splitted[2], m=total_time_splitted[1],
-            s=total_time_splitted[0], lbl='total connect time'))
+            s=total_time_splitted[0], lbl=_('total connect time')))
         print()
 
     # -------------------------------------------------------------------------
@@ -1186,7 +1233,7 @@ class PostfixLogsumsApp(object):
         if not len(data.keys()):
             if self.quiet:
                 return
-            print('\n{lbl}: {n}'.format(lbl=label, n='none'))
+            print('\n{lbl}: {n}'.format(lbl=label, n=_('none')))
             return
         print('\n{lbl}'.format(lbl=label))
         print('-' * len(label))
@@ -1210,12 +1257,12 @@ class PostfixLogsumsApp(object):
                 first_value2 = data[key][first_key2]
                 if not isinstance(first_value2, dict):
                     if count is not None and count > 0:
-                        print(' ({lbl}: {c})'.format(lbl='top', c=count), end='')
+                        print(' ({lbl}: {c})'.format(lbl=_('top'), c=count), end='')
                     total_count = 0
                     for key2 in data[key].keys():
                         total_count += data[key][key2]
                     val = adj_int_units_localized(total_count, no_unit=True).rstrip()
-                    print(' ({lbl}: {c})'.format(lbl='total', c=val), end='')
+                    print(' ({lbl}: {c})'.format(lbl=_('total'), c=val), end='')
                 print()
                 self.walk_nested_hash(data[key], count, level)
         else:
@@ -1230,7 +1277,7 @@ class PostfixLogsumsApp(object):
         if not len(data.keys()):
             if self.quiet:
                 return
-            print('\n{lbl}: {n}'.format(lbl=title, n='none'))
+            print('\n{lbl}: {n}'.format(lbl=title, n=_('none')))
             return
 
         print('\n{lbl}'.format(lbl=title))
@@ -1279,55 +1326,55 @@ class PostfixLogsumsApp(object):
         """Print "problems" reports."""
         if self.detail_deferral != 0:
             self.print_nested_hash(
-                data=self.results.deferred, label="Message deferral detail",
+                data=self.results.deferred, label=_("Message deferral detail"),
                 count=self.detail_deferral)
 
         if self.detail_bounce != 0:
             self.print_nested_hash(
-                data=self.results.bounced, label="Message bounce detail (by relay)",
+                data=self.results.bounced, label=_("Message bounce detail (by relay)"),
                 count=self.detail_bounce)
 
         if self.detail_reject != 0:
             self.print_nested_hash(
-                data=self.results.rejects, label="Message reject detail",
+                data=self.results.rejects, label=_("Message reject detail"),
                 count=self.detail_reject)
             self.print_nested_hash(
-                data=self.results.warnings, label="Message reject warning detail",
+                data=self.results.warnings, label=_("Message reject warning detail"),
                 count=self.detail_reject)
             self.print_nested_hash(
-                data=self.results.holds, label="Message hold detail",
+                data=self.results.holds, label=_("Message hold detail"),
                 count=self.detail_reject)
             self.print_nested_hash(
-                data=self.results.discards, label="Message discard detail",
+                data=self.results.discards, label=_("Message discard detail"),
                 count=self.detail_reject)
 
         if self.detail_smtp != 0:
             self.print_nested_hash(
-                data=self.results.smtp_messages, label="SMTP delivery failures",
+                data=self.results.smtp_messages, label=_("SMTP delivery failures"),
                 count=self.detail_smtp)
 
         if self.detail_smtpd_warning != 0:
             self.print_nested_hash(
-                data=self.results.warnings, label="Warnings", count=self.detail_smtpd_warning)
+                data=self.results.warnings, label=_("Warnings"), count=self.detail_smtpd_warning)
 
-        self.print_nested_hash(data=self.results.fatals, label="Fatal Errors", count=0)
-        self.print_nested_hash(data=self.results.panics, label="Panics", count=0)
+        self.print_nested_hash(data=self.results.fatals, label=_("Fatal Errors"), count=0)
+        self.print_nested_hash(data=self.results.panics, label=_("Panics"), count=0)
         self.print_hash_by_cnt_vals(
-            data=self.results.master_msgs, title='Master daemon messages', count=0)
+            data=self.results.master_msgs, title=_('Master daemon messages'), count=0)
 
     # -------------------------------------------------------------------------
     def print_per_day_summary(self):
         """Print "per-day" traffic summary."""
-        self.print_subsect_title("Per-Day Traffic Summary")
+        self.print_subsect_title(_("Per-Day Traffic Summary"))
         indent = '  '
 
         labels = {
-            'date': 'Date',
-            'received': 'Received',
-            'sent': 'Delivered',
-            'deferred': 'Deferred',
-            'bounced': 'Bounced',
-            'rejected': 'Rejected',
+            'date': _('Date'),
+            'received': _('Received'),
+            'sent': _('Delivered'),
+            'deferred': _('Deferred'),
+            'bounced': _('Bounced'),
+            'rejected': _('Rejected'),
         }
         widths = {
             'date': 12,
@@ -1380,19 +1427,20 @@ class PostfixLogsumsApp(object):
         indent = '  '
 
         if self.nr_days == 1:
-            title = 'Per-Hour Traffic Summary'
+            title = _('Per-Hour Traffic Summary')
         else:
-            title = 'Per-Hour Traffic Daily Average'
+            title = _('Per-Hour Traffic Daily Average')
         self.print_subsect_title(title)
 
         labels = {
-            'hour': 'Hour',
-            'received': 'Received',
-            'sent': 'Delivered',
-            'deferred': 'Deferred',
-            'bounced': 'Bounced',
-            'rejected': 'Rejected',
+            'hour': _('Hour'),
+            'received': _('Received'),
+            'sent': _('Delivered'),
+            'deferred': _('Deferred'),
+            'bounced': _('Bounced'),
+            'rejected': _('Rejected'),
         }
+
         widths = {
             'hour': 13,
             'received': 11,
@@ -1476,18 +1524,18 @@ class PostfixLogsumsApp(object):
         if count == 0:
             return
 
-        title = 'Host/Domain Summary: Message Delivery'
+        title = _('Host/Domain Summary: Message Delivery')
         nr_items = len(self.results.rcpt_domain.keys())
         if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
 
         labels = {
-            'sent': 'Sent count',
-            'bytes': 'Bytes',
-            'defers': 'Defers',
-            'avg_delay': 'Avg. delay',
-            'max_delay': 'Max. delay',
-            'domain': 'Host/Domain',
+            'sent': _('Sent count'),
+            'bytes': _('Bytes'),
+            'defers': _('Defers'),
+            'avg_delay': _('Avg. delay'),
+            'max_delay': _('Max. delay'),
+            'domain': _('Host/Domain'),
         }
         widths = {
             'sent': 8,
@@ -1546,15 +1594,15 @@ class PostfixLogsumsApp(object):
         if count == 0:
             return
 
-        title = 'Host/Domain Summary: Messages Received'
+        title = _('Host/Domain Summary: Messages Received')
         nr_items = len(self.results.sending_domain_data.keys())
         if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
 
         labels = {
-            'received': 'Message count',
-            'bytes': 'Bytes',
-            'domain': 'Host/Domain',
+            'received': _('Message count'),
+            'bytes': _('Bytes'),
+            'domain': _('Host/Domain'),
         }
         widths = {
             'received': 8,
@@ -1594,7 +1642,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def print_per_day_smtpd(self):
         """print "per-day" smtpd connection summary"""
-        title = 'Per-Day SMTPD Connection Summary'
+        title = _('Per-Day SMTPD Connection Summary')
         indent = '  '
 
         nr_items = len(self.results.smtpd_per_day.keys())
@@ -1602,11 +1650,11 @@ class PostfixLogsumsApp(object):
             return
 
         labels = {
-            'date': 'Date',
-            'connections': 'Connections',
-            'time_conn': 'Time connections total',
-            'avg_time': 'Avg. time connection',
-            'max_time': 'Max. time connection',
+            'date': _('Date'),
+            'connections': _('Connections'),
+            'time_conn': _('Time connections total'),
+            'avg_time': _('Avg. time connection'),
+            'max_time': _('Max. time connection'),
         }
         widths = {
             'date': 12,
@@ -1661,9 +1709,9 @@ class PostfixLogsumsApp(object):
         """print 'per-hour' smtpd connection summary"""
         indent = '  '
         if self.nr_days == 1:
-            title = 'Per-Hour SMTPD Connection Summary'
+            title = _('Per-Hour SMTPD Connection Summary')
         else:
-            title = 'Per-Hour SMTPD Connection Daily Average'
+            title = _('Per-Hour SMTPD Connection Daily Average')
 
         conns_total = 0
         for stat in self.results.smtpd_messages_per_hour:
@@ -1673,11 +1721,11 @@ class PostfixLogsumsApp(object):
             return
 
         labels = {
-            'hour': 'Hour',
-            'conn': 'Connections',
-            'time_total': 'Time total',
-            'time_avg': 'Time avg.',
-            'time_max': 'Time max.',
+            'hour': _('Hour'),
+            'conn': _('Connections'),
+            'time_total': _('Time total'),
+            'time_avg': _('Time avg.'),
+            'time_max': _('Time max.'),
         }
 
         widths = {
@@ -1754,17 +1802,17 @@ class PostfixLogsumsApp(object):
         if count == 0:
             return
 
-        title = 'Host/Domain Summary: SMTPD Connections'
+        title = _('Host/Domain Summary: SMTPD Connections')
         nr_items = len(self.results.smtpd_per_domain.keys())
         if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
 
         labels = {
-            'conn': 'Connections',
-            'time_total': 'Time total',
-            'time_avg': 'Time avg.',
-            'time_max': 'Time max.',
-            'domain': 'Host/Domain',
+            'conn': _('Connections'),
+            'time_total': _('Time total'),
+            'time_avg': _('Time avg.'),
+            'time_max': _('Time max.'),
+            'domain': _('Host/Domain'),
         }
 
         widths = {
@@ -1801,7 +1849,7 @@ class PostfixLogsumsApp(object):
             avg = time_total / nr
 
             if domain is None:
-                domain = '<None>'
+                domain = _('<None>')
 
             values = {
                 'conn': 0,

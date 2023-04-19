@@ -8,9 +8,13 @@
 @copyright: © 2023 by Frank Brehm, Berlin
 """
 
-__version__ = '0.4.0'
+from .xlate import XLATOR
+
+__version__ = '0.5.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
+
+_ = XLATOR.gettext
 
 
 # =============================================================================
@@ -42,9 +46,9 @@ class WrongDateKeyError(StatsError, ValueError):
     def __str__(self):
         """Typecast into str."""
         if self.err_msg:
-            msg = "Invalid key {k!r} for a {what}, must be valid date: {e}"
+            msg = _("Invalid key {k!r} for a {what}, must be valid date: {e}")
         else:
-            msg = "Invalid key {k!r} for a {what}, must be valid date."
+            msg = _("Invalid key {k!r} for a {what}, must be valid date.")
         return msg.format(k=self.key, what='DailyStatsDict', e=self.err_msg)
 
 # =============================================================================
@@ -62,9 +66,9 @@ class WrongDailyKeyError(StatsError, KeyError):
     def __str__(self):
         """Typecast into str."""
         if self.err_msg:
-            msg = "Key error for key {k!r} for a {what}: {e}"
+            msg = _("Key error for key {k!r} for a {what}: {e}")
         else:
-            msg = "Key error for {k!r} for a {what}."
+            msg = _("Key error for {k!r} for a {what}.")
         return msg.format(k=self.key, what='DailyStatsDict', e=self.err_msg)
 
 # =============================================================================
@@ -81,7 +85,7 @@ class WrongMsgStatsAttributeError(StatsError, AttributeError):
     # -------------------------------------------------------------------------
     def __str__(self):
         """Typecast into str."""
-        msg = "Invalid attribute {attr!r} for a {w} object."
+        msg = _("Invalid attribute {attr!r} for a {w} object.")
         return msg.format(attr=self.attribute, w=self.class_name)
 
 
@@ -107,7 +111,7 @@ class WrongMsgStatsKeyError(StatsError, KeyError):
     # -------------------------------------------------------------------------
     def __str__(self):
         """Typecast into str."""
-        msg = "Invalid key {k!r} for a {w} object."
+        msg = _("Invalid key {k!r} for a {w} object.")
         return msg.format(k=self.key, w=self.obj_type)
 
 
@@ -126,7 +130,7 @@ class WrongMsgPerDayKeyError(StatsError, KeyError):
     # -------------------------------------------------------------------------
     def __str__(self):
         """Typecast into str."""
-        msg = "Invalid key {k!r} for a {w} object."
+        msg = _("Invalid key {k!r} for a {w} object.")
         return msg.format(k=self.key, w=self.obj_type)
 
 
@@ -145,7 +149,7 @@ class WrongMsgStatsHourError(StatsError, KeyError):
     # -------------------------------------------------------------------------
     def __str__(self):
         """Typecast into str."""
-        msg = "Invalid hour {h!r} for a {w} object."
+        msg = _("Invalid hour {h!r} for a {w} object.")
         return msg.format(h=self.hour, w=self.obj_type)
 
 
@@ -164,7 +168,7 @@ class MsgStatsHourValNotfoundError(StatsError, ValueError):
     # -------------------------------------------------------------------------
     def __str__(self):
         """Typecast into str."""
-        msg = "Value {v!r} not found in the {w} object."
+        msg = _("Value {v!r} not found in the {w} object.")
         return msg.format(v=self.value, w=self.obj_type)
 
 
@@ -183,7 +187,7 @@ class MsgStatsHourInvalidMethodError(StatsError, RuntimeError):
     # -------------------------------------------------------------------------
     def __str__(self):
         """Typecast into str."""
-        msg = "Invalid method {m}() for a {w} object."
+        msg = _("Invalid method {m}() for a {w} object.")
         return msg.format(m=self.method, w=self.obj_type)
 
 
