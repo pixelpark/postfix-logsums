@@ -646,8 +646,6 @@ class PostfixLogsumsApp(object):
                 description += '\n\n'
             description += des
 
-        day_values = ('today', 'yesterday')
-
         self.arg_parser = argparse.ArgumentParser(
             prog=self.appname,
             description=description,
