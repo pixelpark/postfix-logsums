@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: postfix_logsums 0.8.1\n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-04-19 13:07+0200\n"
-"PO-Revision-Date: 2023-03-27 14:46+0200\n"
+"POT-Creation-Date: 2023-04-19 15:21+0200\n"
+"PO-Revision-Date: 2023-04-19 15:35+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: en\n"
 "Language-Team: en <frank.brehm@pixelpark.com>\n"
@@ -297,7 +297,8 @@ msgstr ""
 msgid "Top {} to display in host/domain reports."
 msgstr ""
 
-#: postfix_logsums/app.py:809 postfix_logsums/app.py:820
+#: postfix_logsums/app.py:809 postfix_logsums/app.py:820 postfix_logsums/app.py:1201
+#: postfix_logsums/app.py:1245
 msgid "none"
 msgstr ""
 
@@ -368,28 +369,320 @@ msgstr ""
 msgid "Show program's version number and exit."
 msgstr ""
 
-#: postfix_logsums/app.py:1400
-msgid "Hour"
+#: postfix_logsums/app.py:950
+msgid "undefined error."
 msgstr ""
 
-#: postfix_logsums/app.py:1401
+#: postfix_logsums/app.py:959
+msgid "Exception happened"
+msgstr ""
+
+#: postfix_logsums/app.py:991
+msgid "And here wo go ..."
+msgstr "And here wo go …"
+
+#: postfix_logsums/app.py:1000 postfix_logsums/app.py:1002
+msgid "Result of parsing:"
+msgstr ""
+
+#: postfix_logsums/app.py:1015
+msgid "Postfix log summaries for {}"
+msgstr ""
+
+#: postfix_logsums/app.py:1017
+msgid "Postfix log summaries"
+msgstr ""
+
+#: postfix_logsums/app.py:1042
+msgid "Senders by message count"
+msgstr ""
+
+#: postfix_logsums/app.py:1043
+msgid "Recipients by message count"
+msgstr ""
+
+#: postfix_logsums/app.py:1044
+msgid "Senders by message size"
+msgstr ""
+
+#: postfix_logsums/app.py:1045
+msgid "Recipients by message size"
+msgstr ""
+
+#: postfix_logsums/app.py:1048
+msgid "Messages with no size data"
+msgstr ""
+
+#: postfix_logsums/app.py:1061
+msgid "Grand Totals"
+msgstr ""
+
+#: postfix_logsums/app.py:1064
+msgid "Date of oldest log entry:"
+msgstr ""
+
+#: postfix_logsums/app.py:1065
+msgid "Date of latest log entry:"
+msgstr ""
+
+#: postfix_logsums/app.py:1078
+msgid "Messages:"
+msgstr ""
+
+#: postfix_logsums/app.py:1108
+msgid "received"
+msgstr ""
+
+#: postfix_logsums/app.py:1110
+msgid "delivered"
+msgstr ""
+
+#: postfix_logsums/app.py:1112
+msgid "forwarded"
+msgstr ""
+
+#: postfix_logsums/app.py:1114
+msgid "deferred"
+msgstr ""
+
+#: postfix_logsums/app.py:1117
+msgid "deferrals"
+msgstr ""
+
+#: postfix_logsums/app.py:1121
+msgid "bounced"
+msgstr ""
+
+#: postfix_logsums/app.py:1123
+msgid "rejected"
+msgstr ""
+
+#: postfix_logsums/app.py:1126
+msgid "reject warnings"
+msgstr ""
+
+#: postfix_logsums/app.py:1128
+msgid "held"
+msgstr ""
+
+#: postfix_logsums/app.py:1130
+msgid "discarded"
+msgstr ""
+
+#: postfix_logsums/app.py:1135
+msgid "bytes received"
+msgstr ""
+
+#: postfix_logsums/app.py:1137
+msgid "bytes delivered"
+msgstr ""
+
+#: postfix_logsums/app.py:1139
+msgid "senders"
+msgstr ""
+
+#: postfix_logsums/app.py:1141
+msgid "sending hosts/domains"
+msgstr ""
+
+#: postfix_logsums/app.py:1143
+msgid "recipients"
+msgstr ""
+
+#: postfix_logsums/app.py:1145
+msgid "recipients hosts/domains"
+msgstr ""
+
+#: postfix_logsums/app.py:1159
+msgid "None"
+msgstr ""
+
+#: postfix_logsums/app.py:1164 postfix_logsums/app.py:1225
+msgid "top"
+msgstr ""
+
+#: postfix_logsums/app.py:1187 postfix_logsums/app.py:1190
+msgid "connections"
+msgstr ""
+
+#: postfix_logsums/app.py:1188
+msgid "hosts/domains"
+msgstr ""
+
+#: postfix_logsums/app.py:1193
+msgid "total connect time"
+msgstr ""
+
+#: postfix_logsums/app.py:1230
+msgid "total"
+msgstr ""
+
+#: postfix_logsums/app.py:1294
+msgid "Message deferral detail"
+msgstr ""
+
+#: postfix_logsums/app.py:1299
+msgid "Message bounce detail (by relay)"
+msgstr ""
+
+#: postfix_logsums/app.py:1304
+msgid "Message reject detail"
+msgstr ""
+
+#: postfix_logsums/app.py:1307
+msgid "Message reject warning detail"
+msgstr ""
+
+#: postfix_logsums/app.py:1310
+msgid "Message hold detail"
+msgstr ""
+
+#: postfix_logsums/app.py:1313
+msgid "Message discard detail"
+msgstr ""
+
+#: postfix_logsums/app.py:1318
+msgid "SMTP delivery failures"
+msgstr ""
+
+#: postfix_logsums/app.py:1323
+msgid "Warnings"
+msgstr ""
+
+#: postfix_logsums/app.py:1325
+msgid "Fatal Errors"
+msgstr ""
+
+#: postfix_logsums/app.py:1326
+msgid "Panics"
+msgstr ""
+
+#: postfix_logsums/app.py:1328
+msgid "Master daemon messages"
+msgstr ""
+
+#: postfix_logsums/app.py:1333
+msgid "Per-Day Traffic Summary"
+msgstr ""
+
+#: postfix_logsums/app.py:1337 postfix_logsums/app.py:1618
+msgid "Date"
+msgstr ""
+
+#: postfix_logsums/app.py:1338 postfix_logsums/app.py:1402
 msgid "Received"
 msgstr ""
 
-#: postfix_logsums/app.py:1402
+#: postfix_logsums/app.py:1339 postfix_logsums/app.py:1403
 msgid "Delivered"
 msgstr ""
 
-#: postfix_logsums/app.py:1403
+#: postfix_logsums/app.py:1340 postfix_logsums/app.py:1404
 msgid "Deferred"
 msgstr ""
 
-#: postfix_logsums/app.py:1404
+#: postfix_logsums/app.py:1341 postfix_logsums/app.py:1405
 msgid "Bounced"
 msgstr ""
 
-#: postfix_logsums/app.py:1405
+#: postfix_logsums/app.py:1342 postfix_logsums/app.py:1406
 msgid "Rejected"
+msgstr ""
+
+#: postfix_logsums/app.py:1395
+msgid "Per-Hour Traffic Summary"
+msgstr ""
+
+#: postfix_logsums/app.py:1397
+msgid "Per-Hour Traffic Daily Average"
+msgstr ""
+
+#: postfix_logsums/app.py:1401 postfix_logsums/app.py:1689
+msgid "Hour"
+msgstr ""
+
+#: postfix_logsums/app.py:1492
+msgid "Host/Domain Summary: Message Delivery"
+msgstr ""
+
+#: postfix_logsums/app.py:1498
+msgid "Sent count"
+msgstr ""
+
+#: postfix_logsums/app.py:1499 postfix_logsums/app.py:1569
+msgid "Bytes"
+msgstr ""
+
+#: postfix_logsums/app.py:1500
+msgid "Defers"
+msgstr ""
+
+#: postfix_logsums/app.py:1501
+msgid "Avg. delay"
+msgstr ""
+
+#: postfix_logsums/app.py:1502
+msgid "Max. delay"
+msgstr ""
+
+#: postfix_logsums/app.py:1503 postfix_logsums/app.py:1570 postfix_logsums/app.py:1780
+msgid "Host/Domain"
+msgstr ""
+
+#: postfix_logsums/app.py:1562
+msgid "Host/Domain Summary: Messages Received"
+msgstr ""
+
+#: postfix_logsums/app.py:1568
+msgid "Message count"
+msgstr ""
+
+#: postfix_logsums/app.py:1610
+msgid "Per-Day SMTPD Connection Summary"
+msgstr ""
+
+#: postfix_logsums/app.py:1619 postfix_logsums/app.py:1690 postfix_logsums/app.py:1776
+msgid "Connections"
+msgstr ""
+
+#: postfix_logsums/app.py:1620
+msgid "Time connections total"
+msgstr ""
+
+#: postfix_logsums/app.py:1621
+msgid "Avg. time connection"
+msgstr ""
+
+#: postfix_logsums/app.py:1622
+msgid "Max. time connection"
+msgstr ""
+
+#: postfix_logsums/app.py:1677
+msgid "Per-Hour SMTPD Connection Summary"
+msgstr ""
+
+#: postfix_logsums/app.py:1679
+msgid "Per-Hour SMTPD Connection Daily Average"
+msgstr ""
+
+#: postfix_logsums/app.py:1691 postfix_logsums/app.py:1777
+msgid "Time total"
+msgstr ""
+
+#: postfix_logsums/app.py:1692 postfix_logsums/app.py:1778
+msgid "Time avg."
+msgstr ""
+
+#: postfix_logsums/app.py:1693 postfix_logsums/app.py:1779
+msgid "Time max."
+msgstr ""
+
+#: postfix_logsums/app.py:1770
+msgid "Host/Domain Summary: SMTPD Connections"
+msgstr ""
+
+#: postfix_logsums/app.py:1817
+msgid "<None>"
 msgstr ""
 
 #: postfix_logsums/errors.py:49

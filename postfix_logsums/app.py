@@ -53,7 +53,7 @@ from .xlate import XLATOR, format_list
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.8.2'
+__version__ = '0.8.3'
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -947,7 +947,7 @@ class PostfixLogsumsApp(object):
 
         msg = str(error_message).strip()
         if not msg:
-            msg = 'undefined error.'
+            msg = _('undefined error.')
         title = None
 
         if isinstance(error_message, Exception):
@@ -956,7 +956,7 @@ class PostfixLogsumsApp(object):
             if exception_name is not None:
                 title = exception_name.strip()
             else:
-                title = 'Exception happened'
+                title = _('Exception happened')
         msg = title + ': ' + msg
 
         root_log = logging.getLogger()
@@ -988,7 +988,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def run(self):
 
-        LOG.debug("And here wo go ...")
+        LOG.debug(_("And here wo go ..."))
 
         locale.setlocale(locale.LC_ALL, '')
 
@@ -997,9 +997,9 @@ class PostfixLogsumsApp(object):
         self.nr_days = len(self.results.messages_per_day.keys())
 
         if self.verbose > 2:
-            LOG.info('Result of parsing:' + '\n' + pp(self.results.as_dict()))
+            LOG.info(_('Result of parsing:') + '\n' + pp(self.results.as_dict()))
         elif self.verbose > 1:
-            LOG.info('Result of parsing:' + '\n' + pp(self.results.dict()))
+            LOG.info(_('Result of parsing:') + '\n' + pp(self.results.dict()))
 
         if self.args.output_format == 'json':
             print(json.dumps(self.results.dict(), indent=4, sort_keys=True))
@@ -1012,9 +1012,9 @@ class PostfixLogsumsApp(object):
 
         print()
         if self.parser.date_str:
-            msg = "Postfix log summaries for {}".format(self.parser.date_str)
+            msg = _("Postfix log summaries for {}").format(self.parser.date_str)
         else:
-            msg = "Postfix log summaries"
+            msg = _("Postfix log summaries")
         print(msg)
         print('=' * len(msg))
 
@@ -1038,13 +1038,14 @@ class PostfixLogsumsApp(object):
             self.print_per_hour_smtpd()
             self.print_domain_smtpd_summary()
 
-        self.print_user_data(self.results.sending_user_data, "Senders by message count", 'count')
-        self.print_user_data(self.results.rcpt_user, "Recipients by message count", 'count')
-        self.print_user_data(self.results.sending_user_data, "Senders by message size", 'size')
-        self.print_user_data(self.results.rcpt_user, "Recipients by message size", 'size')
+        self.print_user_data(
+            self.results.sending_user_data, _("Senders by message count"), 'count')
+        self.print_user_data(self.results.rcpt_user, _("Recipients by message count"), 'count')
+        self.print_user_data(self.results.sending_user_data, _("Senders by message size"), 'size')
+        self.print_user_data(self.results.rcpt_user, _("Recipients by message size"), 'size')
 
         self.print_hash_by_key(
-            self.results.no_message_size, 'Messages with no size data', self.detail)
+            self.results.no_message_size, _('Messages with no size data'), self.detail)
 
         if not self.args.problems_first:
             self.print_problems_reports()
@@ -1057,11 +1058,11 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def print_grand_totals(self):
         """Printing the grand total numbers and data."""
-        self.print_subsect_title('Grand Totals')
+        self.print_subsect_title(_('Grand Totals'))
 
         if self.results.logdate_oldest or self.results.logdate_latest:
-            lbl_oldest = 'Date of oldest log entry:'
-            lbl_latest = 'Date of latest log entry:'
+            lbl_oldest = _('Date of oldest log entry:')
+            lbl_latest = _('Date of latest log entry:')
             max_len = len(lbl_oldest)
             if len(lbl_latest) > max_len:
                 max_len = len(lbl_latest)
@@ -1074,7 +1075,7 @@ class PostfixLogsumsApp(object):
                 print("{m:<{lng}}  {dt}".format(m=lbl_latest, lng=max_len, dt=dt))
 
         print()
-        print('Messages:')
+        print(_('Messages:'))
         print()
 
         # Variable renamings:
@@ -1104,44 +1105,44 @@ class PostfixLogsumsApp(object):
             msgs_discarded_pct = msgs_discarded / msgs_total * 100
 
         nr = adj_int_units_localized(msgs_received)
-        print(tpl_loc.format(val=nr, lbl='received'))
+        print(tpl_loc.format(val=nr, lbl=_('received')))
         nr = adj_int_units_localized(msgs_delivered)
-        print(tpl_loc.format(val=nr, lbl='delivered'))
+        print(tpl_loc.format(val=nr, lbl=_('delivered')))
         nr = adj_int_units_localized(self.results.msgs_total.forwarded)
-        print(tpl_loc.format(val=nr, lbl='forwarded'))
+        print(tpl_loc.format(val=nr, lbl=_('forwarded')))
         nr = adj_int_units_localized(self.results.msgs_total.deferred)
-        print(tpl_loc.format(val=nr, lbl='deferred'), end='')
+        print(tpl_loc.format(val=nr, lbl=_('deferred')), end='')
         if self.results.msgs_total.deferrals:
             nr = adj_int_units_localized(self.results.msgs_total.deferrals)
-            val = '  ({val} {lbl})'.format(lbl='deferrals', val=nr)
+            val = '  ({val} {lbl})'.format(lbl=_('deferrals'), val=nr)
             print(val, end='')
         print()
         nr = adj_int_units_localized(self.results.msgs_total.bounced)
-        print(tpl_loc.format(val=nr, lbl='bounced'))
+        print(tpl_loc.format(val=nr, lbl=_('bounced')))
         nr = adj_int_units_localized(self.results.msgs_total.rejected)
-        print(tpl_loc.format(val=nr, lbl='rejected'), end='')
+        print(tpl_loc.format(val=nr, lbl=_('rejected')), end='')
         print(' ({:0.1n}%)'.format(msgs_rejected_pct))
         nr = adj_int_units_localized(self.results.msgs_total.reject_warning)
-        print(tpl_loc.format(val=nr, lbl='reject warnings'))
+        print(tpl_loc.format(val=nr, lbl=_('reject warnings')))
         nr = adj_int_units_localized(self.results.msgs_total.held)
-        print(tpl_loc.format(val=nr, lbl='held'))
+        print(tpl_loc.format(val=nr, lbl=_('held')))
         nr = adj_int_units_localized(self.results.msgs_total.discarded)
-        print(tpl_loc.format(val=nr, lbl='discarded'), end='')
+        print(tpl_loc.format(val=nr, lbl=_('discarded')), end='')
         print(' ({:0.1f}%)'.format(msgs_discarded_pct))
         print()
 
         nr = adj_int_units_localized(self.results.msgs_total.bytes_received)
-        print(tpl_loc.format(val=nr, lbl='bytes received'))
+        print(tpl_loc.format(val=nr, lbl=_('bytes received')))
         nr = adj_int_units_localized(self.results.msgs_total.bytes_delivered)
-        print(tpl_loc.format(val=nr, lbl='bytes delivered'))
+        print(tpl_loc.format(val=nr, lbl=_('bytes delivered')))
         nr = adj_int_units_localized(self.results.msgs_total.sending_users)
-        print(tpl_loc.format(val=nr, lbl='senders'))
+        print(tpl_loc.format(val=nr, lbl=_('senders')))
         nr = adj_int_units_localized(self.results.msgs_total.sending_domains)
-        print(tpl_loc.format(val=nr, lbl='sending hosts/domains'))
+        print(tpl_loc.format(val=nr, lbl=_('sending hosts/domains')))
         nr = adj_int_units_localized(self.results.msgs_total.rcpt_users)
-        print(tpl_loc.format(val=nr, lbl='recipients'))
+        print(tpl_loc.format(val=nr, lbl=_('recipients')))
         nr = adj_int_units_localized(self.results.msgs_total.rcpt_domains)
-        print(tpl_loc.format(val=nr, lbl='recipients hosts/domains'))
+        print(tpl_loc.format(val=nr, lbl=_('recipients hosts/domains')))
 
         print()
 
@@ -1155,12 +1156,12 @@ class PostfixLogsumsApp(object):
 
         if not nr_items:
             if not quiet:
-                msg += ': None'
+                msg += ': ' + _('None')
                 print(msg)
             return False
 
         if count:
-            msg += ' ({lbl}: {c})'.format(lbl='top', c=count)
+            msg += ' ({lbl}: {c})'.format(lbl=_('top'), c=count)
 
         print(msg)
         print('-' * len(msg))
@@ -1183,13 +1184,13 @@ class PostfixLogsumsApp(object):
         print('Smtpd:')
         print()
 
-        print(tpl_loc.format(val=adj_int_units_localized(total_conn), lbl='connections'))
-        print(tpl_loc.format(val=adj_int_units_localized(count_domains), lbl='hosts/domains'))
+        print(tpl_loc.format(val=adj_int_units_localized(total_conn), lbl=_('connections')))
+        print(tpl_loc.format(val=adj_int_units_localized(count_domains), lbl=_('hosts/domains')))
         print(tpl_loc.format(
-            val=adj_int_units_localized(avg_time, no_unit=True), lbl='connections'))
+            val=adj_int_units_localized(avg_time, no_unit=True), lbl=_('connections')))
         print('  {h:d}:{m:02d}:{s:02.0f}  {lbl}'.format(
             h=total_time_splitted[2], m=total_time_splitted[1],
-            s=total_time_splitted[0], lbl='total connect time'))
+            s=total_time_splitted[0], lbl=_('total connect time')))
         print()
 
     # -------------------------------------------------------------------------
@@ -1197,7 +1198,7 @@ class PostfixLogsumsApp(object):
         if not len(data.keys()):
             if self.quiet:
                 return
-            print('\n{lbl}: {n}'.format(lbl=label, n='none'))
+            print('\n{lbl}: {n}'.format(lbl=label, n=_('none')))
             return
         print('\n{lbl}'.format(lbl=label))
         print('-' * len(label))
@@ -1221,12 +1222,12 @@ class PostfixLogsumsApp(object):
                 first_value2 = data[key][first_key2]
                 if not isinstance(first_value2, dict):
                     if count is not None and count > 0:
-                        print(' ({lbl}: {c})'.format(lbl='top', c=count), end='')
+                        print(' ({lbl}: {c})'.format(lbl=_('top'), c=count), end='')
                     total_count = 0
                     for key2 in data[key].keys():
                         total_count += data[key][key2]
                     val = adj_int_units_localized(total_count, no_unit=True).rstrip()
-                    print(' ({lbl}: {c})'.format(lbl='total', c=val), end='')
+                    print(' ({lbl}: {c})'.format(lbl=_('total'), c=val), end='')
                 print()
                 self.walk_nested_hash(data[key], count, level)
         else:
@@ -1241,7 +1242,7 @@ class PostfixLogsumsApp(object):
         if not len(data.keys()):
             if self.quiet:
                 return
-            print('\n{lbl}: {n}'.format(lbl=title, n='none'))
+            print('\n{lbl}: {n}'.format(lbl=title, n=_('none')))
             return
 
         print('\n{lbl}'.format(lbl=title))
@@ -1290,55 +1291,55 @@ class PostfixLogsumsApp(object):
         """Print "problems" reports."""
         if self.detail_deferral != 0:
             self.print_nested_hash(
-                data=self.results.deferred, label="Message deferral detail",
+                data=self.results.deferred, label=_("Message deferral detail"),
                 count=self.detail_deferral)
 
         if self.detail_bounce != 0:
             self.print_nested_hash(
-                data=self.results.bounced, label="Message bounce detail (by relay)",
+                data=self.results.bounced, label=_("Message bounce detail (by relay)"),
                 count=self.detail_bounce)
 
         if self.detail_reject != 0:
             self.print_nested_hash(
-                data=self.results.rejects, label="Message reject detail",
+                data=self.results.rejects, label=_("Message reject detail"),
                 count=self.detail_reject)
             self.print_nested_hash(
-                data=self.results.warnings, label="Message reject warning detail",
+                data=self.results.warnings, label=_("Message reject warning detail"),
                 count=self.detail_reject)
             self.print_nested_hash(
-                data=self.results.holds, label="Message hold detail",
+                data=self.results.holds, label=_("Message hold detail"),
                 count=self.detail_reject)
             self.print_nested_hash(
-                data=self.results.discards, label="Message discard detail",
+                data=self.results.discards, label=_("Message discard detail"),
                 count=self.detail_reject)
 
         if self.detail_smtp != 0:
             self.print_nested_hash(
-                data=self.results.smtp_messages, label="SMTP delivery failures",
+                data=self.results.smtp_messages, label=_("SMTP delivery failures"),
                 count=self.detail_smtp)
 
         if self.detail_smtpd_warning != 0:
             self.print_nested_hash(
-                data=self.results.warnings, label="Warnings", count=self.detail_smtpd_warning)
+                data=self.results.warnings, label=_("Warnings"), count=self.detail_smtpd_warning)
 
-        self.print_nested_hash(data=self.results.fatals, label="Fatal Errors", count=0)
-        self.print_nested_hash(data=self.results.panics, label="Panics", count=0)
+        self.print_nested_hash(data=self.results.fatals, label=_("Fatal Errors"), count=0)
+        self.print_nested_hash(data=self.results.panics, label=_("Panics"), count=0)
         self.print_hash_by_cnt_vals(
-            data=self.results.master_msgs, title='Master daemon messages', count=0)
+            data=self.results.master_msgs, title=_('Master daemon messages'), count=0)
 
     # -------------------------------------------------------------------------
     def print_per_day_summary(self):
         """Print "per-day" traffic summary."""
-        self.print_subsect_title("Per-Day Traffic Summary")
+        self.print_subsect_title(_("Per-Day Traffic Summary"))
         indent = '  '
 
         labels = {
-            'date': 'Date',
-            'received': 'Received',
-            'sent': 'Delivered',
-            'deferred': 'Deferred',
-            'bounced': 'Bounced',
-            'rejected': 'Rejected',
+            'date': _('Date'),
+            'received': _('Received'),
+            'sent': _('Delivered'),
+            'deferred': _('Deferred'),
+            'bounced': _('Bounced'),
+            'rejected': _('Rejected'),
         }
         widths = {
             'date': 12,
@@ -1391,9 +1392,9 @@ class PostfixLogsumsApp(object):
         indent = '  '
 
         if self.nr_days == 1:
-            title = 'Per-Hour Traffic Summary'
+            title = _('Per-Hour Traffic Summary')
         else:
-            title = 'Per-Hour Traffic Daily Average'
+            title = _('Per-Hour Traffic Daily Average')
         self.print_subsect_title(title)
 
         labels = {
@@ -1488,18 +1489,18 @@ class PostfixLogsumsApp(object):
         if count == 0:
             return
 
-        title = 'Host/Domain Summary: Message Delivery'
+        title = _('Host/Domain Summary: Message Delivery')
         nr_items = len(self.results.rcpt_domain.keys())
         if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
 
         labels = {
-            'sent': 'Sent count',
-            'bytes': 'Bytes',
-            'defers': 'Defers',
-            'avg_delay': 'Avg. delay',
-            'max_delay': 'Max. delay',
-            'domain': 'Host/Domain',
+            'sent': _('Sent count'),
+            'bytes': _('Bytes'),
+            'defers': _('Defers'),
+            'avg_delay': _('Avg. delay'),
+            'max_delay': _('Max. delay'),
+            'domain': _('Host/Domain'),
         }
         widths = {
             'sent': 8,
@@ -1558,15 +1559,15 @@ class PostfixLogsumsApp(object):
         if count == 0:
             return
 
-        title = 'Host/Domain Summary: Messages Received'
+        title = _('Host/Domain Summary: Messages Received')
         nr_items = len(self.results.sending_domain_data.keys())
         if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
 
         labels = {
-            'received': 'Message count',
-            'bytes': 'Bytes',
-            'domain': 'Host/Domain',
+            'received': _('Message count'),
+            'bytes': _('Bytes'),
+            'domain': _('Host/Domain'),
         }
         widths = {
             'received': 8,
@@ -1606,7 +1607,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def print_per_day_smtpd(self):
         """print "per-day" smtpd connection summary"""
-        title = 'Per-Day SMTPD Connection Summary'
+        title = _('Per-Day SMTPD Connection Summary')
         indent = '  '
 
         nr_items = len(self.results.smtpd_per_day.keys())
@@ -1614,11 +1615,11 @@ class PostfixLogsumsApp(object):
             return
 
         labels = {
-            'date': 'Date',
-            'connections': 'Connections',
-            'time_conn': 'Time connections total',
-            'avg_time': 'Avg. time connection',
-            'max_time': 'Max. time connection',
+            'date': _('Date'),
+            'connections': _('Connections'),
+            'time_conn': _('Time connections total'),
+            'avg_time': _('Avg. time connection'),
+            'max_time': _('Max. time connection'),
         }
         widths = {
             'date': 12,
@@ -1673,9 +1674,9 @@ class PostfixLogsumsApp(object):
         """print 'per-hour' smtpd connection summary"""
         indent = '  '
         if self.nr_days == 1:
-            title = 'Per-Hour SMTPD Connection Summary'
+            title = _('Per-Hour SMTPD Connection Summary')
         else:
-            title = 'Per-Hour SMTPD Connection Daily Average'
+            title = _('Per-Hour SMTPD Connection Daily Average')
 
         conns_total = 0
         for stat in self.results.smtpd_messages_per_hour:
@@ -1685,11 +1686,11 @@ class PostfixLogsumsApp(object):
             return
 
         labels = {
-            'hour': 'Hour',
-            'conn': 'Connections',
-            'time_total': 'Time total',
-            'time_avg': 'Time avg.',
-            'time_max': 'Time max.',
+            'hour': _('Hour'),
+            'conn': _('Connections'),
+            'time_total': _('Time total'),
+            'time_avg': _('Time avg.'),
+            'time_max': _('Time max.'),
         }
 
         widths = {
@@ -1766,17 +1767,17 @@ class PostfixLogsumsApp(object):
         if count == 0:
             return
 
-        title = 'Host/Domain Summary: SMTPD Connections'
+        title = _('Host/Domain Summary: SMTPD Connections')
         nr_items = len(self.results.smtpd_per_domain.keys())
         if not self.print_subsect_title(title, nr_items=nr_items, count=count):
             return
 
         labels = {
-            'conn': 'Connections',
-            'time_total': 'Time total',
-            'time_avg': 'Time avg.',
-            'time_max': 'Time max.',
-            'domain': 'Host/Domain',
+            'conn': _('Connections'),
+            'time_total': _('Time total'),
+            'time_avg': _('Time avg.'),
+            'time_max': _('Time max.'),
+            'domain': _('Host/Domain'),
         }
 
         widths = {
@@ -1813,7 +1814,7 @@ class PostfixLogsumsApp(object):
             avg = time_total / nr
 
             if domain is None:
-                domain = '<None>'
+                domain = _('<None>')
 
             values = {
                 'conn': 0,
