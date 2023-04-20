@@ -1,0 +1,32 @@
+---
+
+include:
+  - project: 'python/packaging'
+    ref: v1.3
+    file: 'gitlab/create-all.yaml'
+
+variables:
+  EXPIRE_ARTIFACTS_IN: '1 week'
+  PKG_NAME: 'postfix_logsums'
+  PYTHON_ADDITIONAL_PACKAGES: 'python3-fb-logging'
+  PYTHON_INIT_FILE: 'postfix_logsums/__init__.py'
+  PYTHON_TEST_PATHS: 'postfix-logsums postfix_logsums setup.py'
+  SHELLSCRIPTS: 'compile-xlate-msgs.sh update-env.sh xtract-xlate-msgs.sh get-debian-release get-debian-version get-rpm-release get-rpm-version'
+  SSH_PRIV_KEY_YUM_REPO: 'nada'
+  TEST_LOCALES: 'en_US.UTF-8 de_DE.UTF-8'
+  UPDATE_ALL_PIP_MODULES: 'n'
+  USED_SSH_PRIV_KEY_YUM_REPO: "${SSH_PRIV_KEY_YUM_REPO}"
+  USED_TIMEZONE: 'Europe/Berlin'
+  USED_YUM_REPO_GPG_PASSWD: "${YUM_REPO_GPG_PASSWD}"
+  USED_YUM_REPO_GPG_KEY_PUB: "${YUM_REPO_GPG_KEY_PUB}"
+  USED_YUM_REPO_GPG_KEY_SEC: "${YUM_REPO_GPG_KEY_SEC}"
+  YUM_REPO_GPG_ID: 'C0E73F70'
+  YUM_REPO_GPG_PASSWD: ''
+  YUM_REPO_HOST: 'repo02.pixelpark.com'
+  YUM_REPO_USER: 'rpm-repo'
+  YUM_REPO_DIR_HTTP: '/Linux/yum/pixelpark'
+  YUM_REPO_DIR: "/srv/www/repo${YUM_REPO_DIR_HTTP}"
+  YUM_REPO_GPG_KEY_PUB: 'nada'
+  YUM_REPO_GPG_KEY_SEC: ''
+
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
