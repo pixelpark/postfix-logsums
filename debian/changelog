@@ -1,4 +1,4 @@
-postfix-logsums (0.9.3) UNRELEASED; urgency=medium
+postfix-logsums (0.9.3) all; urgency=medium
 
   * Adding .gitlab-ci.yml for having CI jobs also in Gitlab.
 
