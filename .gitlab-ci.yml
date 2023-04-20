@@ -7,7 +7,7 @@ include:
 
 variables:
   EXPIRE_ARTIFACTS_IN: '1 week'
-  PKG_NAME: 'postfix_logsums'
+  PKG_NAME: 'postfix-logsums'
   PYTHON_ADDITIONAL_PACKAGES: 'python3-fb-logging'
   PYTHON_INIT_FILE: 'postfix_logsums/__init__.py'
   PYTHON_TEST_PATHS: 'postfix-logsums postfix_logsums setup.py'
