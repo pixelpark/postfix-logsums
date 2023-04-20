@@ -1,3 +1,9 @@
+postfix-logsums (0.9.3) UNRELEASED; urgency=medium
+
+  * Adding .gitlab-ci.yml for having CI jobs also in Gitlab.
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Thu, 20 Apr 2023 17:58:05 +0200
+
 postfix-logsums (0.9.2) all; urgency=medium
 
   * Fixing translation.
