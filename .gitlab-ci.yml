@@ -2,11 +2,14 @@
 
 include:
   - project: 'python/packaging'
-    ref: v1.3
+    ref: develop
+    # ref: v1.3
     file: 'gitlab/create-all.yaml'
 
 variables:
+  BINS_IN_ROOT: 'postfix-logsums'
   EXPIRE_ARTIFACTS_IN: '1 week'
+  HAS_PYTHON_PREFIX: 'n'
   PKG_NAME: 'postfix-logsums'
   PYTHON_ADDITIONAL_PACKAGES: 'python3-fb-logging'
   PYTHON_INIT_FILE: 'postfix_logsums/__init__.py'
