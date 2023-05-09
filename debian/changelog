@@ -1,3 +1,9 @@
+postfix-logsums (0.9.4) UNRELEASED; urgency=medium
+
+  * Changing dependencies of generated RPM files.
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Tue, 09 May 2023 12:36:46 +0200
+
 postfix-logsums (0.9.3) all; urgency=medium
 
   * Adding .gitlab-ci.yml for having CI jobs also in Gitlab.
