@@ -549,7 +549,10 @@ jobs:
                                   -e "s/@@@py_version_dot@@@/${PY_VERSION_DOT}/gi" \
                                   > "${SPECFILE}"
           if [[ "${EL_VERSION}" == "7" ]] ; then
+              sed -i -e '/^Recommends/d' "${SPECFILE}"
               sed -i -e 's/-pyyaml$/-PyYAML/i' "${SPECFILE}"
+          else
+              sed -i -e 's/^Recommends:\(  *python.*-pyyaml.*)\)/Requires:  \1/i' "${SPECFILE}"
           fi
           dch2speclog debian/changelog >> "${SPECFILE}"
           echo
