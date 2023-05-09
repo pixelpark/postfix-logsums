@@ -66,7 +66,7 @@ msgstr "Lese unkomprimierte Datei {!r} …"
 
 #: postfix_logsums/__init__.py:767 postfix_logsums/__init__.py:773 postfix_logsums/__init__.py:779
 msgid "Reading {w} compressed file {f!r} ..."
-msgstr "Lese {w}-lomprimierte Datei {f!r} …"
+msgstr "Lese {w}-komprimierte Datei {f!r} …"
 
 #: postfix_logsums/__init__.py:845
 msgid "Did not found Postfix command and QID from: {}"
