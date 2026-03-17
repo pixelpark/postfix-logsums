@@ -1,114 +1,136 @@
 # German translations for postfix_logsums.
-# Copyright (C) 2023 Frank Brehm, Berlin
+# Copyright (C) 2026 Frank Brehm, Berlin
 # This file is distributed under the same license as the postfix_logsums project.
-# Frank Brehm <frank.brehm@pixelpark.com>, 2023.
+# Frank Brehm <frank.brehm@pixelpark.com>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: postfix_logsums 0.9.4\n"
+"Project-Id-Version: postfix_logsums \n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2023-05-09 12:37+0200\n"
-"PO-Revision-Date: 2023-04-19 17:55+0200\n"
+"POT-Creation-Date: 2026-03-17 12:52+0100\n"
+"PO-Revision-Date: 2026-03-17 13:30+0200\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: de\n"
 "Language-Team: de <frank.brehm@pixelpark.com>\n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.8.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: postfix_logsums/__init__.py:209
+#: src/postfix_logsums/__init__.py:247
+#, python-brace-format
 msgid "Wrong day {d!r} given. Valid values are {n}, {y!r} and {t!r} or a valid {dt} or {dd} object."
 msgstr ""
 "Ungültiger Tag {d!r} angegeben. Gültige Werte sind {n}, {y!r} und {t!r} oder ein gültiges {dt}- "
 "oder {dd}-Objekt."
 
-#: postfix_logsums/__init__.py:372
+#: src/postfix_logsums/__init__.py:423
+#, python-brace-format
 msgid "Invalid max. length {max} of a string, must be >= {min}."
 msgstr "Ungültige maximale Länge {max} eines Strings, sie muss midestens {min} betragen."
 
-#: postfix_logsums/__init__.py:429 postfix_logsums/app.py:435
+#: src/postfix_logsums/__init__.py:480 src/postfix_logsums/app.py:450
+#, python-brace-format
 msgid "Wrong verbose level {!r}, must be >= 0"
 msgstr "Ungültiges Verbose-Level {!r}, es muss >= 0 sein."
 
-#: postfix_logsums/__init__.py:446
+#: src/postfix_logsums/__init__.py:497
+#, python-brace-format
 msgid "The syslog name must not be {}."
 msgstr "Der Syslog-Name darf nicht {} sein."
 
-#: postfix_logsums/__init__.py:450
+#: src/postfix_logsums/__init__.py:501
 msgid "The syslog name must not be empty."
 msgstr "Der Syslog-Name darf nicht leer sein."
 
-#: postfix_logsums/__init__.py:467
+#: src/postfix_logsums/__init__.py:518
+#, python-brace-format
 msgid "Invalid compression {!r} given."
 msgstr "Ungültige Kompression {!r} gegeben."
 
-#: postfix_logsums/__init__.py:600
+#: src/postfix_logsums/__init__.py:655
+#, python-brace-format
 msgid "Encoding {v!r} must be a {s!r} object, but is a {c!r} object instead."
 msgstr "Die Codierung {v!r} muss ein {s!r}-Objekt sein, sie is aber statt dessen ein {c!r}-Objekt."
 
-#: postfix_logsums/__init__.py:708
+#: src/postfix_logsums/__init__.py:759
+#, python-brace-format
 msgid "Parsing from {} ..."
 msgstr "Parse von {} …"
 
-#: postfix_logsums/__init__.py:713
+#: src/postfix_logsums/__init__.py:764
+#, python-brace-format
 msgid "Parsing logfile {!r} ..."
 msgstr "Parse Logdatei {!r} …"
 
-#: postfix_logsums/__init__.py:719
+#: src/postfix_logsums/__init__.py:770
+#, python-brace-format
 msgid "Filtering log messages for date {} ..."
 msgstr "Filtere LOG-Nachrichten nach Datum {} …"
 
-#: postfix_logsums/__init__.py:757
+#: src/postfix_logsums/__init__.py:807
+#, python-brace-format
 msgid "Reading uncompressed file {!r} ..."
 msgstr "Lese unkomprimierte Datei {!r} …"
 
-#: postfix_logsums/__init__.py:767 postfix_logsums/__init__.py:773 postfix_logsums/__init__.py:779
+#: src/postfix_logsums/__init__.py:817 src/postfix_logsums/__init__.py:822
+#: src/postfix_logsums/__init__.py:827
+#, python-brace-format
 msgid "Reading {w} compressed file {f!r} ..."
 msgstr "Lese {w}-komprimierte Datei {f!r} …"
 
-#: postfix_logsums/__init__.py:845
+#: src/postfix_logsums/__init__.py:893
+#, python-brace-format
 msgid "Did not found Postfix command and QID from: {}"
 msgstr "Postfix-Kommando und QID nicht gefunden in: {}"
 
-#: postfix_logsums/__init__.py:1231
+#: src/postfix_logsums/__init__.py:1282
+#, python-brace-format
 msgid "Evaluating {!r} command message."
 msgstr "Untersuche {!r}-Kommando-Nachricht."
 
-#: postfix_logsums/__init__.py:1731
+#: src/postfix_logsums/__init__.py:1800
+#, python-brace-format
 msgid "Unhandled SMTP message: {msg!r}"
 msgstr "Nicht behandelte SMTP-Nachricht: {msg!r}"
 
-#: postfix_logsums/app.py:70
+#: src/postfix_logsums/app.py:74
+#, python-brace-format
 msgid "Got a {c} for converting {v!r} into an integer value: {e}"
 msgstr "Habe eine {c} bei der Konvertierung von {v!r} in einen Integer-Wert erhalten: {e}"
 
-#: postfix_logsums/app.py:75
+#: src/postfix_logsums/app.py:80
+#, python-brace-format
 msgid "The option must not be negative (given: {})."
 msgstr "Die OPtion darf nicht negativ sein (gegeben {})."
 
-#: postfix_logsums/app.py:107 postfix_logsums/app.py:111
+#: src/postfix_logsums/app.py:112 src/postfix_logsums/app.py:116
+#, python-brace-format
 msgid "Invalid date as day {!r} given"
 msgstr "Ungültiges Datum {!r} als Tag angegeben."
 
-#: postfix_logsums/app.py:144
+#: src/postfix_logsums/app.py:148
+#, python-brace-format
 msgid "Logfile {!r} does not exists."
 msgstr "Die LOgdatei {!r} existiert nicht."
 
-#: postfix_logsums/app.py:148
+#: src/postfix_logsums/app.py:152
+#, python-brace-format
 msgid "File {!r} is not a regular file."
 msgstr "Die Datei {!r} ist keine regulkäre Datei."
 
-#: postfix_logsums/app.py:152
+#: src/postfix_logsums/app.py:156
+#, python-brace-format
 msgid "File {!r} is not readable."
 msgstr "Die Datei {!r} ist nicht lesbar."
 
-#: postfix_logsums/app.py:633
+#: src/postfix_logsums/app.py:644
+#, python-brace-format
 msgid "{} is a log analyzer/summarizer for the Postfix MTA."
 msgstr "{} is ein Log-Analyse- und -Konsolidierungs-Werkzeug für den Postfiy-MTA. "
 
-#: postfix_logsums/app.py:634
+#: src/postfix_logsums/app.py:647
 msgid ""
 "It is designed to provide an over-view of Postfix activity, with just enough detail to give the "
 "administrator a \"heads up\" for potential trouble spots."
@@ -116,7 +138,8 @@ msgstr ""
 "Es wurde entwickelt, um einem Administrator einen genügend detaillierten Überblick über die "
 "Postfix-Aktivitäten zu potentiellen Problemstellen zu geben."
 
-#: postfix_logsums/app.py:637
+#: src/postfix_logsums/app.py:653
+#, python-brace-format
 msgid ""
 "{} generates summaries and, in some cases, detailed reports of mail server traffic volumes, "
 "rejected and bounced email, and server warnings, errors and panics."
@@ -125,25 +148,25 @@ msgstr ""
 "Datenvolumen, abgelehnte und abgewiesene Mails, sowie von Warnungen und Fehler- bzw. Panik-"
 "Meldungen."
 
-#: postfix_logsums/app.py:656
+#: src/postfix_logsums/app.py:674
 msgid "Options for scanning Postfix logfiles"
 msgstr "Optionen zum Durchsuchen von Postfix-Logdateien"
 
-#: postfix_logsums/app.py:660
+#: src/postfix_logsums/app.py:679
 msgid "Generate report for just today, yesterday or a date in ISO format (YYY-mm-dd)."
 msgstr ""
 "Generiert einen Bericht für exakt heute, gestern oder für das im ISO-Format (YYY-mm-dd) "
 "angegebene Datum."
 
-#: postfix_logsums/app.py:664
+#: src/postfix_logsums/app.py:683
 msgid "DAY"
 msgstr "TAG"
 
-#: postfix_logsums/app.py:668
+#: src/postfix_logsums/app.py:687
 msgid "Extended (extreme? excessive?) detail."
 msgstr "Erweiterte (extreme? übermäßige?) Details."
 
-#: postfix_logsums/app.py:669
+#: src/postfix_logsums/app.py:691
 msgid ""
 "At present, this includes only a per-message report, sorted by sender domain, then user-in-"
 "domain, then by queue i.d."
@@ -151,7 +174,7 @@ msgstr ""
 "Gegenwärtig beinhaltet das nur einen Bericht pro Nachricht, sortiert nach Domäne, danach nach "
 "dem Nutzer in der Domäne und dann nach der Queue-ID."
 
-#: postfix_logsums/app.py:672
+#: src/postfix_logsums/app.py:700
 msgid ""
 "WARNING: the data built to generate this report can quickly consume very large amounts of memory"
 " if a lot of log entries are processed!"
@@ -159,11 +182,12 @@ msgstr ""
 "WARNUNG: Die Daten, die der Bericht generiert, können sehr schnell eine große Menge "
 "Hauptspeicher verbrauchen, wenn viele Logeinträge verarbeitet werden!"
 
-#: postfix_logsums/app.py:679
+#: src/postfix_logsums/app.py:711
 msgid "Handle complete email address in a case-insensitive manner."
 msgstr "Behandle die kompletten Mailadressen ohne Berücksichtigung der Groß- und Kleinschreibung."
 
-#: postfix_logsums/app.py:682
+#: src/postfix_logsums/app.py:716
+#, python-brace-format
 msgid ""
 "Normally {} lower-cases only the host and domain parts, leaving the user part alone. This option"
 " causes the entire email address to be lower-cased."
@@ -172,11 +196,12 @@ msgstr ""
 "und Kleinschreibweise. Mit dieser Option wird die gesamte Adresse als in Kleinbuchstaben "
 "behandelt."
 
-#: postfix_logsums/app.py:690
+#: src/postfix_logsums/app.py:726
 msgid "Do not emit report on \"Messages with no size data\"."
-msgstr "Keinen Bericht für \"Nachrichten ohne datenß\" ausgeben."
+msgstr "Keinen Bericht für »Nachrichten ohne Daten« ausgeben."
 
-#: postfix_logsums/app.py:692
+#: src/postfix_logsums/app.py:730
+#, python-brace-format
 msgid ""
 "Message size is reported only by the queue manager. The message may be delivered long-enough "
 "after the (last) qmgr log entry that the information is not in the log(s) processed by a "
@@ -186,668 +211,710 @@ msgstr ""
 "Die Nachrichtengröße wird nur durch den Queuemanager berichtet. Die Zustellung der Mail kann so "
 "lange nach dem (letzten) Logeintrag des Queuemanagers erfolgen, so dass die Information nicht "
 "mehr in den Logs, die durch {a} ausgewertet werden, enthalten ist. Dadurch gelangt diese nich "
-"mehr in \"Empfänger nach Nachrichtengröße\" sowie in \"Zugestellte Bytes\". Diese werden "
-"normalerweise in \"Nachrichten ohne Datengröße\" berichtet."
+"mehr in »Empfänger nach Nachrichtengröße« sowie in »Zugestellte Bytes«. Diese werden "
+"normalerweise in »Nachrichten ohne Datengröße« berichtet."
 
-#: postfix_logsums/app.py:702
+#: src/postfix_logsums/app.py:745
 msgid ""
 "For those reject reports that list IP addresses or host/domain names: append the email from "
 "address to each listing. (Does not apply to \"Improper use of SMTP command pipelining\" report.)"
 msgstr ""
 "Bei Ablehnungsberichten, die IP-Adressen oder Host- bzw. Domännamen auflisten: Anhängen der "
-"Absenderdresse an jedes Listing. (Das btrifft nicht den Bericht zu \"Unzulässige SMTP-"
-"Befehlsverknüfungen\".)"
+"Absenderdresse an jedes Listing. (Das btrifft nicht den Bericht zu »Unzulässige SMTP-"
+"Befehlsverknüfungen«.)"
 
-#: postfix_logsums/app.py:710
+#: src/postfix_logsums/app.py:756
 msgid "Generate smtpd connection statistics."
 msgstr "Generiert smtpd-Verbindungsstatistiken."
 
-#: postfix_logsums/app.py:711
+#: src/postfix_logsums/app.py:759
 msgid ""
 "The \"per-day\" report is not generated for single-day reports. For multiple-day reports: \"per-"
 "hour\" numbers are daily averages (reflected in the report heading)."
 msgstr ""
-"Der \"Pro-Tag\"-Bericht wird nicht für Berichte zu einzelnenn Tagen generiert. Für Berichte zu "
-"mehreren Tagen: \"Pro-Stunde\"-Zahlen sind tägliche Durchschnittswerte (im Berichtskopf "
+"Der »Pro-Tag«-Bericht wird nicht für Berichte zu einzelnenn Tagen generiert. Für Berichte zu "
+"mehreren Tagen: »Pro-Stunde«-Zahlen sind tägliche Durchschnittswerte (im Berichtskopf "
 "dargestellt)."
 
-#: postfix_logsums/app.py:719
+#: src/postfix_logsums/app.py:773
 msgid ""
 "Do \"VERP\" generated address (?) munging. Convert sender addresses of the form \"list-return-"
 "NN-someuser=some.dom@host.sender.dom\" to \"list-return-ID-someuser=some.dom@host.sender.dom\"."
 msgstr ""
-"Baut \"VERP\"-generierte Adressen (?) um. Konvertiert Absenderadressen der Form \"list-return-"
-"NN-someuser=some.dom@host.sender.dom\" nach \"list-return-ID-"
-"someuser=some.dom@host.sender.dom\"."
+"Baut »VERP«-generierte Adressen (?) um. Konvertiert Absenderadressen der Form »list-return-"
+"NN-someuser=some.dom@host.sender.dom« nach »list-return-ID-"
+"someuser=some.dom@host.sender.dom«."
 
-#: postfix_logsums/app.py:723
+#: src/postfix_logsums/app.py:782
 msgid "In other words: replace the numeric value with \"ID\"."
-msgstr "Anders gesagt: ersetze den numerischen Wert durch die \"ID\""
+msgstr "Anders gesagt: ersetze den numerischen Wert durch die »ID«"
 
-#: postfix_logsums/app.py:725
+#: src/postfix_logsums/app.py:788
 msgid ""
 "By specifying the optional \"=2\" (second form), the munging is more \"aggressive\", converting "
 "the address to something like: \"list-return@host.sender.dom\"."
 msgstr ""
-"Bei der optionalen Angabe von \"=2\" (die zweite Form) erfolgt der Umbau \"agressiver\", die "
-"Adresse werden in ungefähr in die Form \"list-return@host.sender.dom\" gebracht."
+"Bei der optionalen Angabe von »=2« (die zweite Form) erfolgt der Umbau »agressiver«, die "
+"Adresse werden in ungefähr in die Form »list-return@host.sender.dom« gebracht."
 
-#: postfix_logsums/app.py:729
+#: src/postfix_logsums/app.py:798
 msgid ""
 "Actually: specifying anything less than 2 does the \"simple\" munging and anything greater than "
 "1 results in the more \"aggressive\" hack being applied."
 msgstr ""
-"Aktuell: eine Angabe von weniger als 2 wendet den \"einfachen\" Umbau an, und alles, was größer "
-"als 1 ist, resultiert im \"agressiveren\" Umbau."
+"Aktuell: eine Angabe von weniger als 2 wendet den »einfachen« Umbau an, und alles, was größer "
+"als 1 ist, resultiert im »agressiveren« Umbau."
 
-#: postfix_logsums/app.py:738
+#: src/postfix_logsums/app.py:816
 msgid "Logfile compression options"
 msgstr "Logdatei-Kompressionsoptionen"
 
-#: postfix_logsums/app.py:743
+#: src/postfix_logsums/app.py:823
 msgid "Assume, that stdin stream or the given files are gzip compressed."
 msgstr "Nimmt an, dass die Standard-Eingabe oder die angegebenen Dateien GZIP-komprimiert sind."
 
-#: postfix_logsums/app.py:745
+#: src/postfix_logsums/app.py:829
 msgid ""
 "If not given, filenames with the extension \".gz\" are assumed to be compressed with the gzip "
 "compression."
-msgstr "Wenn nicht angegeben, werden Dateien mit der Endung \".gz\" als GZIP-komprimiert angesehen."
+msgstr "Wenn nicht angegeben, werden Dateien mit der Endung ».gz« als GZIP-komprimiert angesehen."
 
-#: postfix_logsums/app.py:752
+#: src/postfix_logsums/app.py:839
 msgid "Assume, that stdin stream or the given files are bzip2 compressed."
 msgstr "Nimmt an, dass die Standard-Eingabe oder die angegebenen Dateien BZIP2-komprimiert sind."
 
-#: postfix_logsums/app.py:755
+#: src/postfix_logsums/app.py:846
 msgid ""
 "If not given, filenames with the extensions \".bz2\" or \".bzip2\" are assumed to be compressed "
 "with the bzip2 compression."
 msgstr ""
-"Wenn nicht angegeben, werden Dateien mit den Endungen \".bz2\" oder \".bzip2\" als "
+"Wenn nicht angegeben, werden Dateien mit den Endungen ».bz2« oder ».bzip2« als "
 "BZIP2-komprimiert angesehen."
 
-#: postfix_logsums/app.py:762
+#: src/postfix_logsums/app.py:858
 msgid "Assume, that stdin stream or the given files are xz or lzma compressed."
 msgstr "Nimmt an, dass die Standard-Eingabe oder die angegebenen Dateien XZ- bzw. LZMA-komprimiert sind."
 
-#: postfix_logsums/app.py:765
+#: src/postfix_logsums/app.py:865
 msgid ""
 "If not given, filenames with the extensions \".xz\" or \".lzma\" are assumed to be compressed "
 "with the xz or lzma compression."
 msgstr ""
-"Wenn nicht angegeben, werden Dateien mit den Endungen \".xz\" oder \".lzma\" als XZ-komprimiert "
+"Wenn nicht angegeben, werden Dateien mit den Endungen ».xz« oder ».lzma« als XZ-komprimiert "
 "angesehen."
 
-#: postfix_logsums/app.py:772
+#: src/postfix_logsums/app.py:875
 msgid "The logfile(s) to analyze. If no file(s) specified, reads from stdin."
 msgstr ""
 "Die Logadatei(en), die analysiert werden sollen. Wenn keine Datei(en) angegeben werden, wird von"
 " der Standard-Eingabe gelesen."
 
-#: postfix_logsums/app.py:775
+#: src/postfix_logsums/app.py:878
 msgid "FILE"
 msgstr "DATEI"
 
-#: postfix_logsums/app.py:779
+#: src/postfix_logsums/app.py:883
 msgid "Output options"
 msgstr "Ausgabeoptionen"
 
-#: postfix_logsums/app.py:781
+#: src/postfix_logsums/app.py:886
 msgid "Output format. Valid options are:"
 msgstr "Ausgabeformat. Gültige Optionen sind:"
 
-#: postfix_logsums/app.py:783
+#: src/postfix_logsums/app.py:891
+#, python-brace-format
 msgid "Default: '{}'."
-msgstr "Vorgabe: '{}'."
+msgstr "Vorgabe: »{}«."
 
-#: postfix_logsums/app.py:786
+#: src/postfix_logsums/app.py:897
 msgid "FORMAT"
 msgstr "FORMAT"
 
-#: postfix_logsums/app.py:790
+#: src/postfix_logsums/app.py:906
 msgid "Sets all --*-detail, -h and -u to COUNT. Is over-ridden by individual settings."
 msgstr ""
 "Setzt alle -*-detail, -h und -u Optionen zu ANZAHL. Wird durch individuelle Einstellungen "
 "überschrieben."
 
-#: postfix_logsums/app.py:793
+#: src/postfix_logsums/app.py:913
 msgid "--detail 0 suppresses *all* detail."
 msgstr "--detail 0 unterdrückt *alle* Details."
 
-#: postfix_logsums/app.py:795 postfix_logsums/app.py:800 postfix_logsums/app.py:803
-#: postfix_logsums/app.py:808 postfix_logsums/app.py:811 postfix_logsums/app.py:817
-#: postfix_logsums/app.py:820 postfix_logsums/app.py:826 postfix_logsums/app.py:829
-#: postfix_logsums/app.py:835 postfix_logsums/app.py:838 postfix_logsums/app.py:843
-#: postfix_logsums/app.py:849 postfix_logsums/app.py:854 postfix_logsums/app.py:857
+#: src/postfix_logsums/app.py:918 src/postfix_logsums/app.py:927 src/postfix_logsums/app.py:935
+#: src/postfix_logsums/app.py:944 src/postfix_logsums/app.py:952 src/postfix_logsums/app.py:963
+#: src/postfix_logsums/app.py:972 src/postfix_logsums/app.py:981 src/postfix_logsums/app.py:990
+#: src/postfix_logsums/app.py:999 src/postfix_logsums/app.py:1008 src/postfix_logsums/app.py:1016
+#: src/postfix_logsums/app.py:1027 src/postfix_logsums/app.py:1035 src/postfix_logsums/app.py:1043
 msgid "COUNT"
 msgstr "ANZAHL"
 
-#: postfix_logsums/app.py:799
+#: src/postfix_logsums/app.py:927
+#, python-brace-format
 msgid "Limit detailed bounce reports to the top {}."
 msgstr "Begrenzt detaillierte Bounce-Berichte auf die Top {}."
 
-#: postfix_logsums/app.py:801 postfix_logsums/app.py:809 postfix_logsums/app.py:818
-#: postfix_logsums/app.py:827 postfix_logsums/app.py:836
+#: src/postfix_logsums/app.py:931 src/postfix_logsums/app.py:948 src/postfix_logsums/app.py:968
+#: src/postfix_logsums/app.py:986 src/postfix_logsums/app.py:1004
 msgid "0 to suppress entirely."
 msgstr "0 unterdrückt diese komplett."
 
-#: postfix_logsums/app.py:807
+#: src/postfix_logsums/app.py:944
+#, python-brace-format
 msgid "Limit detailed deferral reports to the top {}."
 msgstr "Begrenzt detaillierte Verzögerungs-Berichte auf die Top {}."
 
-#: postfix_logsums/app.py:815
+#: src/postfix_logsums/app.py:962
+#, python-brace-format
 msgid "Limit detailed smtpd reject, warn, hold and discard reports to the top {}."
 msgstr ""
 "Begrenzt detaillierte Berichte zu smtpd-Ablehnungen, -Warnungen, -Halts und -Verwerfungen auf "
 "die Top {}."
 
-#: postfix_logsums/app.py:824
+#: src/postfix_logsums/app.py:981
+#, python-brace-format
 msgid "Limit detailed smtp delivery reports to the top {}."
 msgstr "Begrenzt detaillierte Zustellungsberichte auf die Top {}."
 
-#: postfix_logsums/app.py:833
+#: src/postfix_logsums/app.py:999
+#, python-brace-format
 msgid "Limit detailed smtpd warnings reports to the top {}."
 msgstr "Begrenzt detaillierte Berichte zu smtpd-Warnungen auf die Top {}."
 
-#: postfix_logsums/app.py:842
+#: src/postfix_logsums/app.py:1016
+#, python-brace-format
 msgid "Top {} to display in host/domain reports."
 msgstr "Top {} bei der Darstellung von Host- bzw. Domänen-Berichten."
 
-#: postfix_logsums/app.py:844 postfix_logsums/app.py:855 postfix_logsums/app.py:1236
-#: postfix_logsums/app.py:1280
+#: src/postfix_logsums/app.py:1018 src/postfix_logsums/app.py:1038 src/postfix_logsums/app.py:1474
+#: src/postfix_logsums/app.py:1517
 msgid "none"
 msgstr "keine"
 
-#: postfix_logsums/app.py:845
+#: src/postfix_logsums/app.py:1020
 msgid "See also: \"-u\" and \"--*-detail\" options for further report-limiting options."
 msgstr ""
-"Siehe auch zu den \"-u\" und \"--*-detail\" Optionen für weitere Optionen zur Begrenzung der "
+"Siehe auch zu den »-u« und »--*-detail« Optionen für weitere Optionen zur Begrenzung der "
 "Berichtsausgaben."
 
-#: postfix_logsums/app.py:853
+#: src/postfix_logsums/app.py:1035
+#, python-brace-format
 msgid "Top {} to display in user reports."
 msgstr "Top {} bei der Darstellung Nutzer-Berichten."
 
-#: postfix_logsums/app.py:861
+#: src/postfix_logsums/app.py:1051
 msgid "Emit \"problems\" reports (bounces, defers, warnings, etc.) before \"normal\" stats."
 msgstr ""
-"Ausgabe von \"Problem\"-Berichten (Bounces, Verwerfungen, Warnungen usw.) VOR den \"normalen\" "
+"Ausgabe von »Problem«-Berichten (Bounces, Verwerfungen, Warnungen usw.) VOR den »normalen« "
 "Statistiken."
 
-#: postfix_logsums/app.py:868
+#: src/postfix_logsums/app.py:1061
 msgid ""
 "For summaries that contain date or time information, use ISO 8601 standard formats (CCYY-MM-DD "
 "and HH:MM), rather than \"Mon DD CCYY\" and \"HHMM\"."
 msgstr ""
-"Verwenden von ISO-8601-Standard-Formaten (CCYY-MM-DD und HH:MM) anstatt von \"Mon DD CCYY\" und "
-"\"HHMM\" bei Zusammenfassungen, die Datums- oder Zeitinformationen enthalten."
+"Verwenden von ISO-8601-Standard-Formaten (CCYY-MM-DD und HH:MM) anstatt von »Mon DD CCYY« und "
+"»HHMM« bei Zusammenfassungen, die Datums- oder Zeitinformationen enthalten."
 
-#: postfix_logsums/app.py:875
+#: src/postfix_logsums/app.py:1075
 msgid ""
 "For the message deferral, bounce and reject summaries: display the full \"reason\", rather than "
 "a truncated one."
 msgstr ""
 "Bei Nachrichten-Verzögerungs, Bounce- und Reject-Zusammenfassungen: Darstellung der "
-"vollständigen \"Gründe\", anstelle von gekürzten."
+"vollständigen »Gründe«, anstelle von gekürzten."
 
-#: postfix_logsums/app.py:878
+#: src/postfix_logsums/app.py:1083
 msgid "NOTE: this can result in quite long lines in the report."
 msgstr "HINWEIS: das kann zu ziemlich umfangreichen Zeilen im Bericht führen."
 
-#: postfix_logsums/app.py:884
+#: src/postfix_logsums/app.py:1092
 msgid ""
 "\"Zero-fill\" certain arrays so reports come out with data in columns that might otherwise be "
 "blank."
 msgstr ""
-"\"Mit Null vorausfüllen\" verschiedener Arrays, so dass Berichte mit möglichen Nullwerten "
+"»Mit Null vorausfüllen« verschiedener Arrays, so dass Berichte mit möglichen Nullwerten "
 "generiert werden."
 
-#: postfix_logsums/app.py:892
+#: src/postfix_logsums/app.py:1103
 msgid "General options"
 msgstr "Allgemeine Optionen"
 
-#: postfix_logsums/app.py:896
+#: src/postfix_logsums/app.py:1108
 msgid "Enabling debug messages and increase their verbosity level if used multiple times."
 msgstr "Aktivieren von Debug-Ausgaben und Erhöhen derer Ausführlichkeit bei Mehrfachangabe."
 
-#: postfix_logsums/app.py:902
+#: src/postfix_logsums/app.py:1113
 msgid "quiet - don't print headings for empty reports."
 msgstr "Schweigend - keine Ausgabe von Kopfzeilen leerer Berichte."
 
-#: postfix_logsums/app.py:904
+#: src/postfix_logsums/app.py:1117
 msgid "NOTE: headings for warning, fatal, and \"master\" messages will always be printed."
-msgstr "HINWEIS: Kopfzeilen von Warn-, fatalen und \"Master\"-Meldungen werden immer ausgegeben."
+msgstr "HINWEIS: Kopfzeilen von Warn-, fatalen und »Master«-Meldungen werden immer ausgegeben."
 
-#: postfix_logsums/app.py:912
+#: src/postfix_logsums/app.py:1125
 msgid "Show this help message and exit."
 msgstr "Zeigt diesen Hilfebidschirm und beendet sich."
 
-#: postfix_logsums/app.py:917
+#: src/postfix_logsums/app.py:1132
 msgid "Display brief usage message and exit."
 msgstr "Zeigt eine kurze Darstellung der Verwendung und beendet sich."
 
-#: postfix_logsums/app.py:920
-#, python-format
+#: src/postfix_logsums/app.py:1135
+#, python-brace-format, python-format
 msgid "Version of %(prog)s: {}"
 msgstr "Version von %(prog)s: {}"
 
-#: postfix_logsums/app.py:923
+#: src/postfix_logsums/app.py:1141
 msgid "Show program's version number and exit."
 msgstr "Zeigt Programmversion und beendet sich."
 
-#: postfix_logsums/app.py:985
+#: src/postfix_logsums/app.py:1202
 msgid "undefined error."
 msgstr "undefinierbarar Fehler."
 
-#: postfix_logsums/app.py:994
+#: src/postfix_logsums/app.py:1211
 msgid "Exception happened"
 msgstr "Aufgetretene Ausnahme"
 
-#: postfix_logsums/app.py:1026
+#: src/postfix_logsums/app.py:1244
 msgid "And here wo go ..."
 msgstr "Und hier geht's los …"
 
-#: postfix_logsums/app.py:1035 postfix_logsums/app.py:1037
+#: src/postfix_logsums/app.py:1253 src/postfix_logsums/app.py:1255
 msgid "Result of parsing:"
 msgstr "Ergebnis der Analyse"
 
-#: postfix_logsums/app.py:1050
+#: src/postfix_logsums/app.py:1277
+#, python-brace-format
 msgid "Postfix log summaries for {}"
 msgstr "Postfix Log-Zusammenfassung für {}"
 
-#: postfix_logsums/app.py:1052
+#: src/postfix_logsums/app.py:1279
 msgid "Postfix log summaries"
 msgstr "Postfix Log-Zusammenfassung"
 
-#: postfix_logsums/app.py:1077
+#: src/postfix_logsums/app.py:1304
 msgid "Senders by message count"
 msgstr "Absender nach Anzahl der Nachrichten"
 
-#: postfix_logsums/app.py:1078
+#: src/postfix_logsums/app.py:1306
 msgid "Recipients by message count"
 msgstr "Empfänger nach Anzahl der Nachrichten"
 
-#: postfix_logsums/app.py:1079
+#: src/postfix_logsums/app.py:1307
 msgid "Senders by message size"
 msgstr "Absender nach Nachrichtengröße"
 
-#: postfix_logsums/app.py:1080
+#: src/postfix_logsums/app.py:1308
 msgid "Recipients by message size"
 msgstr "Empfänger nach Nachrichtengröße"
 
-#: postfix_logsums/app.py:1083
+#: src/postfix_logsums/app.py:1311
 msgid "Messages with no size data"
 msgstr "Nachrichten ohne Datengröße"
 
-#: postfix_logsums/app.py:1096
+#: src/postfix_logsums/app.py:1325
 msgid "Grand Totals"
 msgstr "Gesamtsummen"
 
-#: postfix_logsums/app.py:1099
+#: src/postfix_logsums/app.py:1328
 msgid "Date of oldest log entry:"
 msgstr "Zeitpunkt des ältesten Logeintrags:"
 
-#: postfix_logsums/app.py:1100
+#: src/postfix_logsums/app.py:1329
 msgid "Date of latest log entry:"
 msgstr "Zeitpunkt des aktuellsten Logeintrags:"
 
-#: postfix_logsums/app.py:1113
+#: src/postfix_logsums/app.py:1342
 msgid "Messages:"
 msgstr "Nachrichten:"
 
-#: postfix_logsums/app.py:1143
+#: src/postfix_logsums/app.py:1372
 msgid "received"
 msgstr "empfangen"
 
-#: postfix_logsums/app.py:1145
+#: src/postfix_logsums/app.py:1374
 msgid "delivered"
 msgstr "zugestellt"
 
-#: postfix_logsums/app.py:1147
+#: src/postfix_logsums/app.py:1376
 msgid "forwarded"
 msgstr "weitergeleitet"
 
-#: postfix_logsums/app.py:1149
+#: src/postfix_logsums/app.py:1378
 msgid "deferred"
 msgstr "verzögert"
 
-#: postfix_logsums/app.py:1152
+#: src/postfix_logsums/app.py:1381
 msgid "deferrals"
 msgstr "Verzögerungen"
 
-#: postfix_logsums/app.py:1156
+#: src/postfix_logsums/app.py:1385
 msgid "bounced"
 msgstr "bounced"
 
-#: postfix_logsums/app.py:1158
+#: src/postfix_logsums/app.py:1387
 msgid "rejected"
 msgstr "abgewiesen"
 
-#: postfix_logsums/app.py:1161
+#: src/postfix_logsums/app.py:1390
 msgid "reject warnings"
 msgstr "Abweisungswarnungen"
 
-#: postfix_logsums/app.py:1163
+#: src/postfix_logsums/app.py:1392
 msgid "held"
 msgstr "gehalten"
 
-#: postfix_logsums/app.py:1165
+#: src/postfix_logsums/app.py:1394
 msgid "discarded"
 msgstr "verworfen"
 
-#: postfix_logsums/app.py:1170
+#: src/postfix_logsums/app.py:1399
 msgid "bytes received"
 msgstr "Bytes erhalten"
 
-#: postfix_logsums/app.py:1172
+#: src/postfix_logsums/app.py:1401
 msgid "bytes delivered"
 msgstr "Bytes zugestellt"
 
-#: postfix_logsums/app.py:1174
+#: src/postfix_logsums/app.py:1403
 msgid "senders"
 msgstr "Absender"
 
-#: postfix_logsums/app.py:1176
+#: src/postfix_logsums/app.py:1405
 msgid "sending hosts/domains"
 msgstr "Versendende Hosts/Domänen"
 
-#: postfix_logsums/app.py:1178
+#: src/postfix_logsums/app.py:1407
 msgid "recipients"
 msgstr "Empfänger"
 
-#: postfix_logsums/app.py:1180
+#: src/postfix_logsums/app.py:1409
 msgid "recipients hosts/domains"
 msgstr "empfangende Hosts/Domänen"
 
-#: postfix_logsums/app.py:1194
+#: src/postfix_logsums/app.py:1423
 msgid "None"
 msgstr "Keine"
 
-#: postfix_logsums/app.py:1199 postfix_logsums/app.py:1260
+#: src/postfix_logsums/app.py:1428 src/postfix_logsums/app.py:1498
 msgid "top"
 msgstr "Top"
 
-#: postfix_logsums/app.py:1222 postfix_logsums/app.py:1225
+#: src/postfix_logsums/app.py:1451 src/postfix_logsums/app.py:1455
 msgid "connections"
 msgstr "Verbindungen"
 
-#: postfix_logsums/app.py:1223
+#: src/postfix_logsums/app.py:1452
 msgid "hosts/domains"
 msgstr "Hosts/Domänen"
 
-#: postfix_logsums/app.py:1228
+#: src/postfix_logsums/app.py:1463
 msgid "total connect time"
 msgstr "Gesamtverbindungszeit"
 
-#: postfix_logsums/app.py:1265
+#: src/postfix_logsums/app.py:1503
 msgid "total"
 msgstr "gesamt"
 
-#: postfix_logsums/app.py:1329
+#: src/postfix_logsums/app.py:1570
 msgid "Message deferral detail"
 msgstr "Details zu Nachrichtenverzögerungen"
 
-#: postfix_logsums/app.py:1334
+#: src/postfix_logsums/app.py:1577
 msgid "Message bounce detail (by relay)"
 msgstr "Details zu Nachrichetnbounces (nach Relais)"
 
-#: postfix_logsums/app.py:1339
+#: src/postfix_logsums/app.py:1584
 msgid "Message reject detail"
 msgstr "Details zu Nachrichtenabweisungen"
 
-#: postfix_logsums/app.py:1342
+#: src/postfix_logsums/app.py:1589
 msgid "Message reject warning detail"
 msgstr "Details zu Abweisungswarnungen von Nachrichten"
 
-#: postfix_logsums/app.py:1345
+#: src/postfix_logsums/app.py:1593
 msgid "Message hold detail"
 msgstr "Details zu Nachrichtenhalts"
 
-#: postfix_logsums/app.py:1348
+#: src/postfix_logsums/app.py:1597
 msgid "Message discard detail"
 msgstr "Details zu Nachrichtenverwerfungen"
 
-#: postfix_logsums/app.py:1353
+#: src/postfix_logsums/app.py:1604
 msgid "SMTP delivery failures"
 msgstr "SMTP-Zustellungsfehler"
 
-#: postfix_logsums/app.py:1358
+#: src/postfix_logsums/app.py:1610
 msgid "Warnings"
 msgstr "Warnungen"
 
-#: postfix_logsums/app.py:1360
+#: src/postfix_logsums/app.py:1613
 msgid "Fatal Errors"
 msgstr "Fatale Fehler"
 
-#: postfix_logsums/app.py:1361
+#: src/postfix_logsums/app.py:1614
 msgid "Panics"
 msgstr "Panikmeldungen"
 
-#: postfix_logsums/app.py:1363
+#: src/postfix_logsums/app.py:1616
 msgid "Master daemon messages"
 msgstr "Meldungen des Master-Dämons"
 
-#: postfix_logsums/app.py:1368
+#: src/postfix_logsums/app.py:1622
 msgid "Per-Day Traffic Summary"
 msgstr "Verkehrszusammenfassung pro Tag"
 
-#: postfix_logsums/app.py:1372 postfix_logsums/app.py:1653
+#: src/postfix_logsums/app.py:1626 src/postfix_logsums/app.py:1912
 msgid "Date"
 msgstr "Datum"
 
-#: postfix_logsums/app.py:1373 postfix_logsums/app.py:1437
+#: src/postfix_logsums/app.py:1627 src/postfix_logsums/app.py:1696
 msgid "Received"
 msgstr "Erhalten"
 
-#: postfix_logsums/app.py:1374 postfix_logsums/app.py:1438
+#: src/postfix_logsums/app.py:1628 src/postfix_logsums/app.py:1697
 msgid "Delivered"
 msgstr "Zugestellt"
 
-#: postfix_logsums/app.py:1375 postfix_logsums/app.py:1439
+#: src/postfix_logsums/app.py:1629 src/postfix_logsums/app.py:1698
 msgid "Deferred"
 msgstr "Verzögert"
 
-#: postfix_logsums/app.py:1376 postfix_logsums/app.py:1440
+#: src/postfix_logsums/app.py:1630 src/postfix_logsums/app.py:1699
 msgid "Bounced"
 msgstr "Bounced"
 
-#: postfix_logsums/app.py:1377 postfix_logsums/app.py:1441
+#: src/postfix_logsums/app.py:1631 src/postfix_logsums/app.py:1700
 msgid "Rejected"
 msgstr "Zurückgewiesen"
 
-#: postfix_logsums/app.py:1430
+#: src/postfix_logsums/app.py:1689
 msgid "Per-Hour Traffic Summary"
 msgstr "Verkehrszusammenfassung pro Stunde"
 
-#: postfix_logsums/app.py:1432
+#: src/postfix_logsums/app.py:1691
 msgid "Per-Hour Traffic Daily Average"
 msgstr "Tagesdurchscnitt Verkehrszusammenfassung pro Stunde"
 
-#: postfix_logsums/app.py:1436 postfix_logsums/app.py:1724
+#: src/postfix_logsums/app.py:1695 src/postfix_logsums/app.py:1984
 msgid "Hour"
 msgstr "Stunde"
 
-#: postfix_logsums/app.py:1527
+#: src/postfix_logsums/app.py:1786
 msgid "Host/Domain Summary: Message Delivery"
 msgstr "Host/Domänen-Zusammenfassung: Nachrichtenzustellung"
 
-#: postfix_logsums/app.py:1533
+#: src/postfix_logsums/app.py:1792
 msgid "Sent count"
 msgstr "Anzahl gesendet"
 
-#: postfix_logsums/app.py:1534 postfix_logsums/app.py:1604
+#: src/postfix_logsums/app.py:1793 src/postfix_logsums/app.py:1863
 msgid "Bytes"
 msgstr "Bytes"
 
-#: postfix_logsums/app.py:1535
+#: src/postfix_logsums/app.py:1794
 msgid "Defers"
 msgstr "Verzögerungen"
 
-#: postfix_logsums/app.py:1536
+#: src/postfix_logsums/app.py:1795
 msgid "Avg. delay"
 msgstr "Durchschn. Verzögerung"
 
-#: postfix_logsums/app.py:1537
+#: src/postfix_logsums/app.py:1796
 msgid "Max. delay"
 msgstr "Maximale Verzögerung"
 
-#: postfix_logsums/app.py:1538 postfix_logsums/app.py:1605 postfix_logsums/app.py:1815
+#: src/postfix_logsums/app.py:1797 src/postfix_logsums/app.py:1864 src/postfix_logsums/app.py:2076
 msgid "Host/Domain"
 msgstr "Host/Domäne"
 
-#: postfix_logsums/app.py:1597
+#: src/postfix_logsums/app.py:1856
 msgid "Host/Domain Summary: Messages Received"
 msgstr "Host/Domänen-Zusammenfassung: empfangene Nachrichten"
 
-#: postfix_logsums/app.py:1603
+#: src/postfix_logsums/app.py:1862
 msgid "Message count"
 msgstr "Anzahl Nachrichten"
 
-#: postfix_logsums/app.py:1645
+#: src/postfix_logsums/app.py:1904
 msgid "Per-Day SMTPD Connection Summary"
 msgstr "SMTPD Verbindungszusammenfassung pro Tag"
 
-#: postfix_logsums/app.py:1654 postfix_logsums/app.py:1725 postfix_logsums/app.py:1811
+#: src/postfix_logsums/app.py:1913 src/postfix_logsums/app.py:1985 src/postfix_logsums/app.py:2072
 msgid "Connections"
 msgstr "Verbindungen"
 
-#: postfix_logsums/app.py:1655
+#: src/postfix_logsums/app.py:1914
 msgid "Time connections total"
 msgstr "Verbindungszeiten gesamt"
 
-#: postfix_logsums/app.py:1656
+#: src/postfix_logsums/app.py:1915
 msgid "Avg. time connection"
 msgstr "Durchschn. Verbindungszeit"
 
-#: postfix_logsums/app.py:1657
+#: src/postfix_logsums/app.py:1916
 msgid "Max. time connection"
 msgstr "Maximale Verbindungszeit"
 
-#: postfix_logsums/app.py:1712
+#: src/postfix_logsums/app.py:1972
 msgid "Per-Hour SMTPD Connection Summary"
 msgstr "SMTPD-Verbindungszusammenfassung pro Stunde"
 
-#: postfix_logsums/app.py:1714
+#: src/postfix_logsums/app.py:1974
 msgid "Per-Hour SMTPD Connection Daily Average"
 msgstr "Tagesdurchscnitt SMTPD-Verbindungen pro Stunde"
 
-#: postfix_logsums/app.py:1726 postfix_logsums/app.py:1812
+#: src/postfix_logsums/app.py:1986 src/postfix_logsums/app.py:2073
 msgid "Time total"
 msgstr "Zeit gesamt"
 
-#: postfix_logsums/app.py:1727 postfix_logsums/app.py:1813
+#: src/postfix_logsums/app.py:1987 src/postfix_logsums/app.py:2074
 msgid "Time avg."
 msgstr "Zeit durchschn."
 
-#: postfix_logsums/app.py:1728 postfix_logsums/app.py:1814
+#: src/postfix_logsums/app.py:1988 src/postfix_logsums/app.py:2075
 msgid "Time max."
 msgstr "Zeit maximal"
 
-#: postfix_logsums/app.py:1805
+#: src/postfix_logsums/app.py:2066
 msgid "Host/Domain Summary: SMTPD Connections"
 msgstr "Host/Domänen-Zusammenfassung: SMTPD-Verbindungen"
 
-#: postfix_logsums/app.py:1852
+#: src/postfix_logsums/app.py:2113
 msgid "<None>"
 msgstr "<Keine>"
 
-#: postfix_logsums/errors.py:49
+#: src/postfix_logsums/app.py:2256
+#, python-brace-format
+msgid ""
+"{c}-Object:\n"
+"{a}"
+msgstr ""
+"{c}-Objekt:\n"
+"{a}"
+
+#: src/postfix_logsums/errors.py:49
+#, python-brace-format
 msgid "Invalid key {k!r} for a {what}, must be valid date: {e}"
 msgstr "Ungültiger Schlüssel {k!r} für ein {what}, er muss ein gültiges Datum sein: {e}"
 
-#: postfix_logsums/errors.py:51
+#: src/postfix_logsums/errors.py:51
+#, python-brace-format
 msgid "Invalid key {k!r} for a {what}, must be valid date."
 msgstr "Ungültiger Schlüssel {k!r} für ein {what}, er muss ein gültiges Datum sein."
 
-#: postfix_logsums/errors.py:69
+#: src/postfix_logsums/errors.py:70
+#, python-brace-format
 msgid "Key error for key {k!r} for a {what}: {e}"
 msgstr "Schlüsselfehler für Schlüssel {k!r} für ein {what}: {e}"
 
-#: postfix_logsums/errors.py:71
+#: src/postfix_logsums/errors.py:72
+#, python-brace-format
 msgid "Key error for {k!r} for a {what}."
 msgstr "Schlüsselfehler für Schlüssel {k!r} für ein {what}."
 
-#: postfix_logsums/errors.py:88
+#: src/postfix_logsums/errors.py:90
+#, python-brace-format
 msgid "Invalid attribute {attr!r} for a {w} object."
 msgstr "Ungültoges Attribut {attr!r} für ein {w}-Objekt."
 
-#: postfix_logsums/errors.py:114 postfix_logsums/errors.py:133
+#: src/postfix_logsums/errors.py:115 src/postfix_logsums/errors.py:133
+#, python-brace-format
 msgid "Invalid key {k!r} for a {w} object."
 msgstr "Ungültiger Schlüssel {k!r} für ein {w}-Objekt."
 
-#: postfix_logsums/errors.py:152
+#: src/postfix_logsums/errors.py:151
+#, python-brace-format
 msgid "Invalid hour {h!r} for a {w} object."
 msgstr "Ungültige Stunde für ein {w}-Objekt."
 
-#: postfix_logsums/errors.py:171
+#: src/postfix_logsums/errors.py:169
+#, python-brace-format
 msgid "Value {v!r} not found in the {w} object."
 msgstr "Der Wert {v!r} wurde nicht im {w}-Objekt gefunden."
 
-#: postfix_logsums/errors.py:190
+#: src/postfix_logsums/errors.py:187
+#, python-brace-format
 msgid "Invalid method {m}() for a {w} object."
 msgstr "Ungültige methode {m}() für ein {w}-Objekt."
 
-#: postfix_logsums/stats.py:71 postfix_logsums/stats.py:401 postfix_logsums/stats.py:638
+#: src/postfix_logsums/stats.py:76 src/postfix_logsums/stats.py:428 src/postfix_logsums/stats.py:668
+#, python-brace-format
 msgid "Object is not a {m} object, but a {w} object instead."
 msgstr "Das Objekt ist kein {m}-Objekt, sondern statt dessen ein {w}-Objekt."
 
-#: postfix_logsums/stats.py:102
+#: src/postfix_logsums/stats.py:107
+#, python-brace-format
 msgid "Wrong value {v!r} for a {w} value: {e}"
 msgstr "Falscher Wert {v!r} für ein {w}-Wert: {e}"
 
-#: postfix_logsums/stats.py:107
+#: src/postfix_logsums/stats.py:113
+#, python-brace-format
 msgid "Wrong value {v!r} for a {w} value: must be >= 0"
 msgstr "Falscher Wert {v!r} für ein {w}-Wert: er muss größer oder gleich als Null sein."
 
-#: postfix_logsums/stats.py:116
+#: src/postfix_logsums/stats.py:123
+#, python-brace-format
 msgid "Deleting attribute {a!r} of a {w} is not allowed."
 msgstr "Löschen des Attributes {a!r} eines {w} ist nicht erlaubt."
 
-#: postfix_logsums/stats.py:386
+#: src/postfix_logsums/stats.py:414
+#, python-brace-format
 msgid "Wrong class {c} for using as an item class, must be a subclas of {sc}."
 msgstr "Ungültige Klasse {c} als Item-Klasse verwendet, es muss eine Unterklasse von {sc} sein."
 
-#: postfix_logsums/stats.py:587
+#: src/postfix_logsums/stats.py:616
+#, python-brace-format
 msgid "The method {met}() expected at most {max} arguments, got {got}."
 msgstr "Die Method {met}() erwartet höchstens {max} Argumente, es wurden aber {got} angegeben."
 
-#: postfix_logsums/stats.py:670 postfix_logsums/stats.py:827
+#: src/postfix_logsums/stats.py:702 src/postfix_logsums/stats.py:860
+#, python-brace-format
 msgid "Invalid number {} of statistics per hour given."
 msgstr "Ungültige Zahl {} für Stundenstatistiken angegeben."
 
-#: postfix_logsums/stats.py:755
+#: src/postfix_logsums/stats.py:790
+#, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat: {e}"
 msgstr "Ungültiger Wert {v!r} für eine Stundenstatistik: {e}"
 
-#: postfix_logsums/stats.py:758
+#: src/postfix_logsums/stats.py:793
+#, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat: must be >= 0"
 msgstr "Ungültiger Wert {v!r} für eine Stundenstatistik: er muss größer oder gleich als Null sein."
 
-#: postfix_logsums/stats.py:844
+#: src/postfix_logsums/stats.py:878
+#, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat of smtp - must have three numbers."
 msgstr "Ungültiger Wert {v!r} für eine SMTP-Stundenstatistik - es müssen drei Zahlen sein."
 
-#: postfix_logsums/stats.py:860
+#: src/postfix_logsums/stats.py:893
+#, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat."
 msgstr "Ungültiger Wert {v!r} für eine Stundenstatistik."
 
-#: postfix_logsums/xlate.py:106
-msgid "Module directory: {!r}"
-msgstr "Modul-Verzeichnis: {!r}"
+#: src/postfix_logsums/xlate.py:119
+msgid "Module directory:"
+msgstr "Modul-Verzeichnis:"
 
-#: postfix_logsums/xlate.py:107
-msgid "Base directory: {!r}"
-msgstr "Basisverzeichnis: {!r}"
+#: src/postfix_logsums/xlate.py:120
+msgid "Lib directory:"
+msgstr "Basisverzeichnis:"
 
-#: postfix_logsums/xlate.py:108
-msgid "Locale directory: {!r}"
-msgstr "Verzeichnis für Locales: {!r}"
+#: src/postfix_logsums/xlate.py:121
+msgid "Base directory:"
+msgstr "Basisverzeichnis:"
 
-#: postfix_logsums/xlate.py:109
-msgid "Locale domain: {!r}"
-msgstr "Locale-Domäne: {!r}"
+#: src/postfix_logsums/xlate.py:122
+msgid "Locale directory:"
+msgstr "Verzeichnis für Locales:"
 
-#: postfix_logsums/xlate.py:110
-msgid "Found .mo-file: {!r}"
-msgstr "Gefundene .mo-Datei: {!r}"
+#: src/postfix_logsums/xlate.py:123
+msgid "Locale domain:"
+msgstr "Locale-Domäne:"
+
+#: src/postfix_logsums/xlate.py:124
+msgid "Found .mo-file:"
+msgstr "Gefundene .mo-Datei:"
 

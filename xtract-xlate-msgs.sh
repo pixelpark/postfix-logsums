@@ -14,7 +14,7 @@ my_address="${DEBEMAIL:-frank@brehm-online.com}"
 babel_ini="etc/babel.ini"
 
 # pkg_version=$( head -n 1 debian/changelog | sed -e 's/^[^(]*(//' -e 's/).*//' )
-pkg_version=$( grep -E '^\s*__version__' src/postfix_logsums__init__.py | sed -e 's/.*=[ 	]*//' -e "s/'//g" )
+pkg_version=$( grep -E '^\s*__version__' src/postfix_logsums/__init__.py | sed -e 's/.*=[ 	]*//' -e "s/'//g" )
 echo "Package-Version: '${pkg_version}'"
 
 if [[ ! -f "${babel_ini}" ]] ; then
@@ -27,7 +27,7 @@ if [[ ! -d "${locale_dir}" ]] ; then
     mkdir -v "${locale_dir}"
 fi
 
-pybabel extract postfix-logsums postfix_logsums \
+pybabel extract src \
     -o "${pot_file}" \
     -F "${babel_ini}" \
     --width=${po_with} \
