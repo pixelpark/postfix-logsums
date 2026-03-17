@@ -11,12 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Adding CHANGELOG.md.
 * Adding minimized setup.cfg.
+* Adding entrypoint postfix-logsums in `src/postfix_logsums/app.py`.
 
 ### Changed
 
 * Renaming `test/` => `tests/`
 * Moving `postfix_logsums/` => `src/postfix_logsums/`
 * Refactoring testing scripts.
+* Updating update-env.sh for refactored virtual env.
 
 ### Removed
 

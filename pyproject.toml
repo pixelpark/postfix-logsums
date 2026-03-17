@@ -45,7 +45,7 @@ name = "postfix_logsums"
 directory = "data"
 
 [project.scripts]
-create-terraform = "postfix_logsums.app:main"
+postfix-logsums = "postfix_logsums.app:main"
 
 [project.optional-dependencies]
 development = [

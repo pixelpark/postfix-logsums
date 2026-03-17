@@ -22,6 +22,7 @@ import textwrap
 import shutil
 import locale
 import json
+from pathlib import Path
 
 HAS_YAML = False
 try:
@@ -32,8 +33,6 @@ except ImportError:
 
 # from argparse import RawDescriptionHelpFormatter
 from argparse import RawTextHelpFormatter
-
-from pathlib import Path
 
 from functools import cmp_to_key
 
@@ -53,7 +52,7 @@ from .xlate import XLATOR, format_list
 
 from .stats import HOURS_PER_DAY
 
-__version__ = '0.8.4'
+__version__ = '0.9.0'
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -1977,6 +1976,25 @@ class PostfixLogsumsApp(object):
                     line = tpl.format(qid='', val=val)
                 print(line)
                 first = False
+
+
+# =============================================================================
+def main():
+    """Entrypoint for postfix-logsums."""
+    my_path = Path(sys.argv[0])
+    appname = my_path.name
+
+    locale.setlocale(locale.LC_ALL, "")
+
+    app = PostfixLogsumsApp(appname=appname)
+    app.initialized = True
+
+    if app.verbose > 2:
+        print(_("{c}-Object:\n{a}").format(c=app.__class__.__name__, a=app), file=sys.stderr)
+
+    app()
+
+    sys.exit(0)
 
 
 # =============================================================================
