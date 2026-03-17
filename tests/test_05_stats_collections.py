@@ -8,17 +8,18 @@
 @summary: test script (and module) for unit tests on postfix_logsums.stats
 '''
 
+import datetime
+import logging
 import os
 import sys
-import logging
-import datetime
+from pathlib import Path
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-libdir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+libdir = str(Path(__file__).parent.parent / 'src')
 sys.path.insert(0, libdir)
 
 from general import PostfixLogsumsTestcase, get_arg_verbose, init_root_logger, pp
@@ -31,7 +32,9 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def setUp(self):
-        pass
+        """Execute this on seting up before calling each particular test method."""
+        if self.verbose >= 1:
+            print()
 
     # -------------------------------------------------------------------------
     def test_import(self):
@@ -43,8 +46,8 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_init_base_stats(self):
-
-        LOG.info("Testing init and attributes of a BaseMessageStats object.")
+        """Test init and attributes of a BaseMessageStats object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.stats import BaseMessageStats
 
@@ -97,8 +100,8 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_base_stats_failures(self):
-
-        LOG.info("Testing wrong attributes, keys or values of a BaseMessageStats object.")
+        """Test wrong attributes, keys or values of a BaseMessageStats object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.stats import BaseMessageStats
@@ -136,8 +139,8 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_common_msg_stats(self):
-
-        LOG.info("Testing init and attributes of a MessageStats object.")
+        """Test init and attributes of a MessageStats object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.stats import MessageStats
@@ -185,8 +188,8 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_msg_stats_per_day(self):
-
-        LOG.info("Testing init and attributes of a MessageStatsPerDay object.")
+        """Test init and attributes of a MessageStatsPerDay object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.stats import MessageStatsPerDay
@@ -234,8 +237,8 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_hourly_stats(self):
-
-        LOG.info("Testing init and attributes of a HourlyStats object ..""")
+        """Test init and attributes of a HourlyStats object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.stats import HourlyStats
@@ -287,8 +290,8 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_daily_stats(self):
-
-        LOG.info("Testing init and attributes of a DailyStatsDict object ..""")
+        """Test init and attributes of a DailyStatsDict object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.stats import DailyStatsDict, BaseMessageStats

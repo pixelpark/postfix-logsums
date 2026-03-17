@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
+@summary: Test script (and module) for unit tests on error (exception) classes.
+
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 Frank Brehm, Berlin
+@copyright: © 2023 - 2026 Frank Brehm, Berlin
 @license: GPL3
-@summary: test script (and module) for unit tests on error (exception) classes
 '''
 
 import os
 import sys
 import logging
+from pathlib import Path
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-libdir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+libdir = str(Path(__file__).parent.parent / 'src')
 sys.path.insert(0, libdir)
 
 from general import PostfixLogsumsTestcase, get_arg_verbose, init_root_logger
@@ -30,12 +32,15 @@ class TestErrors(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def setUp(self):
-        pass
+        """Execute this on seting up before calling each particular test method."""
+        if self.verbose >= 1:
+            print()
 
     # -------------------------------------------------------------------------
     def test_import(self):
+        """Test importing module postfix_logsums.errors."""
+        LOG.info(self.get_method_doc())
 
-        LOG.info("Testing import of postfix_logsums.errors ...")
         import postfix_logsums.errors
         LOG.debug("Version of postfix_logsums.errors: {!r}".format(
             postfix_logsums.errors.__version__))
@@ -50,10 +55,10 @@ class TestErrors(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_general_errors(self):
+        """Test raising a PostfixLogsumsError exception."""
+        LOG.info(self.get_method_doc())
 
         test_txt = "Bla blub"
-
-        LOG.info("Test raising a PostfixLogsumsError exception ...")
 
         from postfix_logsums.errors import PostfixLogsumsError
 
@@ -75,10 +80,10 @@ class TestErrors(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_attribute_errors(self):
+        """Test raising a WrongMsgStatsAttributeError."""
+        LOG.info(self.get_method_doc())
 
         wrong_attr = 'uhu'
-
-        LOG.info("Test raising a WrongMsgStatsAttributeError ...")
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.errors import WrongMsgStatsAttributeError
@@ -104,10 +109,10 @@ class TestErrors(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_key_errors(self):
+        """Test raising a WrongMsgStatsKeyError."""
+        LOG.info(self.get_method_doc())
 
         wrong_key = 'uhu'
-
-        LOG.info("Test raising a WrongMsgStatsKeyError ...")
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.errors import WrongMsgStatsKeyError
@@ -130,10 +135,10 @@ class TestErrors(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_hour_errors(self):
+        """Test raising a WrongMsgStatsHourError."""
+        LOG.info(self.get_method_doc())
 
         wrong_hour = 'uhu'
-
-        LOG.info("Test raising a WrongMsgStatsHourError ...")
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.errors import WrongMsgStatsHourError

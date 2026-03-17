@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+@summary: Functions and objects used for unit tests on the postfix logsums python modules.
+
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 Frank Brehm, Berlin
+@copyright: © 2023 - 2026 Frank Brehm, Berlin
 @license: AGPL
-@summary: general used functions an objects used for unit tests on
-          the postfix logsums python modules
 """
 
-import os
-import sys
-import logging
 import argparse
+import logging
+import os
 import pprint
 import shutil
+import sys
+import textwrap
 
 try:
     from fb_logging.colored import ColoredFormatter as Formatter
@@ -92,6 +93,28 @@ def init_root_logger(verbose=0):
 
 # =============================================================================
 class PostfixLogsumsTestcase(unittest.TestCase):
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def current_function_name(cls, level=0):
+        """Return the name of the function, from where this method was called."""
+        return sys._getframe(level + 1).f_code.co_name
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_method_doc(cls):
+        """Return the docstring of the method, from where this method was called."""
+        func_name = cls.current_function_name(1)
+        doc_str = getattr(cls, func_name).__doc__
+        cname = cls.__name__
+        mname = "{cls}.{meth}()".format(cls=cname, meth=func_name)
+        msg = "This is {}.".format(mname)
+        if doc_str is None:
+            return msg
+        doc_str = textwrap.dedent(doc_str).strip()
+        if doc_str:
+            msg = "{m} - {d}".format(m=mname, d=doc_str)
+        return msg
 
     # -------------------------------------------------------------------------
     def __init__(self, methodName='runTest', verbose=0):
