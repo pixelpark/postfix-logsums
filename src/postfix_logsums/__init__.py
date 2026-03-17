@@ -9,26 +9,25 @@
 """
 from __future__ import absolute_import
 
+import bz2
+import codecs
+import copy
+import datetime
+import gzip
+import logging
+import lzma
+import os
 import pprint
+import re
 import shutil
 import sys
-import os
-import re
-import datetime
-import copy
-import codecs
-import gzip
-import bz2
-import lzma
-import logging
 
 # Own modules
 from .errors import PostfixLogsumsError
-
 from .results import PostfixLogSums
-
-from .stats import MessageStats, MessageStatsPerDay, SmtpdStats
-
+from .stats import MessageStats
+from .stats import MessageStatsPerDay
+from .stats import SmtpdStats
 from .xlate import XLATOR
 
 __version__ = '0.9.4'
@@ -57,7 +56,6 @@ def pp(value, indent=4, width=None, depth=None):
     @return: pretty print string
     @rtype: str
     """
-
     if not width:
         term_size = shutil.get_terminal_size((DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT))
         width = term_size.columns
@@ -156,8 +154,7 @@ class PostfixLogParser(object):
             detail_smtpd_warning=True, ignore_case=False, rej_add_from=False,
             smtpd_stats=False, extended=False, no_no_message_size=False,
             verp_mung=None, compression=None, encoding=DEFAULT_ENCODING):
-        """Constructor."""
-
+        """Initialize the PostfixLogParser object."""
         self._appname = get_generic_appname()
         self._verbose = 0
         self._initialized = False
@@ -383,7 +380,6 @@ class PostfixLogParser(object):
     @classmethod
     def said_string_trimmer(cls, message, max_len=None):
         """Trim a "said:" string, if necessary.  Add elipses to show it."""
-
         if not max_len:
             max_len = cls.default_max_trim_length
 
@@ -579,9 +575,12 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     @property
     def rej_add_from(self):
-        """For those reject reports that list IP addresses or host/domain names: append the
-        email from address to each listing. (Does not apply to 'Improper use of
-        SMTP command pipelining' report.)"""
+        """
+        Append the email from address to each listing.
+
+        But only for those reject reports that list IP addresses or host/domain names.
+        Does not apply to 'Improper use of SMTP command pipelining' report.)
+        """
         return self._rej_add_from
 
     @rej_add_from.setter
@@ -644,19 +643,17 @@ class PostfixLogParser(object):
     # -------------------------------------------------------------------------
     def __str__(self):
         """
-        Typecasting function for translating object structure
-        into a string
+        Typecast  for translating object structure into a string.
 
         @return: structure as string
         @rtype:  str
         """
-
         return pp(self.as_dict(short=True))
 
     # -------------------------------------------------------------------------
     def as_dict(self, short=True):
         """
-        Transforms the elements of the object into a dict
+        Transform the elements of the object into a dict.
 
         @param short: don't include local properties in resulting dict.
         @type short: bool
@@ -664,8 +661,8 @@ class PostfixLogParser(object):
         @return: structure as dict
         @rtype:  dict
         """
-
         res = {}
+
         for key in self.__dict__:
             if short and key.startswith('_') and not key.startswith('__'):
                 continue
@@ -700,8 +697,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def parse(self, *files):
-        """Main entry point of this class."""
-
+        """Execute parsing of logfiles - main entry point."""
         self.results.reset()
 
         if not files:
@@ -722,8 +718,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def parse_file(self, logfile):
-        """Parsing a particular logfile."""
-
+        """Parse a particular logfile."""
         open_opts = {
             'encoding': self.encoding,
             'errors': 'surrogateescape',
@@ -750,7 +745,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def parse_fh(self, fh, filename, compression=None):
-
+        """Parse the file content provided by the given opened file handle."""
         line = None
 
         if not compression:
@@ -783,7 +778,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def read_gzip(self, cdata):
-
+        """Read gzip compressed file content."""
         bdata = gzip.decompress(cdata)
         data = bdata.decode(self.encoding, errors='surrogateescape')
 
@@ -792,7 +787,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def read_bzip2(self, cdata):
-
+        """Read bzip2 compressed file content."""
         bdata = bz2.decompress(cdata)
         data = bdata.decode(self.encoding, errors='surrogateescape')
 
@@ -801,7 +796,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def read_lzma(self, cdata):
-
+        """Read lzma compressed file content."""
         bdata = lzma.decompress(cdata)
         data = bdata.decode(self.encoding, errors='surrogateescape')
 
@@ -810,7 +805,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def eval_line(self, line):
-
+        """Evaluate the content of the given logging line."""
         self.results.incr_lines_total()
 
         if self.re_date_filter:
@@ -862,7 +857,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def incr_msgs_per_day(self, index=None):
-
+        """Increase counter for the messages of logging date."""
         cur_date = self._cur_ts.date()
         if cur_date not in self.results.messages_per_day:
             self.results.messages_per_day[cur_date] = MessageStatsPerDay()
@@ -1264,7 +1259,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def do_verp_mung(self, address):
-
+        """Mangle the given address for lower case characters."""
         if self.verp_mung is not None:
             address = self.re_verp_mung1.sub(r'\1-ID', address)
             if self.verp_mung > 1:
@@ -1274,7 +1269,11 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def gimme_domain(self, data):
+        """
+        Return the domain of the given address.
 
+        It returns the IP address, if the domain could not evaluated.
+        """
         domain = None
         ip_address = None
 
@@ -1303,7 +1302,7 @@ class PostfixLogParser(object):
 
     # -------------------------------------------------------------------------
     def proc_smtpd_reject(self, counter):
-
+        """Do something with the given counter."""
         self.results.msgs_total[counter] += 1
         # counter += 1
 
