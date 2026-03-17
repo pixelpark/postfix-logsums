@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
+@summary: Test script (and module) for unit tests on postfix_logsums.stats.
+
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 Frank Brehm, Berlin
+@copyright: © 2023 - 2026 Frank Brehm, Berlin
 @license: GPL3
-@summary: test script (and module) for unit tests on postfix_logsums.stats
-'''
+"""
 
 import datetime
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -29,6 +29,7 @@ LOG = logging.getLogger('test_stats_collections')
 
 # =============================================================================
 class TestStatsCollections(PostfixLogsumsTestcase):
+    """Testcase class for testing postfix_logsums.stats."""
 
     # -------------------------------------------------------------------------
     def setUp(self):
@@ -38,8 +39,9 @@ class TestStatsCollections(PostfixLogsumsTestcase):
 
     # -------------------------------------------------------------------------
     def test_import(self):
+        """Test import of postfix_logsums.stats."""
+        LOG.info(self.get_method_doc())
 
-        LOG.info("Testing import of postfix_logsums.stats ...")
         import postfix_logsums.stats
         LOG.debug("Version of postfix_logsums.stats: {!r}".format(
             postfix_logsums.stats.__version__))

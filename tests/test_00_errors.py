@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
 @summary: Test script (and module) for unit tests on error (exception) classes.
 
 @author: Frank Brehm
 @contact: frank@brehm-online.com
 @copyright: © 2023 - 2026 Frank Brehm, Berlin
 @license: GPL3
-'''
+"""
 
-import os
-import sys
 import logging
+import sys
 from pathlib import Path
 
 try:
@@ -29,6 +28,7 @@ LOG = logging.getLogger('test_errors')
 
 # =============================================================================
 class TestErrors(PostfixLogsumsTestcase):
+    """Testcase class for testing postfix_logsums.errors."""
 
     # -------------------------------------------------------------------------
     def setUp(self):

@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
 @summary: Test script (and module) for unit tests on postfix_logsums.results.
 
 @author: Frank Brehm
 @contact: frank@brehm-online.com
 @copyright: © 2023 Frank Brehm, Berlin
 @license: GPL3
-'''
+"""
 
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -29,6 +28,7 @@ LOG = logging.getLogger('test_results')
 
 # =============================================================================
 class TestResults(PostfixLogsumsTestcase):
+    """Testcase class for testing postfix_logsums.results."""
 
     # -------------------------------------------------------------------------
     def setUp(self):
