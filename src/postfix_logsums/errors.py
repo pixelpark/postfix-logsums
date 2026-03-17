@@ -1,18 +1,17 @@
 #!/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@summary: a module for all error (exception) classes used in this package
+@summary: A module for all error (exception) classes used in this package.
 
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 by Frank Brehm, Berlin
+@copyright: © 2023 - 2026 by Frank Brehm, Berlin
 """
 
 from .xlate import XLATOR
 
-__version__ = '0.5.0'
-__author__ = 'Frank Brehm <frank@brehm-online.com>'
-__copyright__ = '(C) 2023 by Frank Brehm, Berlin'
+__version__ = "0.6.1"
+__author__ = "Frank Brehm <frank@brehm-online.com>"
 
 _ = XLATOR.gettext
 
@@ -40,7 +39,7 @@ class WrongDateKeyError(StatsError, ValueError):
         """Initialise a WrongDateKeyError exception."""
         self.key = key
         self.err_msg = err_msg
-        super(WrongDateKeyError, self).__init__()
+        # super(WrongDateKeyError, self).__init__()
 
     # -------------------------------------------------------------------------
     def __str__(self):
@@ -49,7 +48,8 @@ class WrongDateKeyError(StatsError, ValueError):
             msg = _("Invalid key {k!r} for a {what}, must be valid date: {e}")
         else:
             msg = _("Invalid key {k!r} for a {what}, must be valid date.")
-        return msg.format(k=self.key, what='DailyStatsDict', e=self.err_msg)
+        return msg.format(k=self.key, what="DailyStatsDict", e=self.err_msg)
+
 
 # =============================================================================
 class WrongDailyKeyError(StatsError, KeyError):
@@ -69,7 +69,8 @@ class WrongDailyKeyError(StatsError, KeyError):
             msg = _("Key error for key {k!r} for a {what}: {e}")
         else:
             msg = _("Key error for {k!r} for a {what}.")
-        return msg.format(k=self.key, what='DailyStatsDict', e=self.err_msg)
+        return msg.format(k=self.key, what="DailyStatsDict", e=self.err_msg)
+
 
 # =============================================================================
 class WrongMsgStatsAttributeError(StatsError, AttributeError):
@@ -101,9 +102,8 @@ class WrongMsgStatsKeyError(StatsError, KeyError):
     """Error class for a wrong key for the MessageStats object."""
 
     # -------------------------------------------------------------------------
-    def __init__(self, key, obj_type='MessageStats'):
+    def __init__(self, key, obj_type="MessageStats"):
         """Initialise a WrongMsgStatsKeyError exception."""
-
         self.key = key
         self.obj_type = obj_type
         super(WrongMsgStatsKeyError, self).__init__()
@@ -120,9 +120,8 @@ class WrongMsgPerDayKeyError(StatsError, KeyError):
     """Error class for a wrong key for the MessageStatsPerDay object."""
 
     # -------------------------------------------------------------------------
-    def __init__(self, key, obj_type='MessageStatsPerDay'):
+    def __init__(self, key, obj_type="MessageStatsPerDay"):
         """Initialise a WrongMsgPerDayKeyError exception."""
-
         self.key = key
         self.obj_type = obj_type
         super(WrongMsgPerDayKeyError, self).__init__()
@@ -139,9 +138,8 @@ class WrongMsgStatsHourError(StatsError, KeyError):
     """Error class for a wrong hour for the HourlyStats object."""
 
     # -------------------------------------------------------------------------
-    def __init__(self, hour, obj_type='HourlyStats'):
+    def __init__(self, hour, obj_type="HourlyStats"):
         """Initialise a WrongMsgStatsHourError exception."""
-
         self.hour = hour
         self.obj_type = obj_type
         super(WrongMsgStatsHourError, self).__init__()
@@ -158,9 +156,8 @@ class MsgStatsHourValNotfoundError(StatsError, ValueError):
     """Error class for a value not found error in the HourlyStats class."""
 
     # -------------------------------------------------------------------------
-    def __init__(self, value, obj_type='HourlyStats'):
+    def __init__(self, value, obj_type="HourlyStats"):
         """Initialise a MsgStatsHourValNotfoundError exception."""
-
         self.value = value
         self.obj_type = obj_type
         super(MsgStatsHourValNotfoundError, self).__init__()
@@ -177,9 +174,8 @@ class MsgStatsHourInvalidMethodError(StatsError, RuntimeError):
     """Error class for an invalid method used with a HourlyStats class object."""
 
     # -------------------------------------------------------------------------
-    def __init__(self, method, obj_type='HourlyStats'):
+    def __init__(self, method, obj_type="HourlyStats"):
         """Initialise a MsgStatsHourInvalidMethodError exception."""
-
         self.method = method
         self.obj_type = obj_type
         super(MsgStatsHourInvalidMethodError, self).__init__()

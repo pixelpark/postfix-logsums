@@ -5,13 +5,14 @@
 
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 by Frank Brehm, Berlin
+@copyright: © 2023 - 2026 by Frank Brehm, Berlin
 """
+
 from __future__ import absolute_import
 
 import copy
-import logging
 import datetime
+import logging
 import re
 
 try:
@@ -20,19 +21,23 @@ except ImportError:
     from collections import MutableMapping, Mapping, MutableSequence, Sequence
 
 # Own modules
-from .errors import StatsError, WrongDateKeyError, WrongMsgStatsKeyError, WrongDailyKeyError
-from .errors import MsgStatsHourValNotfoundError, MsgStatsHourInvalidMethodError
-from .errors import WrongMsgStatsAttributeError, WrongMsgStatsValueError
-
+from .errors import MsgStatsHourInvalidMethodError
+from .errors import MsgStatsHourValNotfoundError
+from .errors import StatsError
+from .errors import WrongDailyKeyError
+from .errors import WrongDateKeyError
+from .errors import WrongMsgStatsAttributeError
+from .errors import WrongMsgStatsKeyError
+from .errors import WrongMsgStatsValueError
 from .xlate import XLATOR
 
-__version__ = '0.8.0'
-__author__ = 'Frank Brehm <frank@brehm-online.com>'
-__copyright__ = '(C) 2023 by Frank Brehm, Berlin'
+__version__ = "0.9.1"
+__author__ = "Frank Brehm <frank@brehm-online.com>"
 
 HOURS_PER_DAY = 24
 LOG = logging.getLogger(__name__)
 _ = XLATOR.gettext
+
 
 # =============================================================================
 def is_sequence(arg):
@@ -50,12 +55,11 @@ def is_sequence(arg):
 class BaseMessageStats(MutableMapping):
     """A base class for encapsulating message statistics."""
 
-    valid_keys = ('value_one', 'value_two')
+    valid_keys = ("value_one", "value_two")
 
     # -------------------------------------------------------------------------
     def __init__(self, first_param=None, **kwargs):
-        """Constructor."""
-
+        """Initialize the BaseMessageStats object."""
         self._values = {}
 
         if first_param is not None:
@@ -65,11 +69,12 @@ class BaseMessageStats(MutableMapping):
 
             if isinstance(first_param, Mapping):
                 self._update_from_mapping(first_param)
-            elif first_param.__class__.__name__ == 'zip':
+            elif first_param.__class__.__name__ == "zip":
                 self._update_from_mapping(dict(first_param))
             else:
                 msg = _("Object is not a {m} object, but a {w} object instead.").format(
-                    m='Mapping', w=first_param.__class__.__qualname__)
+                    m="Mapping", w=first_param.__class__.__qualname__
+                )
                 raise StatsError(msg)
 
         if kwargs:
@@ -77,8 +82,7 @@ class BaseMessageStats(MutableMapping):
 
     # -------------------------------------------------------------------------
     def __getattr__(self, name):
-        """Getting the value of a non-pre-defined attribute, epecially the statistics
-        values."""
+        """Get the value of a non-pre-defined attribute, epecially the statistics values."""
         if name not in self.valid_keys:
             raise WrongMsgStatsAttributeError(name, self.__class__.__name__)
 
@@ -89,8 +93,8 @@ class BaseMessageStats(MutableMapping):
 
     # -------------------------------------------------------------------------
     def __setattr__(self, name, value):
-        """Called when an attribute assignment is attempted."""
-        if name in ('_values', ):
+        """Call it when an attribute assignment is attempted."""
+        if name in ("_values",):
             return super(BaseMessageStats, self).__setattr__(name, value)
 
         if name not in self.valid_keys:
@@ -100,21 +104,24 @@ class BaseMessageStats(MutableMapping):
             v = int(value)
         except ValueError as e:
             msg = _("Wrong value {v!r} for a {w} value: {e}").format(
-                v=value, w=self.__class__.__name__, e=e)
+                v=value, w=self.__class__.__name__, e=e
+            )
             raise WrongMsgStatsValueError(msg)
 
         if v < 0:
             msg = _("Wrong value {v!r} for a {w} value: must be >= 0").format(
-                v=value, w=self.__class__.__name__)
+                v=value, w=self.__class__.__name__
+            )
             raise WrongMsgStatsValueError(msg)
 
         self._values[name] = v
 
     # -------------------------------------------------------------------------
     def __delattr__(self, name):
-        """Called, if an attribute should be deleted."""
+        """Call it, if an attribute should be deleted."""
         msg = _("Deleting attribute {a!r} of a {w} is not allowed.").format(
-            a=name, w=self.__class__.__name__)
+            a=name, w=self.__class__.__name__
+        )
         raise StatsError(msg)
 
     # -------------------------------------------------------------------------
@@ -129,11 +136,11 @@ class BaseMessageStats(MutableMapping):
 
     # -----------------------------------------------------------
     def as_dict(self, pure=False):
-        """Transforms the elements of the object into a dict."""
-
+        """Transform the elements of the object into a dict."""
         res = {}
+
         if not pure:
-            res['__class_name__'] = self.__class__.__name__
+            res["__class_name__"] = self.__class__.__name__
 
         for key in self.valid_keys:
             value = getattr(self, key)
@@ -142,7 +149,7 @@ class BaseMessageStats(MutableMapping):
         return res
 
     # -------------------------------------------------------------------------
-    def dict(self):
+    def dict(self):  # noqa: A003
         """Typecast into a regular dict."""
         return self.as_dict(pure=True)
 
@@ -154,8 +161,8 @@ class BaseMessageStats(MutableMapping):
         for pair in self.items():
             arg = "{k}={v!r}".format(k=pair[0], v=pair[1])
             kargs.append(arg)
-        ret += ', '.join(kargs)
-        ret += ')'
+        ret += ", ".join(kargs)
+        ret += ")"
 
         return ret
 
@@ -234,7 +241,7 @@ class BaseMessageStats(MutableMapping):
     # -------------------------------------------------------------------------
     def values(self):
         """Return a list with all values of the current dict."""
-        return list(map(lambda x: self.get(x), self.keys()))
+        return list(map(lambda x: self.get(x), self.keys()))  # noqa: C417
 
     # -------------------------------------------------------------------------
     def __setitem__(self, key, value):
@@ -247,14 +254,17 @@ class BaseMessageStats(MutableMapping):
         setattr(self, key, value)
 
     # -------------------------------------------------------------------------
-    def set(self, key, value):
+    def set(self, key, value):  # noqa: A003
         """Set the value of the given key."""
         self[key] = value
 
     # -------------------------------------------------------------------------
     def __delitem__(self, key):
-        """Should delete the entry on the given key.
-        But in real the value if this key set to zero instead."""
+        """
+        Delete the entry on the given key.
+
+        But in real the value if this key set to zero instead.
+        """
         if isinstance(key, int) and key >= 0 and key < len(self.valid_keys):
             key = self.valid_keys[key]
         if key not in self.valid_keys:
@@ -264,6 +274,7 @@ class BaseMessageStats(MutableMapping):
 
     # -------------------------------------------------------------------------
     def __eq__(self, other):
+        """Compare the current object with tha given argument for equality."""
         if not isinstance(other, self.__class__):
             return False
 
@@ -274,28 +285,28 @@ class BaseMessageStats(MutableMapping):
 class MessageStats(BaseMessageStats):
     """A class for encapsulating common message statistics."""
 
-    valid_keys = ('count', 'size', 'defers', 'delay_avg', 'delay_max')
+    valid_keys = ("count", "size", "defers", "delay_avg", "delay_max")
 
 
 # =============================================================================
 class SmtpdStatsPerHour(BaseMessageStats):
     """A class for encapsulating message statistics per day."""
 
-    valid_keys = ('count', 'time_total', 'time_max')
+    valid_keys = ("count", "time_total", "time_max")
 
 
 # =============================================================================
 class MessageStatsPerDay(BaseMessageStats):
     """A class for encapsulating message statistics per day."""
 
-    valid_keys = ('received', 'sent', 'deferred', 'bounced', 'rejected')
+    valid_keys = ("received", "sent", "deferred", "bounced", "rejected")
 
 
 # =============================================================================
 class SmtpdStats(BaseMessageStats):
     """A class for encapsulating smtpd statistics."""
 
-    valid_keys = ('connections', 'connect_time_total', 'connect_time_max')
+    valid_keys = ("connections", "connect_time_total", "connect_time_max")
 
 
 # =============================================================================
@@ -303,10 +314,25 @@ class MessageStatsTotals(BaseMessageStats):
     """A class for encapsulating total message statistics."""
 
     valid_keys = (
-        'received', 'delivered', 'forwarded', 'deferred', 'deferrals', 'rejected',
-        'discarded', 'bounced', 'reject_warning', 'held', 'bytes_received',
-        'bytes_delivered', 'sending_users', 'sending_domains', 'rcpt_users',
-        'rcpt_domains', 'connections', 'master')
+        "received",
+        "delivered",
+        "forwarded",
+        "deferred",
+        "deferrals",
+        "rejected",
+        "discarded",
+        "bounced",
+        "reject_warning",
+        "held",
+        "bytes_received",
+        "bytes_delivered",
+        "sending_users",
+        "sending_domains",
+        "rcpt_users",
+        "rcpt_domains",
+        "connections",
+        "master",
+    )
 
 
 # =============================================================================
@@ -326,7 +352,7 @@ class CommonStatsDict(dict):
         """
         res = {}
         if not pure:
-            res['__class_name__'] = self.__class__.__name__
+            res["__class_name__"] = self.__class__.__name__
 
         for key in self.keys():
             val = self[key]
@@ -338,7 +364,7 @@ class CommonStatsDict(dict):
         return res
 
     # -------------------------------------------------------------------------
-    def dict(self):
+    def dict(self):  # noqa: A003
         """Typecast into a regular dict."""
         return self.as_dict(pure=True)
 
@@ -347,7 +373,7 @@ class CommonStatsDict(dict):
 class DailyStatsDict(MutableMapping):
     """A dict like class for containing message statistics per day."""
 
-    re_isoformat = re.compile(r'^(?P<year>\d{1,4})-?(?P<month>\d{2})-?(?P<day>\d{2})$')
+    re_isoformat = re.compile(r"^(?P<year>\d{1,4})-?(?P<month>\d{2})-?(?P<day>\d{2})$")
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -369,7 +395,7 @@ class DailyStatsDict(MutableMapping):
             try:
                 m = cls.re_isoformat.match(key)
                 if m:
-                    return datetime.date(int(m['year']), int(m['month']), int(m['day']))
+                    return datetime.date(int(m["year"]), int(m["month"]), int(m["day"]))
                 raise WrongDateKeyError(key)
             except (ValueError, KeyError) as e:
                 if isinstance(e, WrongDateKeyError):
@@ -379,13 +405,13 @@ class DailyStatsDict(MutableMapping):
 
     # -------------------------------------------------------------------------
     def __init__(self, stats_class=BaseMessageStats, first_param=None, **kwargs):
-        """Constructor."""
-
+        """Initialize the DailyStatsDict object."""
         self._stats = {}
+
         if not issubclass(stats_class, BaseMessageStats):
             msg = _(
-                "Wrong class {c} for using as an item class, must be a subclas of {sc}.").format(
-                c=stats_class.__name__, sc='BaseMessageStats')
+                "Wrong class {c} for using as an item class, must be a subclas of {sc}."
+            ).format(c=stats_class.__name__, sc="BaseMessageStats")
             raise TypeError(msg)
         self._stats_class = stats_class
 
@@ -395,11 +421,12 @@ class DailyStatsDict(MutableMapping):
                 self._update_from_other(first_param)
             elif isinstance(first_param, Mapping):
                 self._update_from_mapping(first_param)
-            elif first_param.__class__.__name__ == 'zip':
+            elif first_param.__class__.__name__ == "zip":
                 self._update_from_mapping(dict(first_param))
             else:
                 msg = _("Object is not a {m} object, but a {w} object instead.").format(
-                    m='Mapping', w=first_param.__class__.__qualname__)
+                    m="Mapping", w=first_param.__class__.__qualname__
+                )
                 raise StatsError(msg)
 
         if kwargs:
@@ -458,16 +485,17 @@ class DailyStatsDict(MutableMapping):
     def __repr__(self):
         """Typecast into string for reproduction."""
         ret = "{cn}({{stats_class={sc}".format(
-            cn=self.__class__.__name__, sc=self._stats_class.__name__)
+            cn=self.__class__.__name__, sc=self._stats_class.__name__
+        )
         if len(self) == 0:
-            return ret + '})'
+            return ret + "})"
 
-        kargs = ['']
+        kargs = [""]
         for pair in self.items():
             arg = "{k!r}: {v!r}".format(k=pair[0], v=pair[1])
             kargs.append(arg)
-        ret += ', '.join(kargs)
-        ret += '})'
+        ret += ", ".join(kargs)
+        ret += "})"
 
         return ret
 
@@ -484,8 +512,8 @@ class DailyStatsDict(MutableMapping):
         """
         res = {}
         if not pure:
-            res['__class_name__'] = self.__class__.__name__
-            res['__stats_class__'] = self._stats_class.__name__
+            res["__class_name__"] = self.__class__.__name__
+            res["__stats_class__"] = self._stats_class.__name__
 
         for pair in self.items():
             key = pair[0]
@@ -498,7 +526,7 @@ class DailyStatsDict(MutableMapping):
         return res
 
     # -------------------------------------------------------------------------
-    def dict(self):
+    def dict(self):  # noqa: A003
         """Typecast into a regular dict."""
         return self.as_dict(pure=True)
 
@@ -532,7 +560,7 @@ class DailyStatsDict(MutableMapping):
     # -------------------------------------------------------------------------
     def values(self):
         """Return a list with all values of the current dict."""
-        return list(map(lambda x: self._stats[x], self.keys()))
+        return (self._stats[x] for x in self.keys())
 
     # -------------------------------------------------------------------------
     def __eq__(self, other):
@@ -562,7 +590,7 @@ class DailyStatsDict(MutableMapping):
         self._stats[used_key] = stats
 
     # -------------------------------------------------------------------------
-    def set(self, key, value):
+    def set(self, key, value):  # noqa: A003
         """Set the value of the given key."""
         self[key] = value
 
@@ -585,7 +613,8 @@ class DailyStatsDict(MutableMapping):
 
         if len(args) > 1:
             msg = _("The method {met}() expected at most {max} arguments, got {got}.").format(
-                met='pop', max=2, got=(len(args) + 1))
+                met="pop", max=2, got=(len(args) + 1)
+            )
             raise TypeError(msg)
 
         if used_key not in self._stats:
@@ -612,7 +641,7 @@ class DailyStatsDict(MutableMapping):
     # -------------------------------------------------------------------------
     def clear(self):
         """Remove all items from the dict."""
-        self._stats = dict()
+        self._stats = {}
 
     # -------------------------------------------------------------------------
     def setdefault(self, key, default=None):
@@ -632,11 +661,12 @@ class DailyStatsDict(MutableMapping):
             self._update_from_other(other)
         elif isinstance(other, Mapping):
             self._update_from_mapping(other)
-        elif other.__class__.__name__ == 'zip':
+        elif other.__class__.__name__ == "zip":
             self._update_from_mapping(dict(other))
         else:
             msg = _("Object is not a {m} object, but a {w} object instead.").format(
-                m='Mapping', w=other.__class__.__qualname__)
+                m="Mapping", w=other.__class__.__qualname__
+            )
             raise StatsError(msg)
 
     # -------------------------------------------------------------------------
@@ -645,7 +675,8 @@ class DailyStatsDict(MutableMapping):
             raise StatsError("Wtf, not a {} class?!?".format(self.__class__.__name__))
         if self._stats_class.__name__ != other._stats_class.__name__:
             msg = "Invalid stats class {oc!r}, must be class {sc!r}.".format(
-                oc=other._stats_class.__name__, sc=self._stats_class.__name__)
+                oc=other._stats_class.__name__, sc=self._stats_class.__name__
+            )
             raise StatsError(msg)
         for key in other.keys():
             self[key] = other[key]
@@ -659,10 +690,10 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def __init__(self, *args):
-        """Constructor."""
-
+        """Initialize a HourlyStats object."""
         self._list = []
-        for hour in range(self.hours_per_day):
+
+        for _hour in range(self.hours_per_day):
             self._list.append(0)
 
         if args:
@@ -682,7 +713,7 @@ class HourlyStats(MutableSequence):
 
         for value in self:
             pairs.append(repr(value))
-        ret += ', '.join(pairs) + ')'
+        ret += ", ".join(pairs) + ")"
 
         return ret
 
@@ -693,17 +724,17 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def __getitem__(self, hour):
-        """Returns the value of the given hour."""
+        """Return the value of the given hour."""
         return self._list[hour]
 
     # -------------------------------------------------------------------------
     def __len__(self):
-        """Returns the length of the current array."""
+        """Return the length of the current array."""
         return len(self._list)
 
     # -------------------------------------------------------------------------
     def __contains__(self, value):
-        """Returns, whether the given value is one of the values in current list."""
+        """Return, whether the given value is one of the values in current list."""
         for val in self:
             if value == val:
                 return True
@@ -725,8 +756,11 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def index(self, value, i=0, j=None):
-        """index of the first occurrence of x in s (at or after index i and before index j)."""
+        """
+        Return the index of the first occurrence of x in s.
 
+        (at or after index i and before index j)
+        """
         if j is None:
             j = len(self._list)
         while i < j:
@@ -738,7 +772,7 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def count(self, value):
-        """total number of occurrences of svaluex in current list."""
+        """Return the total number of occurrences of svaluex in current list."""
         number = 0
         for val in self:
             if value == val:
@@ -748,7 +782,7 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def __setitem__(self, hour, value):
-        """Setting the value for the given hour."""
+        """Set the value for the given hour."""
         try:
             v = int(value)
         except ValueError as e:
@@ -761,53 +795,51 @@ class HourlyStats(MutableSequence):
 
     # -------------------------------------------------------------------------
     def __delitem__(self, hour):
-        """Deleting an item in the list - invalid action."""
-
-        raise MsgStatsHourInvalidMethodError('__delitem__')
+        """Delete an item in the list - invalid action."""
+        raise MsgStatsHourInvalidMethodError("__delitem__")
 
     # -------------------------------------------------------------------------
     def insert(self, hour, value):
         """Insert an item in the list - invalid action."""
-
-        raise MsgStatsHourInvalidMethodError('insert')
+        raise MsgStatsHourInvalidMethodError("insert")
 
     # -------------------------------------------------------------------------
     def append(self, value):
-        """Appending the given value to the current list - invalid action."""
-
-        raise MsgStatsHourInvalidMethodError('append')
+        """Append the given value to the current list - invalid action."""
+        raise MsgStatsHourInvalidMethodError("append")
 
     # -------------------------------------------------------------------------
     def reverse(self):
-        """Reverses the values of the current list in place."""
-
+        """Reverse the values of the current list in place."""
         self._list.reverse()
 
     # -------------------------------------------------------------------------
     def extend(self, other_list):
-        """Extends the current list with the contents of other_list - invalid action."""
-
-        raise MsgStatsHourInvalidMethodError('extend')
+        """Extend the current list with the contents of other_list - invalid action."""
+        raise MsgStatsHourInvalidMethodError("extend")
 
     # -------------------------------------------------------------------------
     def pop(self, value):
-        """Retrieves the item at i and also removes it from s - invalid action."""
-
-        raise MsgStatsHourInvalidMethodError('pop')
+        """Retrieve the item at i and also removes it from s - invalid action."""
+        raise MsgStatsHourInvalidMethodError("pop")
 
     # -------------------------------------------------------------------------
     def remove(self, value):
-        """Remove the first item from the current list where s[i] is equal to x -
-        invalid action."""
+        """
+        Remove the first item from the current list where s[i] is equal to x.
 
-        raise MsgStatsHourInvalidMethodError('remove')
+        This is an invalid action.
+        """
+        raise MsgStatsHourInvalidMethodError("remove")
 
     # -------------------------------------------------------------------------
     def __iadd__(self, other_list):
-        """Extends the current list with the contents of other_list and return -
-        invalid action."""
+        """
+        Extend the current list with the contents of other_list and return.
 
-        raise MsgStatsHourInvalidMethodError('__iadd__')
+        This is an invalid action.
+        """
+        raise MsgStatsHourInvalidMethodError("__iadd__")
 
 
 # =============================================================================
@@ -816,10 +848,10 @@ class HourlyStatsSmtpd(HourlyStats):
 
     # -------------------------------------------------------------------------
     def __init__(self, *args):
-        """Constructor."""
-
+        """Initialize the HourlyStatsSmtpd object."""
         self._list = []
-        for hour in range(self.hours_per_day):
+
+        for _hour in range(self.hours_per_day):
             self._list.append(SmtpdStatsPerHour())
 
         if args:
@@ -834,7 +866,7 @@ class HourlyStatsSmtpd(HourlyStats):
 
     # -------------------------------------------------------------------------
     def __setitem__(self, hour, value):
-        """Setting the value for the given hour."""
+        """Set the value for the given hour."""
         if isinstance(value, SmtpdStatsPerHour):
             self._list[hour] = value
             return
@@ -842,8 +874,8 @@ class HourlyStatsSmtpd(HourlyStats):
         if isinstance(value, (list, tuple)):
             if len(value) != 3:
                 msg = _(
-                    "Wrong value {v!r} for a per hour stat of smtp - "
-                    "must have three numbers.").format(v=value)
+                    "Wrong value {v!r} for a per hour stat of smtp - " "must have three numbers."
+                ).format(v=value)
                 raise WrongMsgStatsValueError(msg)
             v = SmtpdStatsPerHour()
             v[0] = value[0]
@@ -862,7 +894,7 @@ class HourlyStatsSmtpd(HourlyStats):
 
     # -------------------------------------------------------------------------
     def as_list(self, pure=False):
-        """Typecasting into a simple list."""
+        """Typecast into a simple list."""
         vals = []
         for stat in self:
             if pure:

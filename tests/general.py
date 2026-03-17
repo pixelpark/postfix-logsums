@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+@summary: Functions and objects used for unit tests on the postfix logsums python modules.
+
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 Frank Brehm, Berlin
+@copyright: © 2023 - 2026 Frank Brehm, Berlin
 @license: AGPL
-@summary: general used functions an objects used for unit tests on
-          the postfix logsums python modules
 """
 
-import os
-import sys
-import logging
 import argparse
+import logging
+import os
 import pprint
 import shutil
+import sys
+import textwrap
 
 try:
     from fb_logging.colored import ColoredFormatter as Formatter
@@ -46,13 +47,13 @@ def pp(value, indent=4, width=None, depth=None):
 
 # =============================================================================
 def get_arg_verbose():
-
+    """Get and return command line arguments."""
     arg_parser = argparse.ArgumentParser()
 
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
-        "-v", "--verbose", action="count",
-        dest='verbose', help='Increase the verbosity level')
+        "-v", "--verbose", action="count", dest="verbose", help="Increase the verbosity level"
+    )
     args = arg_parser.parse_args()
 
     return args.verbose
@@ -60,7 +61,7 @@ def get_arg_verbose():
 
 # =============================================================================
 def init_root_logger(verbose=0):
-
+    """Initialize the root logger."""
     root_log = logging.getLogger()
     root_log.setLevel(logging.WARNING)
     if verbose:
@@ -69,13 +70,13 @@ def init_root_logger(verbose=0):
             root_log.setLevel(logging.DEBUG)
 
     appname = os.path.basename(sys.argv[0])
-    format_str = appname + ': '
+    format_str = appname + ": "
     if verbose:
         if verbose > 1:
-            format_str += '%(name)s(%(lineno)d) %(funcName)s() '
+            format_str += "%(name)s(%(lineno)d) %(funcName)s() "
         else:
-            format_str += '%(name)s '
-    format_str += '%(levelname)s - %(message)s'
+            format_str += "%(name)s "
+    format_str += "%(levelname)s - %(message)s"
     formatter = None
     formatter = Formatter(format_str)
 
@@ -92,23 +93,48 @@ def init_root_logger(verbose=0):
 
 # =============================================================================
 class PostfixLogsumsTestcase(unittest.TestCase):
+    """Base test case for all testcase classes of this package."""
 
     # -------------------------------------------------------------------------
-    def __init__(self, methodName='runTest', verbose=0):
+    @classmethod
+    def current_function_name(cls, level=0):
+        """Return the name of the function, from where this method was called."""
+        return sys._getframe(level + 1).f_code.co_name
 
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_method_doc(cls):
+        """Return the docstring of the method, from where this method was called."""
+        func_name = cls.current_function_name(1)
+        doc_str = getattr(cls, func_name).__doc__
+        cname = cls.__name__
+        mname = "{cls}.{meth}()".format(cls=cname, meth=func_name)
+        msg = "This is {}.".format(mname)
+        if doc_str is None:
+            return msg
+        doc_str = textwrap.dedent(doc_str).strip()
+        if doc_str:
+            msg = "{m} - {d}".format(m=mname, d=doc_str)
+        return msg
+
+    # -------------------------------------------------------------------------
+    def __init__(self, methodName="runTest", verbose=0):
+        """Initialize the base testcase class."""
         self._verbose = int(verbose)
 
-        appname = os.path.basename(sys.argv[0]).replace('.py', '')
+        appname = os.path.basename(sys.argv[0]).replace(".py", "")
         self._appname = appname
 
         super(PostfixLogsumsTestcase, self).__init__(methodName)
 
         self.assertGreaterEqual(
-            sys.version_info[0], 3, "Unsupported Python version {}.".format(sys.version))
+            sys.version_info[0], 3, "Unsupported Python version {}.".format(sys.version)
+        )
 
         if sys.version_info[0] == 3:
             self.assertGreaterEqual(
-                sys.version_info[1], 6, "Unsupported Python version {}.".format(sys.version))
+                sys.version_info[1], 6, "Unsupported Python version {}.".format(sys.version)
+            )
 
         if self.verbose >= 3:
             LOG.debug("Used Phyton version: {!r}.".format(sys.version))
@@ -117,7 +143,7 @@ class PostfixLogsumsTestcase(unittest.TestCase):
     @property
     def verbose(self):
         """The verbosity level."""
-        return getattr(self, '_verbose', 0)
+        return getattr(self, "_verbose", 0)
 
     # -------------------------------------------------------------------------
     @property
@@ -127,15 +153,17 @@ class PostfixLogsumsTestcase(unittest.TestCase):
 
     # -------------------------------------------------------------------------
     def setUp(self):
+        """Execute this on seting up before calling each particular test method."""
         pass
 
     # -------------------------------------------------------------------------
     def tearDown(self):
+        """Tear down routine for calling each particular test method."""
         pass
 
 
 # =============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     pass
 

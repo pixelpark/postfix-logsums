@@ -1,49 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
+@summary: Test script (and module) for unit tests on postfix_logsums.results.
+
 @author: Frank Brehm
 @contact: frank@brehm-online.com
 @copyright: © 2023 Frank Brehm, Berlin
 @license: GPL3
-@summary: test script (and module) for unit tests on postfix_logsums.results
-'''
+"""
 
-import os
-import sys
 import logging
+import sys
+from pathlib import Path
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-libdir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+libdir = str(Path(__file__).parent.parent / "src")
 sys.path.insert(0, libdir)
 
 from general import PostfixLogsumsTestcase, get_arg_verbose, init_root_logger, pp
 
-LOG = logging.getLogger('test_results')
+LOG = logging.getLogger("test_results")
 
 
 # =============================================================================
 class TestResults(PostfixLogsumsTestcase):
+    """Testcase class for testing postfix_logsums.results."""
 
     # -------------------------------------------------------------------------
     def setUp(self):
+        """Execute this on seting up before calling each particular test method."""
         pass
 
     # -------------------------------------------------------------------------
     def test_import(self):
+        """Test import of postfix_logsums.results."""
+        LOG.info(self.get_method_doc())
 
-        LOG.info("Testing import of postfix_logsums.results ...")
         import postfix_logsums.results
-        LOG.debug("Version of postfix_logsums.results: {!r}".format(
-            postfix_logsums.results.__version__))
+
+        LOG.debug(
+            "Version of postfix_logsums.results: {!r}".format(postfix_logsums.results.__version__)
+        )
 
     # -------------------------------------------------------------------------
     def test_init_results(self):
-
-        LOG.info("Testing initt of a PostfixLogSums object.")
+        """Test init of a PostfixLogSums object."""
+        LOG.info(self.get_method_doc())
 
         from postfix_logsums.results import PostfixLogSums
 
@@ -61,7 +67,7 @@ class TestResults(PostfixLogsumsTestcase):
 
 
 # =============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     verbose = get_arg_verbose()
     if verbose is None:
@@ -72,8 +78,8 @@ if __name__ == '__main__':
 
     suite = unittest.TestSuite()
 
-    suite.addTest(TestResults('test_import', verbose))
-    suite.addTest(TestResults('test_init_results', verbose))
+    suite.addTest(TestResults("test_import", verbose))
+    suite.addTest(TestResults("test_init_results", verbose))
 
     runner = unittest.TextTestRunner(verbosity=verbose)
 

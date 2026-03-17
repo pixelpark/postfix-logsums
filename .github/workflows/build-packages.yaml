@@ -1,0 +1,96 @@
+---
+
+name: "Building OS packages with a shared workflow."
+
+################################################################################
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - '**'
+      - '!dev-**'
+      - '!dev/**'
+      - '!hf**'
+      - '!old**'
+      - '!feature**'
+      - 'dev/workflow'
+    tags:
+      - '**'
+  workflow_dispatch: {}
+
+################################################################################
+# These environments can be overridden in the GUI
+env:
+  DEBFULLNAME: 'Frank Brehm'
+  DEBEMAIL: 'frank@brehm-online.com'
+  FB_REPO_IN_DIR: '/var/www/incoming'
+  GITREF: ${{ github.ref }}
+  GPG_KEY_ID: '87A8DBD6B796E12A'
+  GPG_PASSWORD_FILE: '.private/uhu.txt'
+  NOTIFY_ADDRESS: 'frank@brehm-online.com,frank.brehm@pixelpark.com'
+  SENDER_ADDRESS: 'Frank Brehm <frank@brehm-online.com>'
+  SMTP_SERVER_ADDRESS: 'mail.uhu-banane.net'
+  SMTP_SERVER_PORT: 587
+  USED_TIMEZONE: 'Europe/Berlin'
+
+################################################################################
+jobs:
+
+  ###########################
+  prepare-image:
+    name: "Preparing image for the first time."
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Null - Nada - Njet!"
+    outputs:
+      password_file: ${{ env.GPG_PASSWORD_FILE }}
+      key_id: ${{ env.GPG_KEY_ID }}
+      repo_dir: ${{ env.FB_REPO_IN_DIR }}
+      smtp_server_address: ${{ env.SMTP_SERVER_ADDRESS }}
+      smtp_server_port: ${{ env.SMTP_SERVER_PORT }}
+      smtp_sender_address: ${{ env.SENDER_ADDRESS }}
+      smtp_recipient_addresses: ${{ env.NOTIFY_ADDRESS }}
+
+  ###########################
+  call-shared-workflow:
+    name: "Calling shared build workflow"
+    needs:
+      - prepare-image
+    uses: fbrehm/actions/.github/workflows/pyproject-build-packages.yaml@main
+    with:
+      has_i18n: true
+      # test_python_versions: '["3.8", "3.9", "3.12", "3.13"]'
+      libdir: src/postfix_logsums
+      # debian_versions: 'Debian-Bullseye Debian-Bookworm Ubuntu-Focal Ubuntu-Jammy'
+      el_versions: 'el-9 el-10'
+      additional_debian_build_packages: >-
+        flit
+        pybuild-plugin-pyproject
+        python3-fb-logging
+        python3-semver
+        python3-yaml
+      additional_rpm_build_packages: >-
+        python3-fb-logging
+        python3-pyyaml
+      password_file: ${{ needs.prepare-image.outputs.password_file }}
+      key_id: ${{ needs.prepare-image.outputs.key_id }}
+      # do_help2man: true
+      repo_dir: ${{ needs.prepare-image.outputs.repo_dir }}
+      smtp_server_address: ${{ needs.prepare-image.outputs.smtp_server_address }}
+      smtp_server_port: ${{ needs.prepare-image.outputs.smtp_server_port }}
+      smtp_sender_address: ${{ needs.prepare-image.outputs.smtp_sender_address }}
+      smtp_recipient_addresses: ${{ needs.prepare-image.outputs.smtp_recipient_addresses }}
+      revision: 1
+    secrets:
+      pypi_token: ${{ secrets.PYPI_TOKEN }}
+      public_key: ${{ secrets.GPG_PUBLIC_KEY }}
+      private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+      key_password: ${{ secrets.GPG_KEY_PASSWORD }}
+      repo_server: ${{ secrets.FB_REPO_SERVER }}
+      repo_user: ${{ secrets.FB_REPO_USER }}
+      ssh_private_key: ${{ secrets.FB_REPOIN_SSH_PRIVATE_KEY }}
+      smtp_user: ${{ secrets.EMAIL_USERNAME }}
+      smtp_password: ${{ secrets.EMAIL_PASSWORD }}
+
+
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
