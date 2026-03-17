@@ -22,7 +22,6 @@ from .stats import SmtpdStats
 
 __version__ = "0.6.1"
 __author__ = "Frank Brehm <frank@brehm-online.com>"
-__copyright__ = "(C) 2023 by Frank Brehm, Berlin"
 
 LOG = logging.getLogger(__name__)
 

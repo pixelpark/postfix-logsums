@@ -12,7 +12,6 @@ from .xlate import XLATOR
 
 __version__ = "0.6.1"
 __author__ = "Frank Brehm <frank@brehm-online.com>"
-__copyright__ = "(C) 2023 by Frank Brehm, Berlin"
 
 _ = XLATOR.gettext
 

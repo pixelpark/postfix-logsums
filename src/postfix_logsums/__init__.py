@@ -31,9 +31,9 @@ from .stats import MessageStatsPerDay
 from .stats import SmtpdStats
 from .xlate import XLATOR
 
-__version__ = "0.9.4"
+__version__ = "0.9.9"
 __author__ = "Frank Brehm <frank@brehm-online.com>"
-__copyright__ = "(C) 2023 by Frank Brehm, Berlin"
+__copyright__ = "(C) 2023 - 2026 by Frank Brehm, Berlin"
 
 DEFAULT_TERMINAL_WIDTH = 99
 DEFAULT_TERMINAL_HEIGHT = 40
