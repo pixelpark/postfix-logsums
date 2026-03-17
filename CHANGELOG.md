@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Moving `postfix_logsums/` => `src/postfix_logsums/`
 * Refactoring testing scripts.
 * Updating update-env.sh for refactored virtual env.
+* Updating xtract-xlate-msgs.sh and etc/babel.ini.
 
 ### Removed
 

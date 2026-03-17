@@ -11,13 +11,25 @@ locale_domain="postfix_logsums"
 pot_file="${locale_dir}/${locale_domain}.pot"
 po_with="99"
 my_address="${DEBEMAIL:-frank@brehm-online.com}"
+babel_ini="etc/babel.ini"
 
-pkg_version=$( head -n 1 debian/changelog | sed -e 's/^[^(]*(//' -e 's/).*//' )
+# pkg_version=$( head -n 1 debian/changelog | sed -e 's/^[^(]*(//' -e 's/).*//' )
+pkg_version=$( grep -E '^\s*__version__' src/postfix_logsums__init__.py | sed -e 's/.*=[ 	]*//' -e "s/'//g" )
 echo "Package-Version: '${pkg_version}'"
+
+if [[ ! -f "${babel_ini}" ]] ; then
+    echo "Babel config file '${babel_ini}' not found." >&2
+    exit 5
+fi
+
+if [[ ! -d "${locale_dir}" ]] ; then
+    echo "Creating locale directory '${locale_dir}' ..."
+    mkdir -v "${locale_dir}"
+fi
 
 pybabel extract postfix-logsums postfix_logsums \
     -o "${pot_file}" \
-    -F etc/babel.ini \
+    -F "${babel_ini}" \
     --width=${po_with} \
     --sort-by-file \
     --msgid-bugs-address="${my_address}" \
