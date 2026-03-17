@@ -71,6 +71,7 @@ jobs:
         python3-yaml
       additional_rpm_build_packages: >-
         python3-fb-logging
+        python3-semver
         python3-pyyaml
       password_file: ${{ needs.prepare-image.outputs.password_file }}
       key_id: ${{ needs.prepare-image.outputs.key_id }}

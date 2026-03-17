@@ -12,6 +12,8 @@ variables:
   PKG_NAME: 'postfix-logsums'
   PYTHON_ADDITIONAL_PACKAGES: >-
     python3-fb-logging
+    python3-pyyaml
+    python3-semver
   PYTHON_INIT_FILE: 'src/postfix_logsums/__init__.py'
   PYTHON_TEST_PATHS: 'src'
   SHELLSCRIPTS: >-

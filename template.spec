@@ -20,14 +20,15 @@ BuildRequires:  python%{python3_pkgversion}-babel
 BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-libs
 BuildRequires:  python%{python3_pkgversion}-fb-logging >= 1.0.0
+BuildRequires:  python%{python3_pkgversion}-pyyaml
 BuildRequires:  python%{python3_pkgversion}-semver
 BuildRequires:  pyproject-rpm-macros
 
 Requires:       python%{python3_pkgversion}
 Requires:       python%{python3_pkgversion}-babel
 Requires:       python%{python3_pkgversion}-libs
+Requires:       python%{python3_pkgversion}-pyyaml
 Requires:       python%{python3_pkgversion}-semver
-Recommends:     python%{python3_pkgversion}-pyyaml
 BuildArch:      noarch
 
 %description
