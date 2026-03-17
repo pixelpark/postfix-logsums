@@ -60,21 +60,17 @@ jobs:
     with:
       has_i18n: true
       # test_python_versions: '["3.8", "3.9", "3.12", "3.13"]'
-      libdir: src/fb_pdnstools
+      libdir: src/postfix_logsums
       # debian_versions: 'Debian-Bullseye Debian-Bookworm Ubuntu-Focal Ubuntu-Jammy'
       el_versions: 'el-9 el-10'
       additional_debian_build_packages: >-
         flit
         pybuild-plugin-pyproject
         python3-fb-logging
-        python3-fb-tools
-        python3-requests
         python3-semver
         python3-yaml
       additional_rpm_build_packages: >-
         python3-fb-logging
-        python3-fb-tools
-        python3-requests
         python3-pyyaml
       password_file: ${{ needs.prepare-image.outputs.password_file }}
       key_id: ${{ needs.prepare-image.outputs.key_id }}
