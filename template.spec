@@ -55,7 +55,7 @@ echo "Pwd: $( pwd )"
 
 %install
 %pyproject_install
-%pyproject_save_files postfix-logsums
+%pyproject_save_files postfix_logsums
 
 echo "Whats in '%{builddir}':"
 ls -lA '%{builddir}'
