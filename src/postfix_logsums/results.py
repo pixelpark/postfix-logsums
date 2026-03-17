@@ -7,6 +7,7 @@
 @contact: frank@brehm-online.com
 @copyright: © 2023 - -2026 by Frank Brehm, Berlin
 """
+
 from __future__ import absolute_import
 
 import logging
@@ -19,9 +20,9 @@ from .stats import MessageStatsPerDay
 from .stats import MessageStatsTotals
 from .stats import SmtpdStats
 
-__version__ = '0.6.0'
-__author__ = 'Frank Brehm <frank@brehm-online.com>'
-__copyright__ = '(C) 2023 by Frank Brehm, Berlin'
+__version__ = "0.6.1"
+__author__ = "Frank Brehm <frank@brehm-online.com>"
+__copyright__ = "(C) 2023 by Frank Brehm, Berlin"
 
 LOG = logging.getLogger(__name__)
 
@@ -87,15 +88,15 @@ class PostfixLogSums(object):
         self.sending_user_data = CommonStatsDict()
         self.smtp_messages = {}
         self.smtp_connection_details = {
-            'other': {},
-            'trusted': {},
-            'untrusted': {},
+            "other": {},
+            "trusted": {},
+            "untrusted": {},
         }
         self.smtp_connections = {
-            'other': 0,
-            'total': 0,
-            'trusted': 0,
-            'untrusted': 0,
+            "other": 0,
+            "total": 0,
+            "trusted": 0,
+            "untrusted": 0,
         }
         self.smtpd_per_day = DailyStatsDict(stats_class=SmtpdStats)
         self.smtpd_per_domain = CommonStatsDict()
@@ -112,9 +113,9 @@ class PostfixLogSums(object):
         And sets self.files_index to the index of the new created entry.
         """
         entry = {
-            'file': logfile,
-            'lines_total': 0,
-            'lines_considered': 0,
+            "file": logfile,
+            "lines_total": 0,
+            "lines_considered": 0,
         }
 
         self.files.append(entry)
@@ -125,14 +126,14 @@ class PostfixLogSums(object):
         """Increment all counters for all evaluated lines."""
         self.lines_total += increment
         if self._files_index is not None:
-            self.files[self._files_index]['lines_total'] += increment
+            self.files[self._files_index]["lines_total"] += increment
 
     # -------------------------------------------------------------------------
     def incr_lines_considered(self, increment=1):
         """Increment all counters for all considered lines."""
         self.lines_considered += increment
         if self._files_index is not None:
-            self.files[self._files_index]['lines_considered'] += increment
+            self.files[self._files_index]["lines_considered"] += increment
 
     # -------------------------------------------------------------------------
     def as_dict(self, short=True, pure=False):
@@ -148,48 +149,51 @@ class PostfixLogSums(object):
         res = {}
 
         for key in self.__dict__:
-            if short and key.startswith('_') and not key.startswith('__'):
+            if short and key.startswith("_") and not key.startswith("__"):
                 continue
             # LOG.debug("Typecasting {!r} ...".format(key))
-            if key in ('msgs_total', 'messages_per_day', 'smtpd_per_day'):
+            if key in ("msgs_total", "messages_per_day", "smtpd_per_day"):
                 res[key] = getattr(self, key).dict()
             elif isinstance(getattr(self, key), CommonStatsDict):
                 res[key] = getattr(self, key).as_dict(pure=pure)
-            elif key == 'files':
+            elif key == "files":
                 if pure:
                     res[key] = []
                     for f in self.files:
                         fs = {
-                            'file': str(f['file']),
-                            'lines_considered': f['lines_considered'],
-                            'lines_total': f['lines_total'],
+                            "file": str(f["file"]),
+                            "lines_considered": f["lines_considered"],
+                            "lines_total": f["lines_total"],
                         }
                         res[key].append(fs)
                 else:
                     res[key] = self.__dict__[key]
-            elif key == 'smtpd_messages_per_hour':
+            elif key == "smtpd_messages_per_hour":
                 # LOG.debug("Typecasting smtpd_messages_per_hour into a list ...")
                 if self.smtpd_messages_per_hour is None:
                     res[key] = None
                 else:
                     res[key] = self.smtpd_messages_per_hour.as_list(pure=pure)
             elif key in (
-                    'bounced_messages_per_hour', 'deferred_messages_per_hour',
-                    'delivered_messages_per_hour', 'received_messages_per_hour',
-                    'rejected_messages_per_hour'):
+                "bounced_messages_per_hour",
+                "deferred_messages_per_hour",
+                "delivered_messages_per_hour",
+                "received_messages_per_hour",
+                "rejected_messages_per_hour",
+            ):
                 if pure:
                     res[key] = getattr(self, key).as_list()
                 else:
                     res[key] = self.__dict__[key]
-            elif key in ('logdate_latest', 'logdate_oldest'):
+            elif key in ("logdate_latest", "logdate_oldest"):
                 if pure:
                     dt = getattr(self, key, None)
                     if dt:
-                        dt = dt.isoformat(' ')
+                        dt = dt.isoformat(" ")
                     res[key] = dt
                 else:
                     res[key] = self.__dict__[key]
-            elif key in ('messages_per_day', ):
+            elif key in ("messages_per_day",):
                 if pure:
                     stats_dict = getattr(self, key)
                     if isinstance(stats_dict, dict):
@@ -203,12 +207,12 @@ class PostfixLogSums(object):
                 res[key] = self.__dict__[key]
 
         if not pure:
-            res['__class_name__'] = self.__class__.__name__
+            res["__class_name__"] = self.__class__.__name__
 
         return res
 
     # -------------------------------------------------------------------------
-    def dict(self):       # noqa: A003
+    def dict(self):  # noqa: A003
         """Typecast into a regular dict."""
         return self.as_dict(pure=True)
 

@@ -9,6 +9,7 @@ It provides translation object, usable from all other modules in this package.
 @contact: frank.brehm@pixelpark.com
 @copyright: © 2023 - 2026 by Frank Brehm, Berlin
 """
+
 from __future__ import absolute_import, print_function
 
 # Standard modules
@@ -28,25 +29,25 @@ try:
 except ImportError:
     from semver import VersionInfo as Version
 
-DOMAIN = 'postfix_logsums'
+DOMAIN = "postfix_logsums"
 
 LOG = logging.getLogger(__name__)
 
-__version__ = '1.0.0'
+__version__ = "1.0.1"
 
 __me__ = Path(__file__).resolve()
 __module_dir__ = __me__.parent
 __lib_dir__ = __module_dir__.parent
 __base_dir__ = __lib_dir__.parent
 
-LOCALE_DIR = __base_dir__ / 'locale'
+LOCALE_DIR = __base_dir__ / "locale"
 
 if LOCALE_DIR.is_dir():
     # Not installed, in development workdir
     LOCALE_DIR = str(LOCALE_DIR)
 else:
     # Somehow installed
-    LOCALE_DIR = __module_dir__ / 'locale'
+    LOCALE_DIR = __module_dir__ / "locale"
     if sys.prefix == sys.base_prefix:
         # installed as a package
         LOCALE_DIR = sys.prefix + "/share/locale"
@@ -65,7 +66,7 @@ else:
             else:
                 LOCALE_DIR = str(__base_dir__ / sys.prefix / "share" / "locale")
 
-DEFAULT_LOCALE_DEF = 'en_US'
+DEFAULT_LOCALE_DEF = "en_US"
 DEFAULT_LOCALE = babel.core.default_locale()
 if not DEFAULT_LOCALE:
     DEFAULT_LOCALE = DEFAULT_LOCALE_DEF
@@ -73,7 +74,7 @@ if not DEFAULT_LOCALE:
 __mo_file__ = gettext.find(DOMAIN, LOCALE_DIR)
 if __mo_file__:
     try:
-        with open(__mo_file__, 'rb') as F:
+        with open(__mo_file__, "rb") as F:
             XLATOR = Translations(F, DOMAIN)
     except IOError:
         XLATOR = gettext.NullTranslations()
@@ -81,18 +82,15 @@ else:
     XLATOR = gettext.NullTranslations()
 
 CUR_BABEL_VERSION = Version.parse(babel.__version__)
-NEWER_BABEL_VERSION = Version.parse('2.6.0')
+NEWER_BABEL_VERSION = Version.parse("2.6.0")
 
-SUPPORTED_LANGS = (
-    'de',
-    'en'
-)
+SUPPORTED_LANGS = ("de", "en")
 
 _ = XLATOR.gettext
 
 
 # =============================================================================
-def format_list(lst, do_repr=False, style='standard', locale=DEFAULT_LOCALE):
+def format_list(lst, do_repr=False, style="standard", locale=DEFAULT_LOCALE):
     """
     Format the items in `lst` as a list.
 
@@ -100,13 +98,13 @@ def format_list(lst, do_repr=False, style='standard', locale=DEFAULT_LOCALE):
     :param locale: the locale
     """
     if not lst:
-        return ''
+        return ""
 
     my_list = copy.copy(lst)
     if do_repr:
         my_list = []
         for item in lst:
-            my_list.append('{!r}'.format(item))
+            my_list.append("{!r}".format(item))
 
     if CUR_BABEL_VERSION < NEWER_BABEL_VERSION:
         return babel.lists.format_list(my_list, locale=locale)
