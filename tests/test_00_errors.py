@@ -18,12 +18,12 @@ try:
 except ImportError:
     import unittest
 
-libdir = str(Path(__file__).parent.parent / 'src')
+libdir = str(Path(__file__).parent.parent / "src")
 sys.path.insert(0, libdir)
 
 from general import PostfixLogsumsTestcase, get_arg_verbose, init_root_logger
 
-LOG = logging.getLogger('test_errors')
+LOG = logging.getLogger("test_errors")
 
 
 # =============================================================================
@@ -42,16 +42,18 @@ class TestErrors(PostfixLogsumsTestcase):
         LOG.info(self.get_method_doc())
 
         import postfix_logsums.errors
-        LOG.debug("Version of postfix_logsums.errors: {!r}".format(
-            postfix_logsums.errors.__version__))
-        from postfix_logsums.errors import PostfixLogsumsError, StatsError      # noqa
-        from postfix_logsums.errors import WrongMsgStatsAttributeError          # noqa
-        from postfix_logsums.errors import WrongMsgStatsValueError              # noqa
-        from postfix_logsums.errors import WrongMsgStatsKeyError                # noqa
-        from postfix_logsums.errors import WrongMsgPerDayKeyError               # noqa
-        from postfix_logsums.errors import WrongMsgStatsHourError               # noqa
-        from postfix_logsums.errors import MsgStatsHourValNotfoundError         # noqa
-        from postfix_logsums.errors import MsgStatsHourInvalidMethodError       # noqa
+
+        LOG.debug(
+            "Version of postfix_logsums.errors: {!r}".format(postfix_logsums.errors.__version__)
+        )
+        from postfix_logsums.errors import PostfixLogsumsError, StatsError  # noqa
+        from postfix_logsums.errors import WrongMsgStatsAttributeError  # noqa
+        from postfix_logsums.errors import WrongMsgStatsValueError  # noqa
+        from postfix_logsums.errors import WrongMsgStatsKeyError  # noqa
+        from postfix_logsums.errors import WrongMsgPerDayKeyError  # noqa
+        from postfix_logsums.errors import WrongMsgStatsHourError  # noqa
+        from postfix_logsums.errors import MsgStatsHourValNotfoundError  # noqa
+        from postfix_logsums.errors import MsgStatsHourInvalidMethodError  # noqa
 
     # -------------------------------------------------------------------------
     def test_general_errors(self):
@@ -83,7 +85,7 @@ class TestErrors(PostfixLogsumsTestcase):
         """Test raising a WrongMsgStatsAttributeError."""
         LOG.info(self.get_method_doc())
 
-        wrong_attr = 'uhu'
+        wrong_attr = "uhu"
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.errors import WrongMsgStatsAttributeError
@@ -92,27 +94,28 @@ class TestErrors(PostfixLogsumsTestcase):
             raise WrongMsgStatsAttributeError(wrong_attr, self.__class__.__name__)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'WrongMsgStatsAttributeError')
+        self.assertEqual(e.__class__.__name__, "WrongMsgStatsAttributeError")
 
         LOG.info("Test raising a WrongMsgStatsValueError ...")
 
         from postfix_logsums.errors import WrongMsgStatsValueError
 
         msg = "Wrong value {v!r} in test_attribute_errors() of {c}.".format(
-            v=wrong_attr, c=self.__class__.__name__)
+            v=wrong_attr, c=self.__class__.__name__
+        )
 
         with self.assertRaises(PostfixLogsumsError) as cm:
             raise WrongMsgStatsValueError(msg)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'WrongMsgStatsValueError')
+        self.assertEqual(e.__class__.__name__, "WrongMsgStatsValueError")
 
     # -------------------------------------------------------------------------
     def test_key_errors(self):
         """Test raising a WrongMsgStatsKeyError."""
         LOG.info(self.get_method_doc())
 
-        wrong_key = 'uhu'
+        wrong_key = "uhu"
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.errors import WrongMsgStatsKeyError
@@ -121,7 +124,7 @@ class TestErrors(PostfixLogsumsTestcase):
             raise WrongMsgStatsKeyError(wrong_key, self.__class__.__name__)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'WrongMsgStatsKeyError')
+        self.assertEqual(e.__class__.__name__, "WrongMsgStatsKeyError")
 
         LOG.info("Test raising a WrongMsgPerDayKeyError ...")
 
@@ -131,14 +134,14 @@ class TestErrors(PostfixLogsumsTestcase):
             raise WrongMsgPerDayKeyError(wrong_key, self.__class__.__name__)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'WrongMsgPerDayKeyError')
+        self.assertEqual(e.__class__.__name__, "WrongMsgPerDayKeyError")
 
     # -------------------------------------------------------------------------
     def test_hour_errors(self):
         """Test raising a WrongMsgStatsHourError."""
         LOG.info(self.get_method_doc())
 
-        wrong_hour = 'uhu'
+        wrong_hour = "uhu"
 
         from postfix_logsums.errors import PostfixLogsumsError
         from postfix_logsums.errors import WrongMsgStatsHourError
@@ -147,7 +150,7 @@ class TestErrors(PostfixLogsumsTestcase):
             raise WrongMsgStatsHourError(wrong_hour, self.__class__.__name__)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'WrongMsgStatsHourError')
+        self.assertEqual(e.__class__.__name__, "WrongMsgStatsHourError")
 
         LOG.info("Test raising a MsgStatsHourValNotfoundError ...")
 
@@ -157,7 +160,7 @@ class TestErrors(PostfixLogsumsTestcase):
             raise MsgStatsHourValNotfoundError(wrong_hour, self.__class__.__name__)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'MsgStatsHourValNotfoundError')
+        self.assertEqual(e.__class__.__name__, "MsgStatsHourValNotfoundError")
 
         LOG.info("Test raising a MsgStatsHourInvalidMethodError ...")
 
@@ -167,11 +170,11 @@ class TestErrors(PostfixLogsumsTestcase):
             raise MsgStatsHourInvalidMethodError(wrong_hour, self.__class__.__name__)
         e = cm.exception
         LOG.debug("%s raised: %s", e.__class__.__name__, e)
-        self.assertEqual(e.__class__.__name__, 'MsgStatsHourInvalidMethodError')
+        self.assertEqual(e.__class__.__name__, "MsgStatsHourInvalidMethodError")
 
 
 # =============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     verbose = get_arg_verbose()
     if verbose is None:
@@ -182,11 +185,11 @@ if __name__ == '__main__':
 
     suite = unittest.TestSuite()
 
-    suite.addTest(TestErrors('test_import', verbose))
-    suite.addTest(TestErrors('test_general_errors', verbose))
-    suite.addTest(TestErrors('test_attribute_errors', verbose))
-    suite.addTest(TestErrors('test_key_errors', verbose))
-    suite.addTest(TestErrors('test_hour_errors', verbose))
+    suite.addTest(TestErrors("test_import", verbose))
+    suite.addTest(TestErrors("test_general_errors", verbose))
+    suite.addTest(TestErrors("test_attribute_errors", verbose))
+    suite.addTest(TestErrors("test_key_errors", verbose))
+    suite.addTest(TestErrors("test_hour_errors", verbose))
 
     runner = unittest.TextTestRunner(verbosity=verbose)
 

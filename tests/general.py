@@ -52,8 +52,8 @@ def get_arg_verbose():
 
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
-        "-v", "--verbose", action="count",
-        dest='verbose', help='Increase the verbosity level')
+        "-v", "--verbose", action="count", dest="verbose", help="Increase the verbosity level"
+    )
     args = arg_parser.parse_args()
 
     return args.verbose
@@ -70,13 +70,13 @@ def init_root_logger(verbose=0):
             root_log.setLevel(logging.DEBUG)
 
     appname = os.path.basename(sys.argv[0])
-    format_str = appname + ': '
+    format_str = appname + ": "
     if verbose:
         if verbose > 1:
-            format_str += '%(name)s(%(lineno)d) %(funcName)s() '
+            format_str += "%(name)s(%(lineno)d) %(funcName)s() "
         else:
-            format_str += '%(name)s '
-    format_str += '%(levelname)s - %(message)s'
+            format_str += "%(name)s "
+    format_str += "%(levelname)s - %(message)s"
     formatter = None
     formatter = Formatter(format_str)
 
@@ -118,21 +118,23 @@ class PostfixLogsumsTestcase(unittest.TestCase):
         return msg
 
     # -------------------------------------------------------------------------
-    def __init__(self, methodName='runTest', verbose=0):
+    def __init__(self, methodName="runTest", verbose=0):
         """Initialize the base testcase class."""
         self._verbose = int(verbose)
 
-        appname = os.path.basename(sys.argv[0]).replace('.py', '')
+        appname = os.path.basename(sys.argv[0]).replace(".py", "")
         self._appname = appname
 
         super(PostfixLogsumsTestcase, self).__init__(methodName)
 
         self.assertGreaterEqual(
-            sys.version_info[0], 3, "Unsupported Python version {}.".format(sys.version))
+            sys.version_info[0], 3, "Unsupported Python version {}.".format(sys.version)
+        )
 
         if sys.version_info[0] == 3:
             self.assertGreaterEqual(
-                sys.version_info[1], 6, "Unsupported Python version {}.".format(sys.version))
+                sys.version_info[1], 6, "Unsupported Python version {}.".format(sys.version)
+            )
 
         if self.verbose >= 3:
             LOG.debug("Used Phyton version: {!r}.".format(sys.version))
@@ -141,7 +143,7 @@ class PostfixLogsumsTestcase(unittest.TestCase):
     @property
     def verbose(self):
         """The verbosity level."""
-        return getattr(self, '_verbose', 0)
+        return getattr(self, "_verbose", 0)
 
     # -------------------------------------------------------------------------
     @property
@@ -161,7 +163,7 @@ class PostfixLogsumsTestcase(unittest.TestCase):
 
 
 # =============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     pass
 

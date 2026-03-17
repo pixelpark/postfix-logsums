@@ -18,12 +18,12 @@ try:
 except ImportError:
     import unittest
 
-libdir = str(Path(__file__).parent.parent / 'src')
+libdir = str(Path(__file__).parent.parent / "src")
 sys.path.insert(0, libdir)
 
 from general import PostfixLogsumsTestcase, get_arg_verbose, init_root_logger, pp
 
-LOG = logging.getLogger('test_results')
+LOG = logging.getLogger("test_results")
 
 
 # =============================================================================
@@ -41,8 +41,10 @@ class TestResults(PostfixLogsumsTestcase):
         LOG.info(self.get_method_doc())
 
         import postfix_logsums.results
-        LOG.debug("Version of postfix_logsums.results: {!r}".format(
-            postfix_logsums.results.__version__))
+
+        LOG.debug(
+            "Version of postfix_logsums.results: {!r}".format(postfix_logsums.results.__version__)
+        )
 
     # -------------------------------------------------------------------------
     def test_init_results(self):
@@ -65,7 +67,7 @@ class TestResults(PostfixLogsumsTestcase):
 
 
 # =============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     verbose = get_arg_verbose()
     if verbose is None:
@@ -76,8 +78,8 @@ if __name__ == '__main__':
 
     suite = unittest.TestSuite()
 
-    suite.addTest(TestResults('test_import', verbose))
-    suite.addTest(TestResults('test_init_results', verbose))
+    suite.addTest(TestResults("test_import", verbose))
+    suite.addTest(TestResults("test_init_results", verbose))
 
     runner = unittest.TextTestRunner(verbosity=verbose)
 
