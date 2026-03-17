@@ -1,3 +1,10 @@
+postfix-logsums (0.9.9) all; urgency=medium
+
+  * Changing packaging from setuptools to pyproject.toml with flit - see
+    CHANGELOG.md.
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Tue, 17 Mar 2026 15:45:15 +0100
+
 postfix-logsums (0.9.4) all; urgency=medium
 
   * Changing dependencies of generated RPM files.
