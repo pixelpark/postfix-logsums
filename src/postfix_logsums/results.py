@@ -1,21 +1,25 @@
 #!/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@summary: A module for all result classesin this package
+@summary: A module for all result classesin this package.
 
 @author: Frank Brehm
 @contact: frank@brehm-online.com
-@copyright: © 2023 by Frank Brehm, Berlin
+@copyright: © 2023 - -2026 by Frank Brehm, Berlin
 """
 from __future__ import absolute_import
 
 import logging
 
-from .stats import HourlyStats, MessageStatsTotals, HourlyStatsSmtpd
-from .stats import DailyStatsDict, MessageStatsPerDay, SmtpdStats
 from .stats import CommonStatsDict
+from .stats import DailyStatsDict
+from .stats import HourlyStats
+from .stats import HourlyStatsSmtpd
+from .stats import MessageStatsPerDay
+from .stats import MessageStatsTotals
+from .stats import SmtpdStats
 
-__version__ = '0.5.5'
+__version__ = '0.6.0'
 __author__ = 'Frank Brehm <frank@brehm-online.com>'
 __copyright__ = '(C) 2023 by Frank Brehm, Berlin'
 
@@ -28,7 +32,7 @@ class PostfixLogSums(object):
 
     # -------------------------------------------------------------------------
     def __init__(self, smtpd_stats=False):
-        """Constructor."""
+        """Initialize a PostfixLogSums object."""
         self._smtpd_stats = False
         self.smtpd_stats = smtpd_stats
 
@@ -46,7 +50,7 @@ class PostfixLogSums(object):
 
     # -------------------------------------------------------------------------
     def reset(self):
-        """Resetting all counters and result structs."""
+        """Reset all counters and result structs."""
         self._files_index = None
         self.amavis_msgs = 0
         self.bounced = {}
@@ -102,8 +106,11 @@ class PostfixLogSums(object):
 
     # -------------------------------------------------------------------------
     def start_logfile(self, logfile):
-        """Creates an entry for a new logfile in self.files and sets self.files_index
-        to the index of the new created entry."""
+        """
+        Create an entry for a new logfile in self.files.
+
+        And sets self.files_index to the index of the new created entry.
+        """
         entry = {
             'file': logfile,
             'lines_total': 0,
@@ -130,7 +137,7 @@ class PostfixLogSums(object):
     # -------------------------------------------------------------------------
     def as_dict(self, short=True, pure=False):
         """
-        Transforms the elements of the object into a dict
+        Transform the elements of the object into a dict.
 
         @param short: don't include local properties in resulting dict.
         @type short: bool
@@ -138,8 +145,8 @@ class PostfixLogSums(object):
         @return: structure as dict
         @rtype:  dict
         """
-
         res = {}
+
         for key in self.__dict__:
             if short and key.startswith('_') and not key.startswith('__'):
                 continue
@@ -201,7 +208,7 @@ class PostfixLogSums(object):
         return res
 
     # -------------------------------------------------------------------------
-    def dict(self):
+    def dict(self):       # noqa: A003
         """Typecast into a regular dict."""
         return self.as_dict(pure=True)
 

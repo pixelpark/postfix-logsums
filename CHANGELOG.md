@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Updating xtract-xlate-msgs.sh and etc/babel.ini.
 * Refactoring `src/postfix_logsums/xlate.py`.
 
+### Fixed
+
+* Fixing many linting errors.
+
 ### Removed
 
 * Removing get-debian-release, get-debian-version, get-rpm-release, get-rpm-version,

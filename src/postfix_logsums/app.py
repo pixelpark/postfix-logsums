@@ -1,29 +1,36 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
-# Author: Frank Brehm <frank@brehm-online.com
-#         Berlin, Germany, 2022
-# Date:   2022-02-17
-#
-# Refactored from Perl script 'pflogsumm' from James S. Seymour, Release 1.1.5
-#
+"""
+@summary: A log analyzer/summarizer for the Postfix MTA.
 
+It is refactored from Perl script 'pflogsumm' from James S. Seymour, Release 1.1.5
+
+@author: Frank Brehm
+@contact: frank@brehm-online.com
+@copyright: © 2022 - 2026 by Frank Brehm, Berlin
+"""
 from __future__ import absolute_import, print_function
 
-import sys
-import os
-import logging
 import argparse
-import traceback
-import datetime
 import copy
-import re
-import textwrap
-import shutil
-import locale
+import datetime
 import json
+import locale
+import logging
+import os
+import re
+import shutil
+import sys
+import textwrap
+import traceback
+from argparse import RawTextHelpFormatter
+from functools import cmp_to_key
+from locale import format_string
+from locale import strcoll
+from operator import itemgetter
 from pathlib import Path
 
+# Third party modules
 HAS_YAML = False
 try:
     import yaml
@@ -31,41 +38,37 @@ try:
 except ImportError:
     pass
 
-# from argparse import RawDescriptionHelpFormatter
-from argparse import RawTextHelpFormatter
-
-from functools import cmp_to_key
-
-from locale import strcoll, format_string
-
-from operator import itemgetter
+# Own modules
+from . import DEFAULT_TERMINAL_HEIGHT
+from . import DEFAULT_TERMINAL_WIDTH
+from . import MAX_TERMINAL_WIDTH
+from . import PostfixLogParser
+from . import __version__ as GLOBAL_VERSION
+from . import get_generic_appname
+from . import get_smh
+from . import pp
+from . import to_bytes
+from .stats import HOURS_PER_DAY
+from .xlate import XLATOR
+from .xlate import format_list
 
 LOG = logging.getLogger(__name__)
 
-from . import __version__ as GLOBAL_VERSION
-from . import pp, to_bytes, MAX_TERMINAL_WIDTH
-from . import DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT
-from . import get_generic_appname, get_smh
-from . import PostfixLogParser
-
-from .xlate import XLATOR, format_list
-
-from .stats import HOURS_PER_DAY
-
-__version__ = '0.9.0'
+__version__ = '0.10.0'
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
 
 # =============================================================================
-class NonNegativeItegerOptionAction(argparse.Action):
+class NonNegativeIntegerOptionAction(argparse.Action):
+    """Argparse action for checking for non negative Integer options."""
 
     # -------------------------------------------------------------------------
     def __call__(self, parser, namespace, value, option_string=None):
-
+        """Parse the given option."""
         try:
             val = int(value)
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             msg = _("Got a {c} for converting {v!r} into an integer value: {e}").format(
                 c=e.__class__.__name__, v=value, e=e)
             raise argparse.ArgumentError(self, msg)
@@ -79,16 +82,17 @@ class NonNegativeItegerOptionAction(argparse.Action):
 
 # =============================================================================
 class FilterDayOptionAction(argparse.Action):
+    """Argparse action for checking for a valid day argument."""
 
     # -------------------------------------------------------------------------
     def __init__(self, option_strings, *args, **kwargs):
         """Initialise a FilterDayOptionAction object."""
         super(FilterDayOptionAction, self).__init__(
-            option_strings=option_strings, *args, **kwargs)
+            *args, **kwargs, option_strings=option_strings)
 
     # -------------------------------------------------------------------------
     def __call__(self, parser, namespace, value, option_string=None):
-
+        """Parse the given option."""
         val = str(value)
         used_day = None
         if val.lower() == 'today':
@@ -102,7 +106,7 @@ class FilterDayOptionAction(argparse.Action):
             if m:
                 try:
                     used_day = datetime.date(int(m['year']), int(m['month']), int(m['day']))
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     msg = _("Invalid date as day {!r} given").format(value)
                     msg += ': ' + str(e)
                     raise argparse.ArgumentError(self, msg)
@@ -121,7 +125,7 @@ class LogFilesOptionAction(argparse.Action):
     def __init__(self, option_strings, *args, **kwargs):
         """Initialise a LogFilesOptionAction object."""
         super(LogFilesOptionAction, self).__init__(
-            option_strings=option_strings, *args, **kwargs)
+            *args, **kwargs, option_strings=option_strings)
 
     # -------------------------------------------------------------------------
     def __call__(self, parser, namespace, values, option_string=None):
@@ -157,7 +161,7 @@ class LogFilesOptionAction(argparse.Action):
 
 # =============================================================================
 def adj_int_units(value):
-
+    """Transform given Bytes into a human readable format."""
     val = value
     unit = ' '
     if value > PostfixLogParser.div_by_one_gb_at:
@@ -177,7 +181,7 @@ def adj_int_units(value):
 
 # =============================================================================
 def ci_cmp(one, two):
-    """Comparing two strings case insensitive."""
+    """Compare two strings case insensitive."""
     if one.lower() < two.lower():
         return -1
     if one.lower() > two.lower():
@@ -190,7 +194,7 @@ def ci_cmp(one, two):
 
 # =============================================================================
 def adj_int_units_localized(value, digits=1, dec_digits=0, no_unit=False):
-    """Generating a string with localized value."""
+    """Generate a string with localized value."""
     val = value
     unit = ' '
     if not value:
@@ -217,8 +221,7 @@ def adj_int_units_localized(value, digits=1, dec_digits=0, no_unit=False):
 
 # =============================================================================
 def adj_time_units(seconds, digits=1, dec_digits=1):
-    """Return (value + unit) for time"""
-
+    """Return (value + unit) for time."""
     val = seconds
     unit = 's'
     if seconds > 3600 * 1.5:
@@ -239,6 +242,7 @@ def adj_time_units(seconds, digits=1, dec_digits=1):
 
 # =============================================================================
 class PostfixLogsumsApp(object):
+    """The class for the application object for 'postfix-logsums."""
 
     term_size = shutil.get_terminal_size((DEFAULT_TERMINAL_WIDTH, DEFAULT_TERMINAL_HEIGHT))
     max_width = term_size.columns
@@ -263,7 +267,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     @classmethod
     def sorted_keys_by_count_and_key(cls, data):
-        """Returns all keys of tha data dict sorted."""
+        """Return all keys of tha data dict sorted."""
         sorted_keys = []
 
         # ---------------------------------------------
@@ -280,8 +284,8 @@ class PostfixLogsumsApp(object):
             m_one = cls.re_ipv4.match(key_one)
             m_two = cls.re_ipv4.match(key_two)
             if m_one and m_two:
-                lkey_one = ''.join(map(lambda x: chr(int(x)), m_one.groups()))
-                lkey_two = ''.join(map(lambda x: chr(int(x)), m_two.groups()))
+                lkey_one = ''.join(map(lambda x: chr(int(x)), m_one.groups()))  # noqa: C417
+                lkey_two = ''.join(map(lambda x: chr(int(x)), m_two.groups()))  # noqa: C417
             return strcoll(lkey_one, lkey_two)
 
         for key in sorted(data.keys(), key=cmp_to_key(sort_by_count_and_key)):
@@ -292,7 +296,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     @classmethod
     def sorted_keys_of_msg_stats(cls, data):
-        """Returns all keys of tha data dict sorted."""
+        """Return all keys of tha data dict sorted."""
         sorted_keys = []
 
         # ---------------------------------------------
@@ -320,7 +324,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     @classmethod
     def sorted_keys_of_smtpd_stats(cls, data):
-        """Returns all keys of tha data dict sorted."""
+        """Return all keys of tha data dict sorted."""
         sorted_keys = []
 
         # ---------------------------------------------
@@ -355,7 +359,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def __init__(self):
-        """The constructor method."""
+        """Initialize the PostfixLogsumsApp object."""
         self._appname = get_generic_appname()
         self._version = __version__
         self._verbose = 0
@@ -391,7 +395,7 @@ class PostfixLogsumsApp(object):
     # -----------------------------------------------------------
     @property
     def appname(self):
-        """The name of the current running application."""
+        """Give the name of the current running application."""
         if hasattr(self, '_appname'):
             return self._appname
         return os.path.basename(sys.argv[0])
@@ -406,8 +410,7 @@ class PostfixLogsumsApp(object):
     # -----------------------------------------------------------
     @property
     def appname_capitalized(self):
-        """The name of the current running application withe first character
-        as a capital."""
+        """Give the name of the current running application withe first character as a capital."""
         match = self.re_first_letter.match(self.appname)
         if match:
             return match.group(1).upper() + match.group(2)
@@ -567,19 +570,17 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def __str__(self):
         """
-        Typecasting function for translating object structure
-        into a string
+        Typecast function for translating object structure into a string.
 
         @return: structure as string
         @rtype:  str
         """
-
         return pp(self.as_dict(short=True))
 
     # -------------------------------------------------------------------------
     def as_dict(self, short=True):
         """
-        Transforms the elements of the object into a dict
+        Transform the elements of the object into a dict.
 
         @param short: don't include local properties in resulting dict.
         @type short: bool
@@ -587,8 +588,8 @@ class PostfixLogsumsApp(object):
         @return: structure as dict
         @rtype:  dict
         """
-
         res = {}
+
         for key in self.__dict__:
             if short and key.startswith('_') and not key.startswith('__'):
                 continue
@@ -619,12 +620,10 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def init_arg_parser(self):
         """
-        Local called method to initiate the argument parser.
+        Initiate the argument parser.
 
         @raise PBApplicationError: on some errors
-
         """
-
         appname = self.appname_capitalized
         arg_width = self.max_width - 24
 
@@ -730,7 +729,7 @@ class PostfixLogsumsApp(object):
             'greater than 1 results in the more "aggressive" hack being applied.'), arg_width)
         logfile_group.add_argument(
             '--verp-mung', type=int, metavar='1|2', const=0, dest='verp_mung', nargs='?',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         #######
         # Select compression
@@ -792,7 +791,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(_('--detail 0 suppresses *all* detail.'), arg_width)
         output_options.add_argument(
             '-D', '--detail', type=int, metavar=_('COUNT'), dest='detail',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --bounce-detail
         desc = self.wrap_msg(_(
@@ -800,7 +799,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--bounce-detail', type=int, metavar=_('COUNT'), dest='detail_bounce',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --deferral-detail
         desc = self.wrap_msg(_(
@@ -808,7 +807,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--deferral-detail', type=int, metavar=_('COUNT'), dest='detail_deferral',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --reject-detail
         desc = self.wrap_msg(_(
@@ -817,7 +816,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--reject-detail', type=int, metavar=_('COUNT'), dest='detail_reject',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --smtp-detail
         desc = self.wrap_msg(_(
@@ -826,7 +825,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--smtp-detail', type=int, metavar=_('COUNT'), dest='detail_smtp',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --smtpd-warning-detail
         desc = self.wrap_msg(_(
@@ -835,7 +834,7 @@ class PostfixLogsumsApp(object):
         desc += self.wrap_msg(_('0 to suppress entirely.'), arg_width)
         output_options.add_argument(
             '--smtpd-warning-detail', type=int, metavar=_('COUNT'), dest='detail_smtpd_warning',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --host
         desc = self.wrap_msg(_(
@@ -846,7 +845,7 @@ class PostfixLogsumsApp(object):
             arg_width)
         output_options.add_argument(
             '-h', '--host', type=int, metavar=_('COUNT'), dest='detail_host',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --user
         desc = self.wrap_msg(_(
@@ -854,7 +853,7 @@ class PostfixLogsumsApp(object):
         desc += '0 = {}.'.format(_('none'))
         output_options.add_argument(
             '-u', '--user', type=int, metavar=_('COUNT'), dest='detail_user',
-            action=NonNegativeItegerOptionAction, help=desc)
+            action=NonNegativeIntegerOptionAction, help=desc)
 
         # --problems-first
         desc = self.wrap_msg(_(
@@ -924,7 +923,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def perform_arg_parser(self):
-
+        """Evaluate the given command line parameters."""
         self.args = self.arg_parser.parse_args()
 
         if self.args.usage:
@@ -940,12 +939,12 @@ class PostfixLogsumsApp(object):
     def init_logging(self):
         """
         Initialize the logger object.
+
         It creates a colored loghandler with all output to STDERR.
         Maybe overridden in descendant classes.
 
         @return: None
         """
-
         log_level = logging.INFO
         if self.verbose:
             log_level = logging.DEBUG
@@ -978,7 +977,7 @@ class PostfixLogsumsApp(object):
     # -------------------------------------------------------------------------
     def handle_error(
             self, error_message=None, exception_name=None, do_traceback=False):
-
+        """Handle an error gracefully."""
         msg = str(error_message).strip()
         if not msg:
             msg = _('undefined error.')
@@ -1017,11 +1016,12 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def __call__(self):
+        """Call the main run method."""
         return self.run()
 
     # -------------------------------------------------------------------------
     def run(self):
-
+        """Execute the main actions of the application."""
         LOG.debug(_("And here wo go ..."))
 
         locale.setlocale(locale.LC_ALL, '')
@@ -1091,7 +1091,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_grand_totals(self):
-        """Printing the grand total numbers and data."""
+        """Print the grand total numbers and data."""
         self.print_subsect_title(_('Grand Totals'))
 
         if self.results.logdate_oldest or self.results.logdate_latest:
@@ -1182,7 +1182,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_subsect_title(self, title, nr_items=1, count=None, quiet=None):
-        """Printing the title of a sub section."""
+        """Print the title of a sub section."""
         msg = str(title)
         if quiet is None:
             quiet = self.quiet
@@ -1204,7 +1204,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_smtpd_stats(self):
-
+        """Print SMTPD statistics."""
         tpl_loc = ' {val:>8}  {lbl}'
         count_domains = len(self.results.smtpd_per_domain.keys())
         total_conn = self.results.msgs_total.connections
@@ -1229,6 +1229,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_nested_hash(self, data, label, count):
+        """Print a nested hash."""
         if not len(data.keys()):
             if self.quiet:
                 return
@@ -1240,7 +1241,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def walk_nested_hash(self, data, count, level=0):
-        """# 'walk' a 'nested' hash"""
+        """Walk recursively through a nested hash."""
         if not len(data.keys()):
             return
         level += 1
@@ -1269,8 +1270,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_hash_by_cnt_vals(self, data, title, count):
-        """Print hash contents sorted by numeric values in descending
-        order (i.e.: highest first)."""
+        """Print hash contents sorted by numeric values in descending order."""
         if count:
             title = "{top} {c} ".format(top="top", c=count) + title
         if not len(data.keys()):
@@ -1286,8 +1286,11 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def really_print_hash_by_cnt_vals(self, data, count, indent):
-        """*really* print hash contents sorted by numeric values in descending
-        order (i.e.: highest first), then by IP/addr, in ascending order."""
+        """
+        Print hash contents sorted by numeric values in descending order.
+
+        (i.e.: highest first), then by IP/addr, in ascending order.
+        """
         tpl = '{i}{val:>8}  {lbl}'
 
         i = 0
@@ -1640,7 +1643,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_per_day_smtpd(self):
-        """print "per-day" smtpd connection summary"""
+        """Print "per-day" smtpd connection summary."""
         title = _('Per-Day SMTPD Connection Summary')
         indent = '  '
 
@@ -1705,7 +1708,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_per_hour_smtpd(self):
-        """print 'per-hour' smtpd connection summary"""
+        """Print 'per-hour' smtpd connection summary."""
         indent = '  '
         if self.nr_days == 1:
             title = _('Per-Hour SMTPD Connection Summary')
@@ -1795,7 +1798,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_domain_smtpd_summary(self):
-        """print 'per-domain-smtpd' connection summary"""
+        """Print 'per-domain-smtpd' connection summary."""
         indent = '  '
         count = self.detail_host
         if count == 0:
@@ -1873,7 +1876,7 @@ class PostfixLogsumsApp(object):
 
     # -------------------------------------------------------------------------
     def print_user_data(self, data, title, attribute):
-        """print 'per-user' data sorted in descending order"""
+        """Print 'per-user' data sorted in descending order."""
         if self.detail_user == 0:
             return
         indent = '  '
