@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Refactoring testing scripts.
 * Updating update-env.sh for refactored virtual env.
 * Updating xtract-xlate-msgs.sh and etc/babel.ini.
+* Refactoring `src/postfix_logsums/xlate.py`.
 
 ### Removed
 
