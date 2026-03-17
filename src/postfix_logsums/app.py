@@ -56,7 +56,7 @@ from .xlate import format_list
 
 LOG = logging.getLogger(__name__)
 
-__version__ = "0.10.2"
+__version__ = "0.10.3"
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -2244,12 +2244,9 @@ class PostfixLogsumsApp(object):
 # =============================================================================
 def main():
     """Entrypoint for postfix-logsums."""
-    my_path = Path(sys.argv[0])
-    appname = my_path.name
-
     locale.setlocale(locale.LC_ALL, "")
 
-    app = PostfixLogsumsApp(appname=appname)
+    app = PostfixLogsumsApp()
     app.initialized = True
 
     if app.verbose > 2:
