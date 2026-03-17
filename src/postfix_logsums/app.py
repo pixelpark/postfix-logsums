@@ -56,7 +56,7 @@ from .xlate import format_list
 
 LOG = logging.getLogger(__name__)
 
-__version__ = "0.10.1"
+__version__ = "0.10.2"
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -650,8 +650,8 @@ class PostfixLogsumsApp(object):
         )
         desc.append(
             _(
-                "{} generates summaries and, in some cases, detailed reports of mail server traffic "
-                "volumes, rejected and bounced email, and server warnings, "
+                "{} generates summaries and, in some cases, detailed reports of mail server "
+                "traffic volumes, rejected and bounced email, and server warnings, "
                 "errors and panics."
             ).format(appname)
         )
@@ -688,8 +688,8 @@ class PostfixLogsumsApp(object):
         desc += (
             self.wrap_msg(
                 _(
-                    "At present, this includes only a per-message report, sorted by sender domain, "
-                    "then user-in-domain, then by queue i.d."
+                    "At present, this includes only a per-message report, sorted by sender "
+                    "domain, then user-in-domain, then by queue i.d."
                 ),
                 arg_width,
             )
@@ -713,8 +713,8 @@ class PostfixLogsumsApp(object):
         desc += "\n"
         desc += self.wrap_msg(
             _(
-                "Normally {} lower-cases only the host and domain parts, leaving the user part alone. "
-                "This option causes the entire email address to be lower-cased."
+                "Normally {} lower-cases only the host and domain parts, leaving the user part "
+                "alone. This option causes the entire email address to be lower-cased."
             ).format(appname),
             arg_width,
         )
@@ -730,8 +730,8 @@ class PostfixLogsumsApp(object):
                 "Message size is reported only by the queue manager. The message may be delivered "
                 "long-enough after the (last) qmgr log entry that the information is not in "
                 'the log(s) processed by a particular run of {a}. This throws off "Recipients by '
-                'message size" and the total for "bytes delivered." These are normally reported by '
-                '{a} as "Messages with nosize data".'
+                'message size" and the total for "bytes delivered." These are normally reported '
+                'by {a} as "Messages with nosize data".'
             ).format(a=appname),
             arg_width,
         )
@@ -770,8 +770,8 @@ class PostfixLogsumsApp(object):
         desc = (
             self.wrap_msg(
                 _(
-                    'Do "VERP" generated address (?) munging. Convert sender addresses of the form '
-                    '"list-return-NN-someuser=some.dom@host.sender.dom" to '
+                    'Do "VERP" generated address (?) munging. Convert sender addresses of the '
+                    'form "list-return-NN-someuser=some.dom@host.sender.dom" to '
                     '"list-return-ID-someuser=some.dom@host.sender.dom".'
                 ),
                 arg_width,
@@ -785,8 +785,9 @@ class PostfixLogsumsApp(object):
         desc += (
             self.wrap_msg(
                 _(
-                    'By specifying the optional "=2" (second form), the munging is more "aggressive", '
-                    'converting the address to something like: "list-return@host.sender.dom".'
+                    'By specifying the optional "=2" (second form), the munging is more '
+                    '"aggressive", converting the address to something like: '
+                    '"list-return@host.sender.dom".'
                 ),
                 arg_width,
             )
@@ -825,8 +826,8 @@ class PostfixLogsumsApp(object):
         )
         desc += self.wrap_msg(
             _(
-                'If not given, filenames with the extension ".gz" are assumed to be compressed with '
-                "the gzip compression."
+                'If not given, filenames with the extension ".gz" are assumed to be '
+                "compressed with the gzip compression."
             ),
             arg_width,
         )
@@ -1057,8 +1058,9 @@ class PostfixLogsumsApp(object):
         # --iso-date-time
         desc = self.wrap_msg(
             _(
-                "For summaries that contain date or time information, use ISO 8601 standard formats "
-                '(CCYY-MM-DD and HH:MM), rather than "Mon DD CCYY" and "HHMM".'
+                "For summaries that contain date or time information, "
+                "use ISO 8601 standard formats (CCYY-MM-DD and HH:MM), "
+                'rather than "Mon DD CCYY" and "HHMM".'
             ),
             arg_width,
         )
@@ -1070,8 +1072,8 @@ class PostfixLogsumsApp(object):
         desc = (
             self.wrap_msg(
                 _(
-                    'For the message deferral, bounce and reject summaries: display the full "reason", '
-                    "rather than a truncated one."
+                    "For the message deferral, bounce and reject summaries: display the full "
+                    '"reason", rather than a truncated one.'
                 ),
                 arg_width,
             )
