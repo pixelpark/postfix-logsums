@@ -51,7 +51,7 @@ python@@@py_version_dot@@@ setup.py install --prefix=%{_prefix} --root=%{buildro
 %files
 %defattr(-,root,root,-)
 %license LICENSE
-%doc LICENSE README.md CHANGELOG.md debian/changelog
+%doc LICENSE README.md CHANGELOG.md debian/changelog pyproject.toml
 %{_bindir}/*
 %{_datadir}/*
 %{python3_sitelib}/*
