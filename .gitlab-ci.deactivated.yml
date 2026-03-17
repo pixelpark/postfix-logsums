@@ -2,18 +2,22 @@
 
 include:
   - project: 'python/packaging'
-    ref: v1.9
-    file: 'gitlab/create-all.yaml'
+    ref: main
+    file: 'gitlab/pyproject-create-all.yaml'
 
 variables:
-  BINS_IN_ROOT: 'postfix-logsums'
+  BUILD_RPMS_FOR: 'el-9 el-10'
   EXPIRE_ARTIFACTS_IN: '1 week'
-  HAS_PYTHON_PREFIX: 'n'
+  NOTIFY_ADDRESS: 'frank.brehm@pixelpark.com'
   PKG_NAME: 'postfix-logsums'
-  PYTHON_ADDITIONAL_PACKAGES: 'python3-fb-logging'
-  PYTHON_INIT_FILE: 'postfix_logsums/__init__.py'
-  PYTHON_TEST_PATHS: 'postfix-logsums postfix_logsums setup.py'
-  SHELLSCRIPTS: 'compile-xlate-msgs.sh update-env.sh xtract-xlate-msgs.sh get-debian-release get-debian-version get-rpm-release get-rpm-version'
+  PYTHON_ADDITIONAL_PACKAGES: >-
+    python3-fb-logging
+  PYTHON_INIT_FILE: 'src/postfix_logsums/__init__.py'
+  PYTHON_TEST_PATHS: 'src'
+  SHELLSCRIPTS: >-
+    compile-xlate-msgs.sh
+    update-env.sh
+    xtract-xlate-msgs.sh
   SSH_PRIV_KEY_YUM_REPO: 'nada'
   TEST_LOCALES: 'en_US.UTF-8 de_DE.UTF-8'
   UPDATE_ALL_PIP_MODULES: 'n'
@@ -30,5 +34,6 @@ variables:
   # YUM_REPO_DIR: "/srv/www/repo${YUM_REPO_DIR_HTTP}"
   YUM_REPO_GPG_KEY_PUB: 'nada'
   YUM_REPO_GPG_KEY_SEC: ''
+  REVISION: 1
 
-# last line
+# vim: et tabstop=2 expandtab shiftwidth=2 softtabstop=2 list
