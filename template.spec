@@ -1,7 +1,9 @@
-%define version @@@Version@@@
-%define builddir postfix-logsums-%{version}
+# vim: filetype=spec
 
-Name:           postfix-logsums
+%define version @@@Version@@@
+%define builddir %{_builddir}/python%{python3_pkgversion}-postfix-logsums-%{version}
+
+Name:           python%{python3_pkgversion}-postfix-logsums
 Version:        %{version}
 Release:        @@@Release@@@%{?dist}
 Summary:        A log analyzer/summarizer for the Postfix MTA.
@@ -12,16 +14,20 @@ Distribution:   Frank Brehm
 URL:            https://github.com/pixelpark/postfix-logsums
 Source0:        postfix-logsums.%{version}.tar.gz
 
-BuildRequires:  python@@@py_version_nodot@@@
-BuildRequires:  python@@@py_version_nodot@@@-libs
-BuildRequires:  python@@@py_version_nodot@@@-devel
-BuildRequires:  python@@@py_version_nodot@@@-setuptools
-BuildRequires:  python@@@py_version_nodot@@@-babel
-BuildRequires:  python@@@py_version_nodot@@@-fb-logging >= 0.5.0
-Requires:       python@@@py_version_nodot@@@
-Requires:       python@@@py_version_nodot@@@-libs
-Requires:       python@@@py_version_nodot@@@-babel
-Recommends:     python@@@py_version_nodot@@@-pyyaml
+BuildRequires:	gettext
+BuildRequires:  python%{python3_pkgversion}
+BuildRequires:  python%{python3_pkgversion}-babel
+BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  python%{python3_pkgversion}-libs
+BuildRequires:  python%{python3_pkgversion}-fb-logging >= 1.0.0
+BuildRequires:  python%{python3_pkgversion}-semver
+BuildRequires:  pyproject-rpm-macros
+
+Requires:       python%{python3_pkgversion}
+Requires:       python%{python3_pkgversion}-babel
+Requires:       python%{python3_pkgversion}-libs
+Requires:       python%{python3_pkgversion}-semver
+Recommends:     python%{python3_pkgversion}-pyyaml
 BuildArch:      noarch
 
 %description
@@ -37,23 +43,30 @@ This is the Python@@@py_version_nodot@@@ version.
 
 %prep
 echo "Preparing '${builddir}-' ..."
-%setup -n %{builddir}
+echo "Pwd: $( pwd )"
+%autosetup -p1 -v
+
+%generate_buildrequires
+%pyproject_buildrequires
 
 %build
-cd ../%{builddir}
-python@@@py_version_dot@@@ setup.py build
+%pyproject_wheel
 
 %install
-cd ../%{builddir}
-echo "Buildroot: %{buildroot}"
-python@@@py_version_dot@@@ setup.py install --prefix=%{_prefix} --root=%{buildroot}
+%pyproject_install
+%pyproject_save_files postfix-logsums
 
-%files
+echo "Whats in '%{builddir}':"
+ls -lA '%{builddir}'
+
+echo "Whats in '%{buildroot}':"
+ls -lA '%{buildroot}'
+
+%files -f %{pyproject_files}
 %defattr(-,root,root,-)
 %license LICENSE
 %doc LICENSE README.md CHANGELOG.md debian/changelog pyproject.toml
 %{_bindir}/*
 %{_datadir}/*
-%{python3_sitelib}/*
 
 %changelog
