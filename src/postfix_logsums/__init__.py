@@ -12,7 +12,7 @@ from __future__ import absolute_import
 
 import logging
 
-__version__ = "0.9.9"
+__version__ = "0.9.10"
 __author__ = "Frank Brehm <frank@brehm-online.com>"
 __copyright__ = "(C) 2023 - 2026 by Frank Brehm, Berlin"
 

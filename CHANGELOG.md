@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-03-18
+## [0.9.10] - 2026-03-18
 
 ### Added
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Moving common used functions into `src/postfix_logsums/functions.py`.
 * Moving class `PostfixLogParser` into module `src/postfix_logsums/parser.py`.
 * Simplyfication of tests.
+* Renaming RPM package to postfix-logsums.
 
 ## [0.9.9] - 2026-03-17
 
@@ -107,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Initial release
 
-[Unreleased]: https://github.com/pixelpark/postfix-logsums/compare/0.9.9...develop
+[0.9.10]: https://github.com/pixelpark/postfix-logsums/compare/0.9.9...0.9.10
 [0.9.9]: https://github.com/pixelpark/postfix-logsums/compare/0.9.4...0.9.9
 [0.9.4]: https://github.com/pixelpark/postfix-logsums/compare/0.9.3...0.9.4
 [0.9.3]: https://github.com/pixelpark/postfix-logsums/compare/0.9.2...0.9.3
