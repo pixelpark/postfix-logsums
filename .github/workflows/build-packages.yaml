@@ -56,7 +56,7 @@ jobs:
     name: "Calling shared build workflow"
     needs:
       - prepare-image
-    uses: fbrehm/actions/.github/workflows/pyproject-build-packages.yaml@main
+    uses: fbrehm/actions/.github/workflows/pyproject-build-packages.yaml@develop
     with:
       has_i18n: true
       # test_python_versions: '["3.8", "3.9", "3.12", "3.13"]'
@@ -73,6 +73,7 @@ jobs:
         python3-fb-logging
         python3-semver
         python3-pyyaml
+      python_in_pkg_basename: false
       password_file: ${{ needs.prepare-image.outputs.password_file }}
       key_id: ${{ needs.prepare-image.outputs.key_id }}
       # do_help2man: true

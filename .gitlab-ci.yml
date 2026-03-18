@@ -2,7 +2,7 @@
 
 include:
   - project: 'python/packaging'
-    ref: main
+    ref: develop
     file: 'gitlab/pyproject-create-all.yaml'
 
 variables:
@@ -14,6 +14,7 @@ variables:
     python3-fb-logging
     python3-pyyaml
     python3-semver
+  PYTHON_IN_PKG_BASENAME: 'n'
   PYTHON_INIT_FILE: 'src/postfix_logsums/__init__.py'
   PYTHON_TEST_PATHS: 'src'
   SHELLSCRIPTS: >-
