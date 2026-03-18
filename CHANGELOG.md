@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * New module `src/postfix_logsums/functions.py`.
+* New module `src/postfix_logsums/parser.py`.
 
 ### Changed
 
 * Moving common used functions into `src/postfix_logsums/functions.py`.
+* Moving class `PostfixLogParser` into module `src/postfix_logsums/parser.py`.
 
 ## [0.9.9] - 2026-03-17
 
@@ -104,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Initial release
 
+[Unreleased]: https://github.com/pixelpark/postfix-logsums/compare/0.9.9...develop
 [0.9.9]: https://github.com/pixelpark/postfix-logsums/compare/0.9.4...0.9.9
 [0.9.4]: https://github.com/pixelpark/postfix-logsums/compare/0.9.3...0.9.4
 [0.9.3]: https://github.com/pixelpark/postfix-logsums/compare/0.9.2...0.9.3
