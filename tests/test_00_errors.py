@@ -10,16 +10,11 @@
 """
 
 import logging
-import sys
-from pathlib import Path
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
-
-libdir = str(Path(__file__).parent.parent / "src")
-sys.path.insert(0, libdir)
 
 from general import PostfixLogsumsTestcase, get_arg_verbose, init_root_logger
 
