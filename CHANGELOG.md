@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Moving common used functions into `src/postfix_logsums/functions.py`.
 * Moving class `PostfixLogParser` into module `src/postfix_logsums/parser.py`.
+* Simplyfication of tests.
 
 ## [0.9.9] - 2026-03-17
 
