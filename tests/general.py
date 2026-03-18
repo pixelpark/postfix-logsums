@@ -16,6 +16,7 @@ import pprint
 import shutil
 import sys
 import textwrap
+from pathlib import Path
 
 try:
     from fb_logging.colored import ColoredFormatter as Formatter
@@ -26,6 +27,9 @@ try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+
+libdir = str(Path(__file__).parent.parent / "src")
+sys.path.insert(0, libdir)
 
 # =============================================================================
 DEFAULT_TERMINAL_WIDTH = 99
@@ -133,11 +137,12 @@ class PostfixLogsumsTestcase(unittest.TestCase):
 
         if sys.version_info[0] == 3:
             self.assertGreaterEqual(
-                sys.version_info[1], 6, "Unsupported Python version {}.".format(sys.version)
+                sys.version_info[1], 8, "Unsupported Python version {}.".format(sys.version)
             )
 
-        if self.verbose >= 3:
+        if self.verbose >= 2:
             LOG.debug("Used Phyton version: {!r}.".format(sys.version))
+            LOG.debug("Used Phyton include path:\n" + pp(sys.path))
 
     # -------------------------------------------------------------------------
     @property

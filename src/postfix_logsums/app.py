@@ -44,19 +44,19 @@ except ImportError:
 from . import DEFAULT_TERMINAL_HEIGHT
 from . import DEFAULT_TERMINAL_WIDTH
 from . import MAX_TERMINAL_WIDTH
-from . import PostfixLogParser
 from . import __version__ as GLOBAL_VERSION
-from . import get_generic_appname
-from . import get_smh
-from . import pp
-from . import to_bytes
+from .functions import get_generic_appname
+from .functions import get_smh
+from .functions import pp
+from .functions import to_bytes
+from .parser import PostfixLogParser
 from .stats import HOURS_PER_DAY
 from .xlate import XLATOR
 from .xlate import format_list
 
 LOG = logging.getLogger(__name__)
 
-__version__ = "0.10.3"
+__version__ = "0.10.4"
 _ = XLATOR.gettext
 ngettext = XLATOR.ngettext
 
@@ -2252,7 +2252,12 @@ def main():
     if app.verbose > 2:
         print(_("{c}-Object:\n{a}").format(c=app.__class__.__name__, a=app), file=sys.stderr)
 
-    app()
+    try:
+        app()
+    except KeyboardInterrupt:
+        sys.stderr.write("\n")
+        LOG.warning(_("Aborted by keyboard interrupt."))
+        sys.exit(99)
 
     sys.exit(0)
 

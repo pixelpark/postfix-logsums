@@ -1,3 +1,10 @@
+postfix-logsums (0.9.10) all; urgency=medium
+
+  * Renaming RPM package, Moving classes and functions into other
+    modules - see CHANGELOG.md.
+
+ -- Frank Brehm <frank.brehm@pixelpark.com>  Wed, 18 Mar 2026 09:52:31 +0100
+
 postfix-logsums (0.9.9) all; urgency=medium
 
   * Changing packaging from setuptools to pyproject.toml with flit - see

@@ -1,9 +1,9 @@
 # vim: filetype=spec
 
 %define version @@@Version@@@
-%define builddir %{_builddir}/python%{python3_pkgversion}-postfix-logsums-%{version}
+%define builddir %{_builddir}/postfix-logsums-%{version}
 
-Name:           python%{python3_pkgversion}-postfix-logsums
+Name:           postfix-logsums
 Version:        %{version}
 Release:        @@@Release@@@%{?dist}
 Summary:        A log analyzer/summarizer for the Postfix MTA.

@@ -1,16 +1,16 @@
 # Translations template for postfix_logsums.
 # Copyright (C) 2026 Frank Brehm, Berlin
 # This file is distributed under the same license as the postfix_logsums project.
-# Frank Brehm <frank.brehm@pixelpark.com>, 2026.
+# Frank Brehm <frank@brehm-online.com>, 2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: postfix_logsums \"0.9.4\"\n"
-"Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2026-03-17 12:52+0100\n"
+"Project-Id-Version: postfix_logsums \"0.9.9\"\n"
+"Report-Msgid-Bugs-To: frank@brehm-online.com\n"
+"POT-Creation-Date: 2026-03-18 08:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <frank.brehm@pixelpark.com>\n"
+"Last-Translator: FULL NAME <frank@brehm-online.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -730,109 +730,113 @@ msgstr ""
 msgid "<None>"
 msgstr ""
 
-#: src/postfix_logsums/app.py:2256
+#: src/postfix_logsums/app.py:2253
 #, python-brace-format
 msgid ""
 "{c}-Object:\n"
 "{a}"
 msgstr ""
 
-#: src/postfix_logsums/errors.py:49
+#: src/postfix_logsums/app.py:2259
+msgid "Aborted by keyboard interrupt."
+msgstr ""
+
+#: src/postfix_logsums/errors.py:48
 #, python-brace-format
 msgid "Invalid key {k!r} for a {what}, must be valid date: {e}"
 msgstr ""
 
-#: src/postfix_logsums/errors.py:51
+#: src/postfix_logsums/errors.py:50
 #, python-brace-format
 msgid "Invalid key {k!r} for a {what}, must be valid date."
 msgstr ""
 
-#: src/postfix_logsums/errors.py:70
+#: src/postfix_logsums/errors.py:69
 #, python-brace-format
 msgid "Key error for key {k!r} for a {what}: {e}"
 msgstr ""
 
-#: src/postfix_logsums/errors.py:72
+#: src/postfix_logsums/errors.py:71
 #, python-brace-format
 msgid "Key error for {k!r} for a {what}."
 msgstr ""
 
-#: src/postfix_logsums/errors.py:90
+#: src/postfix_logsums/errors.py:89
 #, python-brace-format
 msgid "Invalid attribute {attr!r} for a {w} object."
 msgstr ""
 
-#: src/postfix_logsums/errors.py:115 src/postfix_logsums/errors.py:133
+#: src/postfix_logsums/errors.py:114 src/postfix_logsums/errors.py:132
 #, python-brace-format
 msgid "Invalid key {k!r} for a {w} object."
 msgstr ""
 
-#: src/postfix_logsums/errors.py:151
+#: src/postfix_logsums/errors.py:150
 #, python-brace-format
 msgid "Invalid hour {h!r} for a {w} object."
 msgstr ""
 
-#: src/postfix_logsums/errors.py:169
+#: src/postfix_logsums/errors.py:168
 #, python-brace-format
 msgid "Value {v!r} not found in the {w} object."
 msgstr ""
 
-#: src/postfix_logsums/errors.py:187
+#: src/postfix_logsums/errors.py:186
 #, python-brace-format
 msgid "Invalid method {m}() for a {w} object."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:76 src/postfix_logsums/stats.py:428 src/postfix_logsums/stats.py:668
+#: src/postfix_logsums/stats.py:75 src/postfix_logsums/stats.py:427 src/postfix_logsums/stats.py:667
 #, python-brace-format
 msgid "Object is not a {m} object, but a {w} object instead."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:107
+#: src/postfix_logsums/stats.py:106
 #, python-brace-format
 msgid "Wrong value {v!r} for a {w} value: {e}"
 msgstr ""
 
-#: src/postfix_logsums/stats.py:113
+#: src/postfix_logsums/stats.py:112
 #, python-brace-format
 msgid "Wrong value {v!r} for a {w} value: must be >= 0"
 msgstr ""
 
-#: src/postfix_logsums/stats.py:123
+#: src/postfix_logsums/stats.py:122
 #, python-brace-format
 msgid "Deleting attribute {a!r} of a {w} is not allowed."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:414
+#: src/postfix_logsums/stats.py:413
 #, python-brace-format
 msgid "Wrong class {c} for using as an item class, must be a subclas of {sc}."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:616
+#: src/postfix_logsums/stats.py:615
 #, python-brace-format
 msgid "The method {met}() expected at most {max} arguments, got {got}."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:702 src/postfix_logsums/stats.py:860
+#: src/postfix_logsums/stats.py:701 src/postfix_logsums/stats.py:859
 #, python-brace-format
 msgid "Invalid number {} of statistics per hour given."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:790
+#: src/postfix_logsums/stats.py:789
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat: {e}"
 msgstr ""
 
-#: src/postfix_logsums/stats.py:793
+#: src/postfix_logsums/stats.py:792
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat: must be >= 0"
 msgstr ""
 
-#: src/postfix_logsums/stats.py:878
+#: src/postfix_logsums/stats.py:877
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat of smtp - must have three numbers."
 msgstr ""
 
-#: src/postfix_logsums/stats.py:893
+#: src/postfix_logsums/stats.py:892
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat."
 msgstr ""
