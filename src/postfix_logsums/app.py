@@ -2252,7 +2252,12 @@ def main():
     if app.verbose > 2:
         print(_("{c}-Object:\n{a}").format(c=app.__class__.__name__, a=app), file=sys.stderr)
 
-    app()
+    try:
+        app()
+    except KeyboardInterrupt:
+        sys.stderr.write("\n")
+        LOG.warning(_("Aborted by keyboard interrupt."))
+        sys.exit(99)
 
     sys.exit(0)
 

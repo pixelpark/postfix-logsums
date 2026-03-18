@@ -1,14 +1,14 @@
 # English translations for postfix_logsums.
 # Copyright (C) 2026 Frank Brehm, Berlin
 # This file is distributed under the same license as the postfix_logsums project.
-# Frank Brehm <frank.brehm@pixelpark.com>, 2026.
+# Frank Brehm <frank@brehm-online.com>, 2026.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: postfix_logsums \n"
 "Report-Msgid-Bugs-To: frank.brehm@pixelpark.com\n"
-"POT-Creation-Date: 2026-03-17 12:52+0100\n"
-"PO-Revision-Date: 2026-03-17 13:00+0100\n"
+"POT-Creation-Date: 2026-03-18 08:23+0100\n"
+"PO-Revision-Date: 2026-03-18 08:25+0100\n"
 "Last-Translator: Frank Brehm <frank.brehm@pixelpark.com>\n"
 "Language: en\n"
 "Language-Team: en <frank.brehm@pixelpark.com>\n"
@@ -210,7 +210,7 @@ msgstr ""
 #: src/postfix_logsums/app.py:745
 msgid ""
 "For those reject reports that list IP addresses or host/domain names: append the email from "
-"address to each listing. (Does not apply to “Improper use of SMTP command pipelining” report.)"
+"address to each listing. (Does not apply to \"Improper use of SMTP command pipelining\" report.)"
 msgstr ""
 "For those reject reports that list IP addresses or host/domain names: append the email from "
 "address to each listing. (Does not apply to “Improper use of SMTP command pipelining” report.)"
@@ -232,8 +232,8 @@ msgid ""
 "Do \"VERP\" generated address (?) munging. Convert sender addresses of the form \"list-return-"
 "NN-someuser=some.dom@host.sender.dom\" to \"list-return-ID-someuser=some.dom@host.sender.dom\"."
 msgstr ""
-"Do “VERP” generated address (?) munging. Convert sender addresses of the form “list-return-"
-"NN-someuser=some.dom@host.sender.dom” to “list-return-ID-someuser=some.dom@host.sender.dom”."
+"Do “VERP” generated address (?) munging. Convert sender addresses of the form “list-return-NN-"
+"someuser=some.dom@host.sender.dom” to “list-return-ID-someuser=some.dom@host.sender.dom”."
 
 #: src/postfix_logsums/app.py:782
 msgid "In other words: replace the numeric value with \"ID\"."
@@ -244,16 +244,16 @@ msgid ""
 "By specifying the optional \"=2\" (second form), the munging is more \"aggressive\", converting "
 "the address to something like: \"list-return@host.sender.dom\"."
 msgstr ""
-"By specifying the optional “=2” (second form), the munging is more “aggressive”, converting "
-"the address to something like: “list-return@host.sender.dom”."
+"By specifying the optional “=2” (second form), the munging is more “aggressive”, converting the "
+"address to something like: “list-return@host.sender.dom”."
 
 #: src/postfix_logsums/app.py:798
 msgid ""
 "Actually: specifying anything less than 2 does the \"simple\" munging and anything greater than "
 "1 results in the more \"aggressive\" hack being applied."
 msgstr ""
-"Actually: specifying anything less than 2 does the “simple” munging and anything greater than "
-"1 results in the more “aggressive” hack being applied."
+"Actually: specifying anything less than 2 does the “simple” munging and anything greater than 1 "
+"results in the more “aggressive” hack being applied."
 
 #: src/postfix_logsums/app.py:816
 msgid "Logfile compression options"
@@ -280,8 +280,8 @@ msgid ""
 "If not given, filenames with the extensions \".bz2\" or \".bzip2\" are assumed to be compressed "
 "with the bzip2 compression."
 msgstr ""
-"If not given, filenames with the extensions “.bz2” or “.bzip2” are assumed to be compressed "
-"with the bzip2 compression."
+"If not given, filenames with the extensions “.bz2” or “.bzip2” are assumed to be compressed with"
+" the bzip2 compression."
 
 #: src/postfix_logsums/app.py:858
 msgid "Assume, that stdin stream or the given files are xz or lzma compressed."
@@ -292,8 +292,8 @@ msgid ""
 "If not given, filenames with the extensions \".xz\" or \".lzma\" are assumed to be compressed "
 "with the xz or lzma compression."
 msgstr ""
-"If not given, filenames with the extensions “.xz” or “.lzma” are assumed to be compressed "
-"with the xz or lzma compression."
+"If not given, filenames with the extensions “.xz” or “.lzma” are assumed to be compressed with "
+"the xz or lzma compression."
 
 #: src/postfix_logsums/app.py:875
 msgid "The logfile(s) to analyze. If no file(s) specified, reads from stdin."
@@ -402,8 +402,8 @@ msgid ""
 "For the message deferral, bounce and reject summaries: display the full \"reason\", rather than "
 "a truncated one."
 msgstr ""
-"For the message deferral, bounce and reject summaries: display the full “reason”, rather than "
-"a truncated one."
+"For the message deferral, bounce and reject summaries: display the full “reason”, rather than a "
+"truncated one."
 
 #: src/postfix_logsums/app.py:1083
 msgid "NOTE: this can result in quite long lines in the report."
@@ -767,7 +767,7 @@ msgstr "Host/Domain Summary: SMTPD Connections"
 msgid "<None>"
 msgstr "«None»"
 
-#: src/postfix_logsums/app.py:2256
+#: src/postfix_logsums/app.py:2253
 #, python-brace-format
 msgid ""
 "{c}-Object:\n"
@@ -776,102 +776,106 @@ msgstr ""
 "{c}-Object:\n"
 "{a}"
 
-#: src/postfix_logsums/errors.py:49
+#: src/postfix_logsums/app.py:2259
+msgid "Aborted by keyboard interrupt."
+msgstr "Aborted by keyboard interrupt."
+
+#: src/postfix_logsums/errors.py:48
 #, python-brace-format
 msgid "Invalid key {k!r} for a {what}, must be valid date: {e}"
 msgstr "Invalid key {k!r} for a {what}, must be valid date: {e}"
 
-#: src/postfix_logsums/errors.py:51
+#: src/postfix_logsums/errors.py:50
 #, python-brace-format
 msgid "Invalid key {k!r} for a {what}, must be valid date."
 msgstr "Invalid key {k!r} for a {what}, must be valid date."
 
-#: src/postfix_logsums/errors.py:70
+#: src/postfix_logsums/errors.py:69
 #, python-brace-format
 msgid "Key error for key {k!r} for a {what}: {e}"
 msgstr "Key error for key {k!r} for a {what}: {e}"
 
-#: src/postfix_logsums/errors.py:72
+#: src/postfix_logsums/errors.py:71
 #, python-brace-format
 msgid "Key error for {k!r} for a {what}."
 msgstr "Key error for {k!r} for a {what}."
 
-#: src/postfix_logsums/errors.py:90
+#: src/postfix_logsums/errors.py:89
 #, python-brace-format
 msgid "Invalid attribute {attr!r} for a {w} object."
 msgstr "Invalid attribute {attr!r} for a {w} object."
 
-#: src/postfix_logsums/errors.py:115 src/postfix_logsums/errors.py:133
+#: src/postfix_logsums/errors.py:114 src/postfix_logsums/errors.py:132
 #, python-brace-format
 msgid "Invalid key {k!r} for a {w} object."
 msgstr "Invalid key {k!r} for a {w} object."
 
-#: src/postfix_logsums/errors.py:151
+#: src/postfix_logsums/errors.py:150
 #, python-brace-format
 msgid "Invalid hour {h!r} for a {w} object."
 msgstr "Invalid hour {h!r} for a {w} object."
 
-#: src/postfix_logsums/errors.py:169
+#: src/postfix_logsums/errors.py:168
 #, python-brace-format
 msgid "Value {v!r} not found in the {w} object."
 msgstr "Value {v!r} not found in the {w} object."
 
-#: src/postfix_logsums/errors.py:187
+#: src/postfix_logsums/errors.py:186
 #, python-brace-format
 msgid "Invalid method {m}() for a {w} object."
 msgstr "Invalid method {m}() for a {w} object."
 
-#: src/postfix_logsums/stats.py:76 src/postfix_logsums/stats.py:428 src/postfix_logsums/stats.py:668
+#: src/postfix_logsums/stats.py:75 src/postfix_logsums/stats.py:427 src/postfix_logsums/stats.py:667
 #, python-brace-format
 msgid "Object is not a {m} object, but a {w} object instead."
 msgstr "Object is not a {m} object, but a {w} object instead."
 
-#: src/postfix_logsums/stats.py:107
+#: src/postfix_logsums/stats.py:106
 #, python-brace-format
 msgid "Wrong value {v!r} for a {w} value: {e}"
 msgstr "Wrong value {v!r} for a {w} value: {e}"
 
-#: src/postfix_logsums/stats.py:113
+#: src/postfix_logsums/stats.py:112
 #, python-brace-format
 msgid "Wrong value {v!r} for a {w} value: must be >= 0"
 msgstr "Wrong value {v!r} for a {w} value: must be >= 0"
 
-#: src/postfix_logsums/stats.py:123
+#: src/postfix_logsums/stats.py:122
 #, python-brace-format
 msgid "Deleting attribute {a!r} of a {w} is not allowed."
 msgstr "Deleting attribute {a!r} of a {w} is not allowed."
 
-#: src/postfix_logsums/stats.py:414
+#: src/postfix_logsums/stats.py:413
 #, python-brace-format
 msgid "Wrong class {c} for using as an item class, must be a subclas of {sc}."
 msgstr "Wrong class {c} for using as an item class, must be a subclas of {sc}."
 
-#: src/postfix_logsums/stats.py:616
+#: src/postfix_logsums/stats.py:615
 #, python-brace-format
 msgid "The method {met}() expected at most {max} arguments, got {got}."
 msgstr "The method {met}() expected at most {max} arguments, got {got}."
 
-#: src/postfix_logsums/stats.py:702 src/postfix_logsums/stats.py:860
+#: src/postfix_logsums/stats.py:701 src/postfix_logsums/stats.py:859
 #, python-brace-format
 msgid "Invalid number {} of statistics per hour given."
 msgstr "Invalid number {} of statistics per hour given."
 
-#: src/postfix_logsums/stats.py:790
+#: src/postfix_logsums/stats.py:789
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat: {e}"
 msgstr "Wrong value {v!r} for a per hour stat: {e}"
 
-#: src/postfix_logsums/stats.py:793
+#: src/postfix_logsums/stats.py:792
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat: must be >= 0"
 msgstr "Wrong value {v!r} for a per hour stat: must be >= 0"
 
-#: src/postfix_logsums/stats.py:878
+#: src/postfix_logsums/stats.py:877
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat of smtp - must have three numbers."
 msgstr "Wrong value {v!r} for a per hour stat of smtp - must have three numbers."
 
-#: src/postfix_logsums/stats.py:893
+#: src/postfix_logsums/stats.py:892
 #, python-brace-format
 msgid "Wrong value {v!r} for a per hour stat."
 msgstr "Wrong value {v!r} for a per hour stat."

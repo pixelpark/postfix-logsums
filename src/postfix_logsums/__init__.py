@@ -756,7 +756,7 @@ class PostfixLogParser(object):
         self.results.reset()
 
         if not files:
-            LOG.debug(_("Parsing from {} ...").format("STDIN"))
+            LOG.info(_("Parsing from {} ...").format("STDIN"))
             self.results.start_logfile("STDIN")
             return self.parse_fh(sys.stdin, "STDIN", self.compression)
 
